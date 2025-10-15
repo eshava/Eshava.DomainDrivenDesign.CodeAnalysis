@@ -1,0 +1,1 @@
+# Eshava.DomainDrivenDesign.CodeAnalysis
