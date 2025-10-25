@@ -1,0 +1,1043 @@
+{
+	"namespaces": [
+		{
+			"domain": "Ordering",
+			"useCases": [
+				{
+					"type": 1,
+					"useCaseName": "Read",
+					"classificationKey": "Product",
+					"additionalContructorParameter": [],
+					"dtos": [
+						{
+							"name": "ProductItem",
+							"referenceModelName": "ProductData",
+							"properties": [
+								{
+									"name": "Id",
+									"type": "int"
+								},
+								{
+									"name": "Name",
+									"type": "string"
+								},
+								{
+									"name": "Price",
+									"type": "decimal"
+								},
+								{
+									"name": "Category",
+									"type": "ProductCategory",
+									"usingForType": "Eshava.Example.Domain.Ordering.ProductFeature"
+								}
+							]
+						}
+					],
+					"attributes": [
+						{
+							"name": "UseCaseClass",
+							"usingForType": "Eshava.Example.Application.Common.Attributes",
+							"parameters": [
+								{
+									"name": "name",
+									"type": "string",
+									"value": "Product"
+								}
+							]
+						}
+					]
+				},
+				{
+					"type": 1,
+					"useCaseName": "ReadArticle",
+					"classificationKey": "Product",
+					"additionalContructorParameter": [],
+					"dtos": [
+						{
+							"name": "ArticleItem",
+							"referenceModelName": "ArticleData",
+							"properties": [
+								{
+									"name": "Id",
+									"type": "int"
+								},
+								{
+									"name": "Name",
+									"type": "string"
+								},
+								{
+									"name": "Price",
+									"type": "decimal"
+								},
+								{
+									"name": "Category",
+									"type": "ProductCategory",
+									"usingForType": "Eshava.Example.Domain.Ordering.ProductFeature"
+								}
+							]
+						}
+					],
+					"attributes": [
+						{
+							"name": "UseCaseClass",
+							"usingForType": "Eshava.Example.Application.Common.Attributes",
+							"parameters": [
+								{
+									"name": "name",
+									"type": "string",
+									"value": "Product"
+								}
+							]
+						}
+					]
+				},
+				{
+					"type": 2,
+					"useCaseName": "Search",
+					"classificationKey": "Product",
+					"dtos": [
+						{
+							"name": "ProductItem",
+							"referenceModelName": "ProductData",
+							"properties": [
+								{
+									"name": "Id",
+									"type": "int",
+									"isSortable": false,
+									"isSearchable": false
+								},
+								{
+									"name": "Name",
+									"type": "string",
+									"isSortable": true,
+									"isSearchable": true,
+									"searchOperations": [
+										"Equal",
+										"Contains"
+									]
+								},
+								{
+									"name": "Price",
+									"type": "decimal",
+									"isSortable": false,
+									"isSearchable": false
+								},
+								{
+									"name": "Category",
+									"type": "ProductCategory",
+									"usingForType": "Eshava.Example.Domain.Ordering.ProductFeature",
+									"isSortable": true,
+									"isSearchable": true,
+									"searchOperations": [
+										"Equal"
+									]
+								}
+							]
+						}
+					],
+					"attributes": [
+						{
+							"name": "UseCaseClass",
+							"usingForType": "Eshava.Example.Application.Common.Attributes",
+							"parameters": [
+								{
+									"name": "name",
+									"type": "string",
+									"value": "Product"
+								}
+							]
+						}
+					]
+				},
+				{
+					"type": 4,
+					"useCaseName": "Create",
+					"classificationKey": "Product",
+					"addValidationConfigurationMethod": true,
+					"validationConfigurationAsTreeStructure": true,
+					"checkForeignKeyReferencesAutomatically": true,
+					"dtos": [
+						{
+							"name": "ProductCreate",
+							"referenceModelName": "ProductDDD",
+							"properties": [
+								{
+									"name": "Name",
+									"type": "string"
+								},
+								{
+									"name": "Price",
+									"type": "decimal"
+								},
+								{
+									"name": "SomeId",
+									"type": "int?"
+								}
+							]
+						}
+					],
+					"attributes": [
+						{
+							"name": "UseCaseClass",
+							"usingForType": "Eshava.Example.Application.Common.Attributes",
+							"parameters": [
+								{
+									"name": "name",
+									"type": "string",
+									"value": "Product"
+								}
+							]
+						}
+					]
+				},
+				{
+					"type": 5,
+					"useCaseName": "Update",
+					"classificationKey": "Product",
+					"addValidationConfigurationMethod": true,
+					"validationConfigurationAsTreeStructure": true,
+					"checkForeignKeyReferencesAutomatically": true,
+					"dtos": [
+						{
+							"name": "ProductUpdate",
+							"referenceModelName": "ProductDDD",
+							"properties": [
+								{
+									"name": "Name",
+									"type": "string"
+								},
+								{
+									"name": "Price",
+									"type": "decimal"
+								}
+							]
+						}
+					],
+					"attributes": [
+						{
+							"name": "UseCaseClass",
+							"usingForType": "Eshava.Example.Application.Common.Attributes",
+							"parameters": [
+								{
+									"name": "name",
+									"type": "string",
+									"value": "Product"
+								}
+							]
+						}
+					]
+				},
+				{
+					"type": 6,
+					"useCaseName": "Deactivate",
+					"classificationKey": "Product",
+					"domainModelReference": "ProductDDD",
+					"checkForeignKeyReferencesAutomatically": true,
+					"warpInTransaction": true,
+					"deactivateBefore": [
+						{
+							"name": "ProductPriceDDD"
+						}
+					],
+					"attributes": [
+						{
+							"name": "UseCaseClass",
+							"usingForType": "Eshava.Example.Application.Common.Attributes",
+							"parameters": [
+								{
+									"name": "name",
+									"type": "string",
+									"value": "Product"
+								}
+							]
+						}
+					]
+				},
+				{
+					"type": 7,
+					"useCaseName": "CheckUniqueName",
+					"classificationKey": "Product",
+					"dtos": [
+						{
+							"name": "ProductUniqueName",
+							"referenceModelName": "ProductData",
+							"properties": [
+								{
+									"name": "Id",
+									"type": "int"
+								},
+								{
+									"name": "Name",
+									"type": "string"
+								},
+								{
+									"name": "Category",
+									"type": "ProductCategory?",
+									"usingForType": "Eshava.Example.Domain.Ordering.ProductFeature",
+									"searchOperations": [
+										"NotEqual"
+									]
+								}
+							]
+						}
+					],
+					"attributes": [
+						{
+							"name": "UseCaseClass",
+							"usingForType": "Eshava.Example.Application.Common.Attributes",
+							"parameters": [
+								{
+									"name": "name",
+									"type": "string",
+									"value": "Product"
+								}
+							]
+						}
+					]
+				},
+				{
+					"type": 8,
+					"useCaseName": "SuggestProductName",
+					"classificationKey": "Product",
+					"dtos": [
+						{
+							"name": "ProductNameSuggestion",
+							"referenceModelName": "ProductData",
+							"properties": [
+								{
+									"name": "Id",
+									"type": "int"
+								},
+								{
+									"name": "Name",
+									"type": "string",
+									"isSearchable": true
+								}
+							]
+						}
+					],
+					"attributes": [
+						{
+							"name": "UseCaseClass",
+							"usingForType": "Eshava.Example.Application.Common.Attributes",
+							"parameters": [
+								{
+									"name": "name",
+									"type": "string",
+									"value": "Product"
+								}
+							]
+						}
+					]
+				},
+				{
+					"type": 6,
+					"useCaseName": "Deactivate",
+					"classificationKey": "Order",
+					"featureName": "OrderFeature",
+					"domainModelReference": "OrderDDD",
+					"checkForeignKeyReferencesAutomatically": true,
+					"attributes": [
+						{
+							"name": "UseCaseClass",
+							"usingForType": "Eshava.Example.Application.Common.Attributes",
+							"parameters": [
+								{
+									"name": "name",
+									"type": "string",
+									"value": "Order"
+								}
+							]
+						}
+					]
+				},
+				{
+					"type": 6,
+					"useCaseName": "Deactivate",
+					"classificationKey": "Order",
+					"featureName": "OrderFeature",
+					"domainModelReference": "OrderPositionDDD",
+					"checkForeignKeyReferencesAutomatically": true,
+					"readAggregateByChildId": false,
+					"attributes": [
+						{
+							"name": "UseCaseClass",
+							"usingForType": "Eshava.Example.Application.Common.Attributes",
+							"parameters": [
+								{
+									"name": "name",
+									"type": "string",
+									"value": "OrderPosition"
+								}
+							]
+						}
+					]
+				},
+				{
+					"type": 4,
+					"useCaseName": "Create",
+					"classificationKey": "Order",
+					"featureName": "OrderFeature",
+					"addValidationConfigurationMethod": true,
+					"validationConfigurationAsTreeStructure": true,
+					"checkForeignKeyReferencesAutomatically": true,
+					"mainDto": "OrderCreate",
+					"dtos": [
+						{
+							"name": "OrderCreate",
+							"referenceModelName": "OrderDDD",
+							"properties": [
+								{
+									"name": "OrderDateUtc",
+									"type": "DateTime"
+								},
+								{
+									"name": "CustomerId",
+									"type": "int"
+								},
+								{
+									"type": "int?",
+									"name": "OfficeId"
+								},
+								{
+									"type": "int?",
+									"name": "BillingOfficeId"
+								},
+								{
+									"name": "Positions",
+									"type": "OrderPositionCreate",
+									"isEnumerable": true
+								}
+							]
+						},
+						{
+							"name": "OrderPositionCreate",
+							"referenceModelName": "OrderPositionDDD",
+							"properties": [
+								{
+									"name": "PostionName",
+									"type": "string"
+								},
+								{
+									"name": "PositionDescription",
+									"type": "string"
+								},
+								{
+									"name": "ProductId",
+									"type": "int"
+								},
+								{
+									"name": "AlternativeProductId",
+									"type": "int?"
+								},
+								{
+									"name": "Price",
+									"type": "decimal"
+								},
+								{
+									"name": "Units",
+									"type": "int"
+								}
+							]
+						}
+					],
+					"attributes": [
+						{
+							"name": "UseCaseClass",
+							"usingForType": "Eshava.Example.Application.Common.Attributes",
+							"parameters": [
+								{
+									"name": "name",
+									"type": "string",
+									"value": "Order"
+								}
+							]
+						}
+					]
+				},
+				{
+					"type": 4,
+					"useCaseName": "CreateWithSinglePosition",
+					"classificationKey": "Order",
+					"featureName": "OrderFeature",
+					"addValidationConfigurationMethod": true,
+					"validationConfigurationAsTreeStructure": true,
+					"checkForeignKeyReferencesAutomatically": true,
+					"mainDto": "OrderCreate",
+					"dtos": [
+						{
+							"name": "OrderCreate",
+							"referenceModelName": "OrderDDD",
+							"properties": [
+								{
+									"name": "OrderDateUtc",
+									"type": "DateTime"
+								},
+								{
+									"name": "CustomerId",
+									"type": "int"
+								},
+								{
+									"name": "Position",
+									"type": "OrderPositionCreate",
+									"isEnumerable": false
+								}
+							]
+						},
+						{
+							"name": "OrderPositionCreate",
+							"referenceModelName": "OrderPositionDDD",
+							"properties": [
+								{
+									"name": "PostionName",
+									"type": "string"
+								},
+								{
+									"name": "PositionDescription",
+									"type": "string"
+								},
+								{
+									"name": "ProductId",
+									"type": "int"
+								},
+								{
+									"name": "AlternativeProductId",
+									"type": "int?"
+								},
+								{
+									"name": "Price",
+									"type": "decimal"
+								},
+								{
+									"name": "Units",
+									"type": "int"
+								}
+							]
+						}
+					],
+					"attributes": [
+						{
+							"name": "UseCaseClass",
+							"usingForType": "Eshava.Example.Application.Common.Attributes",
+							"parameters": [
+								{
+									"name": "name",
+									"type": "string",
+									"value": "Order"
+								}
+							]
+						}
+					]
+				},
+				{
+					"type": 4,
+					"useCaseName": "Create",
+					"classificationKey": "Order",
+					"featureName": "OrderFeature",
+					"addValidationConfigurationMethod": true,
+					"validationConfigurationAsTreeStructure": true,
+					"checkForeignKeyReferencesAutomatically": true,
+					"mainDto": "OrderPositionCreate",
+					"dtos": [
+						{
+							"name": "OrderPositionCreate",
+							"referenceModelName": "OrderPositionDDD",
+							"properties": [
+								{
+									"name": "PostionName",
+									"type": "string"
+								},
+								{
+									"name": "PositionDescription",
+									"type": "string"
+								},
+								{
+									"name": "ProductId",
+									"type": "int"
+								},
+								{
+									"name": "AlternativeProductId",
+									"type": "int?"
+								},
+								{
+									"name": "Price",
+									"type": "decimal"
+								},
+								{
+									"name": "Units",
+									"type": "int"
+								}
+							]
+						}
+					],
+					"attributes": [
+						{
+							"name": "UseCaseClass",
+							"usingForType": "Eshava.Example.Application.Common.Attributes",
+							"parameters": [
+								{
+									"name": "name",
+									"type": "string",
+									"value": "Order"
+								}
+							]
+						}
+					]
+				},
+				{
+					"type": 5,
+					"useCaseName": "Update",
+					"classificationKey": "Order",
+					"featureName": "OrderFeature",
+					"addValidationConfigurationMethod": true,
+					"validationConfigurationAsTreeStructure": true,
+					"checkForeignKeyReferencesAutomatically": true,
+					"mainDto": "OrderUpdate",
+					"dtos": [
+						{
+							"name": "OrderUpdate",
+							"referenceModelName": "OrderDDD",
+							"properties": [
+								{
+									"name": "OrderDateUtc",
+									"type": "DateTime"
+								},
+								{
+									"name": "CustomerId",
+									"type": "int"
+								},
+								{
+									"name": "Positions",
+									"type": "OrderPositionUpdate",
+									"isEnumerable": true
+								}
+							]
+						},
+						{
+							"name": "OrderPositionUpdate",
+							"referenceModelName": "OrderPositionDDD",
+							"properties": [
+								{
+									"name": "PostionName",
+									"type": "string"
+								},
+								{
+									"name": "PositionDescription",
+									"type": "string"
+								},
+								{
+									"name": "ProductId",
+									"type": "int"
+								},
+								{
+									"name": "AlternativeProductId",
+									"type": "int?"
+								},
+								{
+									"name": "Price",
+									"type": "decimal"
+								},
+								{
+									"name": "Units",
+									"type": "int"
+								}
+							]
+						}
+					],
+					"attributes": [
+						{
+							"name": "UseCaseClass",
+							"usingForType": "Eshava.Example.Application.Common.Attributes",
+							"parameters": [
+								{
+									"name": "name",
+									"type": "string",
+									"value": "Order"
+								}
+							]
+						}
+					]
+				},
+				{
+					"type": 5,
+					"useCaseName": "Update",
+					"classificationKey": "Order",
+					"featureName": "OrderFeature",
+					"addValidationConfigurationMethod": true,
+					"validationConfigurationAsTreeStructure": true,
+					"checkForeignKeyReferencesAutomatically": true,
+					"dtos": [
+						{
+							"name": "OrderPositionUpdate",
+							"referenceModelName": "OrderPositionDDD",
+							"properties": [
+								{
+									"name": "PostionName",
+									"type": "string"
+								},
+								{
+									"name": "PositionDescription",
+									"type": "string"
+								},
+								{
+									"name": "ProductId",
+									"type": "int"
+								},
+								{
+									"name": "AlternativeProductId",
+									"type": "int?"
+								},
+								{
+									"name": "Price",
+									"type": "decimal"
+								},
+								{
+									"name": "Units",
+									"type": "int"
+								}
+							]
+						}
+					],
+					"attributes": [
+						{
+							"name": "UseCaseClass",
+							"usingForType": "Eshava.Example.Application.Common.Attributes",
+							"parameters": [
+								{
+									"name": "name",
+									"type": "string",
+									"value": "Order"
+								}
+							]
+						}
+					]
+				},
+				{
+					"type": 2,
+					"useCaseName": "Search",
+					"classificationKey": "OrderPosition",
+					"featureName": "OrderFeature",
+					"useCustomGroupDtoMethod": false,
+					"dtos": [
+						{
+							"name": "OrderPositionItem",
+							"referenceModelName": "OrderPositionData",
+							"properties": [
+								{
+									"name": "Id",
+									"type": "int",
+									"isSortable": false,
+									"isSearchable": false
+								},
+								{
+									"name": "OrderDateUtc",
+									"referenceProperty": "Order.OrderDateUtc",
+									"type": "DateTime",
+									"isSortable": true,
+									"isSearchable": true,
+									"searchOperations": [
+										"Equal"
+									]
+								},
+								{
+									"name": "Name",
+									"referenceProperty": "PostionName",
+									"type": "string",
+									"isSortable": true,
+									"isSearchable": true,
+									"searchOperations": [
+										"Equal",
+										"Contains"
+									]
+								},
+								{
+									"name": "Description",
+									"referenceProperty": "PositionDescription",
+									"type": "string",
+									"isSortable": true,
+									"isSearchable": true,
+									"searchOperations": [
+										"Contains"
+									]
+								},
+								{
+									"name": "Price",
+									"type": "decimal",
+									"isSortable": false,
+									"isSearchable": false
+								},
+								{
+									"name": "Units",
+									"type": "int",
+									"isSortable": false,
+									"isSearchable": false
+								},
+								{
+									"name": "ProductCategory",
+									"referenceProperty": "Product.Category",
+									"type": "ProductCategory",
+									"usingForType": "Eshava.Example.Domain.Ordering.ProductFeature",
+									"isSortable": true,
+									"isSearchable": true,
+									"searchOperations": [
+										"Equal"
+									]
+								},
+								{
+									"name": "Product",
+									"referenceProperty": "Product.Name",
+									"type": "string",
+									"isSortable": true,
+									"isSearchable": true,
+									"searchOperations": [
+										"Equal",
+										"Contains"
+									]
+								},
+								{
+									"name": "ProductType",
+									"referenceProperty": "Product.Type.Name",
+									"type": "string",
+									"isSortable": true,
+									"isSearchable": true,
+									"searchOperations": [
+										"Equal",
+										"Contains"
+									]
+								},
+								{
+									"name": "InvoiceProductTypeId",
+									"referenceProperty": "InvoicePosition.Product.TypeId",
+									"type": "int",
+									"isSortable": true,
+									"isSearchable": true,
+									"searchOperations": [
+										"Contains"
+									]
+								},
+								{
+									"name": "InvoiceProductType",
+									"referenceProperty": "InvoicePosition.Product.Type.Name",
+									"type": "string",
+									"isSortable": true,
+									"isSearchable": true,
+									"searchOperations": [
+										"Contains"
+									]
+								}
+							]
+						}
+					],
+					"attributes": [
+						{
+							"name": "UseCaseClass",
+							"usingForType": "Eshava.Example.Application.Common.Attributes",
+							"parameters": [
+								{
+									"name": "name",
+									"type": "string",
+									"value": "OrderPosition"
+								}
+							]
+						}
+					]
+				},
+				{
+					"type": 1,
+					"useCaseName": "Read",
+					"classificationKey": "OrderPosition",
+					"featureName": "OrderFeature",
+					"dtos": [
+						{
+							"name": "OrderPositionItem",
+							"referenceModelName": "OrderPositionData",
+							"properties": [
+								{
+									"name": "Id",
+									"type": "int"
+								},
+								{
+									"name": "OrderDateUtc",
+									"referenceProperty": "Order.OrderDateUtc",
+									"type": "DateTime"
+								},
+								{
+									"name": "Name",
+									"referenceProperty": "PostionName",
+									"type": "string"
+								},
+								{
+									"name": "Description",
+									"referenceProperty": "PositionDescription",
+									"type": "string"
+								},
+								{
+									"name": "Price",
+									"type": "decimal"
+								},
+								{
+									"name": "Units",
+									"type": "int"
+								},
+								{
+									"name": "ProductName",
+									"referenceProperty": "Product.Name",
+									"type": "string"
+								},
+								{
+									"name": "ProductCategory",
+									"referenceProperty": "Product.Category",
+									"type": "ProductCategory",
+									"usingForType": "Eshava.Example.Domain.Ordering.ProductFeature"
+								}
+							]
+						}
+					],
+					"attributes": [
+						{
+							"name": "UseCaseClass",
+							"usingForType": "Eshava.Example.Application.Common.Attributes",
+							"parameters": [
+								{
+									"name": "name",
+									"type": "string",
+									"value": "OrderPosition"
+								}
+							]
+						}
+					]
+				},
+				{
+					"type": 1,
+					"useCaseName": "Read",
+					"classificationKey": "Order",
+					"featureName": "OrderFeature",
+					"mainDto": "OrderItem",
+					"useCustomGroupDtoMethod": false,
+					"dtos": [
+						{
+							"name": "OrderItem",
+							"referenceModelName": "OrderData",
+							"properties": [
+								{
+									"name": "Id",
+									"type": "int"
+								},
+								{
+									"name": "OrderDateUtc",
+									"type": "DateTime"
+								},
+								{
+									"name": "Address",
+									"type": "AddressItem"
+								},
+								{
+									"name": "Positions",
+									"type": "OrderPositionItem",
+									"isEnumerable": true
+								}
+							]
+						},
+						{
+							"name": "AddressItem",
+							"referenceModelName": "OrderData",
+							"properties": [
+								{
+									"name": "CustomerId",
+									"type": "int"
+								}
+							]
+						},
+						{
+							"name": "OrderPositionItem",
+							"referenceModelName": "OrderPositionData",
+							"properties": [
+								{
+									"name": "Id",
+									"type": "int",
+									"isGroupProperty": true
+								},
+								{
+									"name": "Name",
+									"referenceProperty": "PostionName",
+									"type": "string"
+								},
+								{
+									"name": "Description",
+									"referenceProperty": "PositionDescription",
+									"type": "string"
+								},
+								{
+									"name": "Price",
+									"type": "decimal"
+								},
+								{
+									"name": "Units",
+									"type": "int"
+								},
+								{
+									"name": "Product",
+									"type": "ProductItem"
+								}
+							]
+						},
+						{
+							"name": "ProductItem",
+							"referenceModelName": "OrderPositionData",
+							"properties": [
+								{
+									"name": "Name",
+									"referenceProperty": "Product.Name",
+									"type": "string"
+								},
+								{
+									"name": "Category",
+									"referenceProperty": "Product.Category",
+									"type": "ProductCategory",
+									"usingForType": "Eshava.Example.Domain.Ordering.ProductFeature"
+								},
+								{
+									"name": "PriceList",
+									"type": "ProductPriceItem",
+									"isEnumerable": true
+								}
+							]
+						},
+						{
+							"name": "ProductPriceItem",
+							"referenceModelName": "ProductPriceData",
+							"properties": [
+								{
+									"name": "Id",
+									"type": "int",
+									"isGroupProperty": true
+								},
+								{
+									"name": "Name",
+									"type": "string"
+								},
+								{
+									"name": "Price",
+									"type": "decimal"
+								}
+							]
+						}
+					],
+					"attributes": [
+						{
+							"name": "UseCaseClass",
+							"usingForType": "Eshava.Example.Application.Common.Attributes",
+							"parameters": [
+								{
+									"name": "name",
+									"type": "string",
+									"value": "Order"
+								}
+							]
+						}
+					]
+				}
+			]
+		}
+	]
+}

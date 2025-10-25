@@ -1,0 +1,5 @@
+{
+	"fullQualifiedNamespace": "Eshava.Example.Application",
+	"scopedSettingsClass": "ExampleScopedSettings",
+	"scopedSettingsUsing": "Eshava.Example.Application.Settings"
+}

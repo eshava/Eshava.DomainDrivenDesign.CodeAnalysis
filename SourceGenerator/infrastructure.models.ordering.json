@@ -1,0 +1,244 @@
+{
+	"namespaces": [
+		{
+			"domain": "Ordering",
+			"databaseSchema": "ordering",
+			"models": [
+				{
+					"identifierType": "int",
+					"identifierGenerationOnAdd": true,
+					"tableName": "ProductTypes",
+					"name": "ProductTypeData",
+					"classificationKey": "ProductType",
+					"createRepository": true,
+					"createProviderService": true,
+					"properties": [
+						{
+							"type": "string",
+							"name": "Name"
+						}
+					]
+				},
+				{
+					"identifierType": "int",
+					"identifierGenerationOnAdd": true,
+					"tableName": "Products",
+					"name": "ProductData",
+					"classificationKey": "Product",
+					"createRepository": true,
+					"createProviderService": true,
+					"properties": [
+						{
+							"type": "string",
+							"name": "Name"
+						},
+						{
+							"type": "decimal",
+							"name": "Price"
+						},
+						{
+							"type": "ProductCategory",
+							"usingForType": "Eshava.Example.Domain.Ordering.ProductFeature",
+							"name": "Category"
+						},
+						{
+							"type": "int",
+							"name": "TypeId",
+							"isReference": true,
+							"referenceType": "ProductTypeData",
+							"referenceDomain": null
+						}
+					]
+				},
+				{
+					"identifierType": "int",
+					"identifierGenerationOnAdd": true,
+					"tableName": "Products",
+					"name": "ArticleData",
+					"classificationKey": "Product",
+					"createRepository": true,
+					"createProviderService": true,
+					"properties": [
+						{
+							"type": "string",
+							"name": "Name"
+						},
+						{
+							"type": "decimal",
+							"name": "Price"
+						},
+						{
+							"type": "ProductCategory",
+							"usingForType": "Eshava.Example.Domain.Ordering.ProductFeature",
+							"name": "Category"
+						},
+						{
+							"type": "int",
+							"name": "TypeId",
+							"isReference": true,
+							"referenceType": "ProductTypeData",
+							"referenceDomain": null
+						}
+					]
+				},
+				{
+					"identifierType": "int",
+					"identifierGenerationOnAdd": true,
+					"tableName": "ProductPrices",
+					"name": "ProductPriceData",
+					"classificationKey": "ProductPrice",
+					"createRepository": true,
+					"createProviderService": true,
+					"properties": [
+						{
+							"type": "int",
+							"name": "ProductId",
+							"isReference": true,
+							"referenceType": "ProductData",
+							"referenceDomain": null,
+							"isParentReference": true
+						},
+						{
+							"type": "string",
+							"name": "Name"
+						},
+						{
+							"type": "int",
+							"name": "ScaleUnits"
+						},
+						{
+							"type": "decimal",
+							"name": "Price"
+						},
+						{
+							"type": "DateTime",
+							"name": "UsageStartAtUtc"
+						},
+						{
+							"type": "DateTime?",
+							"name": "UsageEndAtUtc"
+						}
+					]
+				},
+				{
+					"identifierType": "int",
+					"identifierGenerationOnAdd": true,
+					"tableName": "Orders",
+					"name": "OrderData",
+					"classificationKey": "Order",
+					"createRepository": true,
+					"createProviderService": true,
+					"createCreationBag": true,
+					"properties": [
+						{
+							"type": "DateTime",
+							"name": "OrderDateUtc"
+						},
+						{
+							"type": "string",
+							"name": "OrderNumber"
+						},
+						{
+							"type": "int",
+							"name": "CustomerId",
+							"addToCreationBag": true,
+							"isReference": true,
+							"referenceType": "CustomerData",
+							"referenceDomain": "Organizations"
+						},
+						{
+							"type": "CustomerData",
+							"name": "Customer",
+							"referenceType": "CustomerData",
+							"referencePropertyName": "CustomerId",
+							"referenceDomain": "Organizations",
+							"skipFromDomainModel": true
+						},
+						{
+							"type": "OrderPositionData",
+							"name": "Position",
+							"referenceType": "OrderPositionData",
+							"referencePropertyName": "OrderId",
+							"referenceDomain": null,
+							"skipFromDomainModel": true
+						}
+					]
+				},
+				{
+					"identifierType": "int",
+					"identifierGenerationOnAdd": true,
+					"tableName": "OrderPositions",
+					"name": "OrderPositionData",
+					"classificationKey": "OrderPosition",
+					"createRepository": true,
+					"isChild": true,
+					"referencedParent": "OrderData",
+					"properties": [
+						{
+							"type": "int",
+							"name": "OrderId",
+							"isReference": true,
+							"referenceType": "OrderData",
+							"referenceDomain": null,
+							"isParentReference": true
+						},
+						{
+							"type": "string",
+							"name": "PostionName"
+						},
+						{
+							"type": "string",
+							"name": "PositionDescription"
+						},
+						{
+							"type": "int",
+							"name": "ProductId",
+							"isReference": true,
+							"referenceType": "ProductData",
+							"referenceDomain": null
+						},
+						{
+							"type": "int",
+							"name": "ArticleId",
+							"isReference": true,
+							"referenceType": "ArticleData",
+							"referenceDomain": null
+						},
+						{
+							"type": "decimal",
+							"name": "Price"
+						},
+						{
+							"type": "int",
+							"name": "Units"
+						},
+						{
+							"type": "decimal",
+							"name": "TotalPrice"
+						},
+						{
+							"type": "OrderData",
+							"name": "Order",
+							"referenceType": "OrderData",
+							"referencePropertyName": "OrderId",
+							"referenceDomain": null,
+							"skipFromDomainModel": true
+						},
+						{
+							"type": "InvoicePositionData",
+							"name": "InvoicePosition",
+							"referenceType": "InvoicePositionData",
+							"referenceDomain": "Accounting",
+							"referencePropertyName": "OrderPositionId",
+							"skipFromDomainModel": true
+						},
+						{
+							"type": "int",
+							"name": "CustomerId"
+						}
+					]
+				}
+			]
+		}
+	]
+}

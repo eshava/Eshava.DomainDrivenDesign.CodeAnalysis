@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net9.0</TargetFramework>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Eshava.DomainDrivenDesign" Version="9.0.0" />
+		<PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.10" />
+		<PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="9.0.10" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<AdditionalFiles Include="..\SourceGenerator\domain.activator" />
+		<AdditionalFiles Include="..\SourceGenerator\domain.project.json" />
+		<AdditionalFiles Include="..\SourceGenerator\domain.models.ordering.json" />
+		<AdditionalFiles Include="..\SourceGenerator\domain.models.organizations.json" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Eshava.Example.SourceGenerator\Eshava.Example.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+	</ItemGroup>
+</Project>

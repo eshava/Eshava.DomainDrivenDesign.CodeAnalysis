@@ -1,0 +1,7 @@
+{
+	"fullQualifiedNamespace": "Eshava.Example.Api",
+	"endpointNamespace": "Endpoints",
+	"scopedSettingsClass": "ExampleScopedSettings",
+	"scopedSettingsUsing": "Eshava.Example.Application.Settings",
+	"responseDataExtensionsUsing": "Eshava.Example.Api.Extensions"
+}

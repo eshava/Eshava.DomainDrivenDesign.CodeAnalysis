@@ -1,0 +1,41 @@
+{
+	"namespaces": [
+		{
+			"domain": "Accounting",
+			"databaseSchema": "accounting",
+			"models": [
+				{
+					"identifierType": "int",
+					"identifierGenerationOnAdd": true,
+					"tableName": "InvoicePositions",
+					"name": "InvoicePositionData",
+					"classificationKey": "InvoicePosition",
+					"properties": [
+						{
+							"type": "string",
+							"name": "PostionName"
+						},
+						{
+							"type": "int",
+							"name": "OrderPositionId",
+							"isReference": true,
+							"referenceType": "OrderPositionData",
+							"referenceDomain": "Ordering"
+						},
+						{
+							"type": "int",
+							"name": "ProductId",
+							"isReference": true,
+							"referenceType": "ProductData",
+							"referenceDomain": "Ordering"
+						},
+						{
+							"type": "decimal",
+							"name": "TotalPrice"
+						}
+					]
+				}
+			]
+		}
+	]
+}

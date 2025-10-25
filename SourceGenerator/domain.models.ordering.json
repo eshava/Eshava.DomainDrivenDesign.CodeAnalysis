@@ -1,0 +1,518 @@
+{
+	"namespaces": [
+		{
+			"domain": "Ordering",
+			"models": [
+				{
+					"identifierType": "int",
+					"name": "ProductDDD",
+					"dataModelName": "ProductData",
+					"featureName": "ProductFeature",
+					"classificationKey": "Product",
+					"addGeneralPatchMethod": true,
+					"properties": [
+						{
+							"type": "string",
+							"name": "Name",
+							"attributes": [
+								{
+									"name": "Required",
+									"usingForType": "System.ComponentModel.DataAnnotations"
+								},
+								{
+									"name": "MaxLength",
+									"usingForType": "System.ComponentModel.DataAnnotations",
+									"parameters": [
+										{
+											"type": "int",
+											"value": "250"
+										}
+									]
+								}
+							],
+							"validationRules": [
+								{
+									"type": 1
+								}
+							]
+						},
+						{
+							"type": "decimal",
+							"name": "Price",
+							"attributes": [
+								{
+									"name": "Required",
+									"usingForType": "System.ComponentModel.DataAnnotations"
+								},
+								{
+									"name": "DecimalPlaces",
+									"usingForType": "Eshava.Core.Validation.Attributes",
+									"parameters": [
+										{
+											"type": "int",
+											"value": "2"
+										}
+									]
+								},
+								{
+									"name": "Range",
+									"usingForType": "System.ComponentModel.DataAnnotations",
+									"parameters": [
+										{
+											"type": "int",
+											"value": "0"
+										},
+										{
+											"type": "constant",
+											"value": "Int32.MaxValue"
+										}
+									]
+								}
+							]
+						},
+						{
+							"skipForConstructor": true,
+							"type": "ProductCategory",
+							"usingForType": "Eshava.Example.Domain.Ordering.ProductFeature",
+							"name": "Category",
+							"attributes": [
+								{
+									"name": "AutoPatchBlocked",
+									"usingForType": "Eshava.DomainDrivenDesign.Domain.Attributes"
+								},
+								{
+									"name": "Enumeration",
+									"usingForType": "Eshava.Core.Validation.Attributes",
+									"parameters": [
+										{
+											"name": "invalidateZero",
+											"type": "bool",
+											"value": "true"
+										}
+									]
+								}
+							]
+						}
+					]
+				},
+				{
+					"identifierType": "int",
+					"name": "ProductPriceDDD",
+					"dataModelName": "ProductPriceData",
+					"featureName": "ProductFeature",
+					"classificationKey": "ProductPrice",
+					"addGeneralPatchMethod": true,
+					"properties": [
+						{
+							"type": "int",
+							"name": "ProductId",
+							"isReference": true,
+							"referenceType": "ProductDDD",
+							"attributes": [
+								{
+									"name": "Required",
+									"usingForType": "System.ComponentModel.DataAnnotations"
+								},
+								{
+									"name": "Range",
+									"usingForType": "System.ComponentModel.DataAnnotations",
+									"parameters": [
+										{
+											"type": "int",
+											"value": "1"
+										},
+										{
+											"type": "constant",
+											"value": "Int32.MaxValue"
+										}
+									]
+								}
+							]
+						},
+						{
+							"type": "string",
+							"name": "Name",
+							"attributes": [
+								{
+									"name": "Required",
+									"usingForType": "System.ComponentModel.DataAnnotations"
+								},
+								{
+									"name": "MaxLength",
+									"usingForType": "System.ComponentModel.DataAnnotations",
+									"parameters": [
+										{
+											"type": "int",
+											"value": "250"
+										}
+									]
+								}
+							],
+							"validationRules": [
+								{
+									"type": 1
+								}
+							]
+						},
+						{
+							"type": "decimal",
+							"name": "Price",
+							"attributes": [
+								{
+									"name": "Required",
+									"usingForType": "System.ComponentModel.DataAnnotations"
+								},
+								{
+									"name": "DecimalPlaces",
+									"usingForType": "Eshava.Core.Validation.Attributes",
+									"parameters": [
+										{
+											"type": "int",
+											"value": "2"
+										}
+									]
+								},
+								{
+									"name": "Range",
+									"usingForType": "System.ComponentModel.DataAnnotations",
+									"parameters": [
+										{
+											"type": "int",
+											"value": "0"
+										},
+										{
+											"type": "constant",
+											"value": "Int32.MaxValue"
+										}
+									]
+								}
+							]
+						},
+						{
+							"type": "int",
+							"name": "ScaleUnits",
+							"attributes": [
+								{
+									"name": "Required",
+									"usingForType": "System.ComponentModel.DataAnnotations"
+								},
+								{
+									"name": "Range",
+									"usingForType": "System.ComponentModel.DataAnnotations",
+									"parameters": [
+										{
+											"type": "int",
+											"value": "0"
+										},
+										{
+											"type": "constant",
+											"value": "Int32.MaxValue"
+										}
+									]
+								}
+							]
+						},
+						{
+							"type": "DateTime",
+							"name": "UsageStartAtUtc",
+							"attributes": [
+								{
+									"name": "RangeTo",
+									"usingForType": "Eshava.Core.Validation.Attributes",
+									"parameters": [
+										{
+											"name": "Required",
+											"usingForType": "System.ComponentModel.DataAnnotations"
+										},
+										{
+											"name": "propertyName",
+											"type": "string",
+											"value": "UsageEndAtUtc"
+										},
+										{
+											"name": "allowNull",
+											"type": "bool",
+											"value": "true"
+										}
+									]
+								}
+							]
+						},
+						{
+							"type": "DateTime",
+							"name": "UsageEndAtUtc",
+							"attributes": [
+								{
+									"name": "RangeFrom",
+									"usingForType": "Eshava.Core.Validation.Attributes",
+									"parameters": [
+										{
+											"name": "propertyName",
+											"type": "string",
+											"value": "UsageStartAtUtc"
+										},
+										{
+											"name": "allowNull",
+											"type": "bool",
+											"value": "false"
+										}
+									]
+								}
+							]
+						}
+					]
+				},
+				{
+					"isAggregate": true,
+					"identifierType": "int",
+					"name": "OrderDDD",
+					"dataModelName": "OrderData",
+					"featureName": "OrderFeature",
+					"classificationKey": "Order",
+					"addGeneralPatchMethod": true,
+					"childDomainModels": [
+						"OrderPositionDDD"
+					],
+					"properties": [
+						{
+							"type": "DateTime",
+							"name": "OrderDateUtc",
+							"attributes": [
+								{
+									"name": "Required",
+									"usingForType": "System.ComponentModel.DataAnnotations"
+								}
+							]
+						},
+						{
+							"skipForConstructor": true,
+							"type": "string",
+							"name": "OrderNumber",
+							"attributes": [
+								{
+									"name": "AutoPatchBlocked",
+									"usingForType": "Eshava.DomainDrivenDesign.Domain.Attributes"
+								}
+							]
+						},
+						{
+							"type": "int",
+							"name": "CustomerId",
+							"isReference": true,
+							"referenceType": "CustomerDDD",
+							"referenceDomain": "Organizations",
+							"attributes": [
+								{
+									"name": "Required",
+									"usingForType": "System.ComponentModel.DataAnnotations"
+								},
+								{
+									"name": "Range",
+									"usingForType": "System.ComponentModel.DataAnnotations",
+									"parameters": [
+										{
+											"type": "int",
+											"value": "1"
+										},
+										{
+											"type": "constant",
+											"value": "Int32.MaxValue"
+										}
+									]
+								}
+							]
+						},
+						{
+							"type": "int?",
+							"name": "OfficeId",
+							"isReference": true,
+							"isProcessingProperty": true,
+							"referenceType": "OfficeDDD",
+							"referenceDomain": "Organizations"
+						},
+						{
+							"type": "int?",
+							"name": "BillingOfficeId",
+							"isReference": true,
+							"isProcessingProperty": true,
+							"referenceType": "BillingOfficeDDD",
+							"referenceDomain": "Organizations"
+						}
+					]
+				},
+				{
+					"identifierType": "int",
+					"name": "OrderPositionDDD",
+					"dataModelName": "OrderPositionData",
+					"featureName": "OrderFeature",
+					"classificationKey": "OrderPosition",
+					"addGeneralPatchMethod": true,
+					"properties": [
+						{
+							"type": "string",
+							"name": "PostionName",
+							"attributes": [
+								{
+									"name": "Required",
+									"usingForType": "System.ComponentModel.DataAnnotations"
+								},
+								{
+									"name": "MaxLength",
+									"usingForType": "System.ComponentModel.DataAnnotations",
+									"parameters": [
+										{
+											"type": "int",
+											"value": "100"
+										}
+									]
+								}
+							]
+						},
+						{
+							"type": "string",
+							"name": "PositionDescription"
+						},
+						{
+							"type": "int",
+							"name": "ProductId",
+							"isReference": true,
+							"referenceType": "ProductDDD",
+							"attributes": [
+								{
+									"name": "Required",
+									"usingForType": "System.ComponentModel.DataAnnotations"
+								},
+								{
+									"name": "Range",
+									"usingForType": "System.ComponentModel.DataAnnotations",
+									"parameters": [
+										{
+											"type": "int",
+											"value": "1"
+										},
+										{
+											"type": "constant",
+											"value": "Int32.MaxValue"
+										}
+									]
+								}
+							]
+						},
+						{
+							"type": "int?",
+							"name": "AlternativeProductId",
+							"isReference": true,
+							"referenceType": "ProductDDD",
+							"attributes": [
+								{
+									"name": "Range",
+									"usingForType": "System.ComponentModel.DataAnnotations",
+									"parameters": [
+										{
+											"type": "int",
+											"value": "1"
+										},
+										{
+											"type": "constant",
+											"value": "Int32.MaxValue"
+										}
+									]
+								}
+							]
+						},
+						{
+							"type": "decimal",
+							"name": "Price",
+							"attributes": [
+								{
+									"name": "Required",
+									"usingForType": "System.ComponentModel.DataAnnotations"
+								},
+								{
+									"name": "DecimalPlaces",
+									"usingForType": "Eshava.Core.Validation.Attributes",
+									"parameters": [
+										{
+											"type": "int",
+											"value": "2"
+										}
+									]
+								},
+								{
+									"name": "Range",
+									"usingForType": "System.ComponentModel.DataAnnotations",
+									"parameters": [
+										{
+											"type": "int",
+											"value": "0"
+										},
+										{
+											"type": "constant",
+											"value": "Int32.MaxValue"
+										}
+									]
+								}
+							]
+						},
+						{
+							"type": "int",
+							"name": "Units",
+							"attributes": [
+								{
+									"name": "Required",
+									"usingForType": "System.ComponentModel.DataAnnotations"
+								},
+								{
+									"name": "Range",
+									"usingForType": "System.ComponentModel.DataAnnotations",
+									"parameters": [
+										{
+											"type": "int",
+											"value": "0"
+										},
+										{
+											"type": "constant",
+											"value": "Int32.MaxValue"
+										}
+									]
+								}
+							]
+						},
+						{
+							"skipForConstructor": true,
+							"type": "decimal",
+							"name": "TotalPrice",
+							"attributes": [
+								{
+									"name": "AutoPatchBlocked",
+									"usingForType": "Eshava.DomainDrivenDesign.Domain.Attributes"
+								}
+							]
+						}
+					]
+				}
+			],
+			"enumerations": [
+				{
+					"name": "ProductCategory",
+					"classificationKey": "Product",
+					"featureName": "ProductFeature",
+					"items": [
+						{
+							"name": "None",
+							"value": 0
+						},
+						{
+							"name": "Default",
+							"value": 1
+						},
+						{
+							"name": "Premium",
+							"value": 2
+						}
+					]
+				}
+			]
+		}
+	]
+}

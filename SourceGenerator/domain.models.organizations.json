@@ -1,0 +1,238 @@
+{
+	"namespaces": [
+		{
+			"domain": "Organizations",
+			"models": [
+				{
+					"isAggregate": true,
+					"identifierType": "int",
+					"name": "CustomerDDD",
+					"dataModelName": "CustomerData",
+					"featureName": "CustomerFeature",
+					"classificationKey": "Customer",
+					"addGeneralPatchMethod": true,
+					"addInfrastructureProviderServiceByPassMethod": true,
+					"childDomainModels": [
+						"OfficeDDD",
+						"BillingOfficeDDD"
+					],
+					"properties": [
+						{
+							"type": "string",
+							"name": "Name",
+							"dataModelPropertyName": "CompanyName",
+							"attributes": [
+								{
+									"name": "Required",
+									"usingForType": "System.ComponentModel.DataAnnotations"
+								},
+								{
+									"name": "MaxLength",
+									"usingForType": "System.ComponentModel.DataAnnotations",
+									"parameters": [
+										{
+											"type": "int",
+											"value": "250"
+										}
+									]
+								}
+							],
+							"validationRules": [
+								{
+									"type": 1
+								}
+							]
+						},
+						{
+							"type": "int?",
+							"name": "MainOfficeId",
+							"isReference": true,
+							"isProcessingProperty": true,
+							"referenceType": "BillingOfficeDDD",
+							"referenceDomain": "Organizations"
+						},
+						{
+							"type": "int?",
+							"name": "MainBillingOfficeId",
+							"isReference": true,
+							"isProcessingProperty": true,
+							"referenceType": "BillingOfficeDDD",
+							"referenceDomain": "Organizations"
+						}
+					]
+				},
+				{
+					"isAggregate": true,
+					"identifierType": "int",
+					"name": "OfficeDDD",
+					"dataModelName": "OfficeData",
+					"dataModelTypeProperty": "TypeId",
+					"dataModelTypePropertyValue": "1",
+					"featureName": "CustomerFeature",
+					"classificationKey": "Office",
+					"addGeneralPatchMethod": true,
+					"addInfrastructureProviderServiceByPassMethod": true,
+					"childDomainModels": [
+						"LocationDDD"
+					],
+					"properties": [
+						{
+							"type": "bool",
+							"name": "Public"
+						},
+						{
+							"type": "string",
+							"name": "Name",
+							"attributes": [
+								{
+									"name": "Required",
+									"usingForType": "System.ComponentModel.DataAnnotations"
+								},
+								{
+									"name": "MaxLength",
+									"usingForType": "System.ComponentModel.DataAnnotations",
+									"parameters": [
+										{
+											"type": "int",
+											"value": "250"
+										}
+									]
+								}
+							],
+							"validationRules": [
+								{
+									"type": 1
+								}
+							]
+						}
+					]
+				},
+				{
+					"identifierType": "int",
+					"name": "BillingOfficeDDD",
+					"dataModelName": "OfficeData",
+					"dataModelTypeProperty": "TypeId",
+					"dataModelTypePropertyValue": "2",
+					"featureName": "CustomerFeature",
+					"classificationKey": "Office",
+					"addGeneralPatchMethod": true,
+					"addInfrastructureProviderServiceByPassMethod": true,
+					"properties": [
+						{
+							"type": "bool",
+							"name": "Public"
+						},
+						{
+							"type": "string",
+							"name": "Name",
+							"attributes": [
+								{
+									"name": "Required",
+									"usingForType": "System.ComponentModel.DataAnnotations"
+								},
+								{
+									"name": "MaxLength",
+									"usingForType": "System.ComponentModel.DataAnnotations",
+									"parameters": [
+										{
+											"type": "int",
+											"value": "250"
+										}
+									]
+								}
+							],
+							"validationRules": [
+								{
+									"type": 1
+								}
+							]
+						}
+					]
+				},
+				{
+					"isAggregate": true,
+					"identifierType": "int",
+					"name": "LocationDDD",
+					"dataModelName": "LocationData",
+					"featureName": "CustomerFeature",
+					"classificationKey": "Location",
+					"addGeneralPatchMethod": true,
+					"addInfrastructureProviderServiceByPassMethod": true,
+					"childDomainModels": [
+						"BuildingDDD"
+					],
+					"properties": [
+						{
+							"type": "string",
+							"name": "Name",
+							"attributes": [
+								{
+									"name": "Required",
+									"usingForType": "System.ComponentModel.DataAnnotations"
+								},
+								{
+									"name": "MaxLength",
+									"usingForType": "System.ComponentModel.DataAnnotations",
+									"parameters": [
+										{
+											"type": "int",
+											"value": "250"
+										}
+									]
+								}
+							],
+							"validationRules": [
+								{
+									"type": 1
+								}
+							]
+						}
+					]
+				},
+				{
+					"identifierType": "int",
+					"name": "BuildingDDD",
+					"dataModelName": "BuildingData",
+					"featureName": "CustomerFeature",
+					"classificationKey": "Building",
+					"addGeneralPatchMethod": true,
+					"addInfrastructureProviderServiceByPassMethod": true,
+					"providerServiceConstructorParameters": [
+						{
+							"name": "productDDDInfrastructureProviderService",
+							"type": "ProductDDDInfrastructureProviderService",
+							"usingForType": "Eshava.Example.Infrastructure.Ordering.Products"
+						}
+					],
+					"properties": [
+						{
+							"type": "string",
+							"name": "Name",
+							"attributes": [
+								{
+									"name": "Required",
+									"usingForType": "System.ComponentModel.DataAnnotations"
+								},
+								{
+									"name": "MaxLength",
+									"usingForType": "System.ComponentModel.DataAnnotations",
+									"parameters": [
+										{
+											"type": "int",
+											"value": "250"
+										}
+									]
+								}
+							],
+							"validationRules": [
+								{
+									"type": 1
+								}
+							]
+						}
+					]
+				}
+			]
+		}
+	]
+}

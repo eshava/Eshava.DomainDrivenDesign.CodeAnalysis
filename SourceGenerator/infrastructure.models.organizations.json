@@ -1,0 +1,227 @@
+{
+	"namespaces": [
+		{
+			"domain": "Organizations",
+			"databaseSchema": "organizations",
+			"models": [
+				{
+					"identifierType": "int",
+					"identifierGenerationOnAdd": true,
+					"tableName": "Customers",
+					"name": "CustomerData",
+					"classificationKey": "Customer",
+					"createRepository": true,
+					"createProviderService": true,
+					"createCreationBag": true,
+					"properties": [
+						{
+							"type": "string",
+							"name": "CompanyName"
+						},
+						{
+							"type": "int?",
+							"name": "MainProductId",
+							"isReference": true,
+							"referenceType": "ProductData",
+							"referenceDomain": "Ordering",
+							"isParentReference": false
+						},
+						{
+							"type": "int?",
+							"name": "AlternativeProductId",
+							"isReference": true,
+							"referenceType": "ProductData",
+							"referenceDomain": "Ordering",
+							"isParentReference": false
+						}
+					]
+				},
+				{
+					"identifierType": "int",
+					"identifierGenerationOnAdd": true,
+					"tableName": "Offices",
+					"name": "OfficeData",
+					"classificationKey": "Office",
+					"createRepository": true,
+					"isChild": true,
+					"createCreationBag": true,
+					"referencedParent": "CustomerData",
+					"properties": [
+						{
+							"type": "bool",
+							"name": "Public"
+						},
+						{
+							"type": "string",
+							"name": "Name"
+						},
+						{
+							"type": "int?",
+							"name": "ReferenceProductId",
+							"isReference": true,
+							"referenceType": "ProductData",
+							"referenceDomain": "Ordering",
+							"isParentReference": false
+						},
+						{
+							"type": "int",
+							"name": "CustomerId",
+							"isReference": true,
+							"referenceType": "CustomerData",
+							"referenceDomain": null,
+							"isParentReference": true
+						},
+						{
+							"type": "int?",
+							"name": "AlternativeCustomerId",
+							"isReference": true,
+							"referenceType": "CustomerData",
+							"referenceDomain": null
+						},
+						{
+							"type": "int",
+							"name": "TypeId"
+						}
+					]
+				},
+				{
+					"identifierType": "int",
+					"identifierGenerationOnAdd": true,
+					"tableName": "Locations",
+					"name": "LocationData",
+					"classificationKey": "Location",
+					"createRepository": true,
+					"isChild": true,
+					"createCreationBag": true,
+					"referencedParent": "OfficeData",
+					"properties": [
+						{
+							"type": "string",
+							"name": "Name"
+						},
+						{
+							"type": "int",
+							"name": "OfficeId",
+							"isReference": true,
+							"referenceType": "OfficeData",
+							"referenceDomain": null,
+							"isParentReference": true
+						},
+						{
+							"type": "OfficeData",
+							"name": "Office",
+							"referenceType": "OfficeData",
+							"referencePropertyName": "OfficeId",
+							"referenceDomain": null,
+							"skipFromDomainModel": true
+						}
+					]
+				},
+				{
+					"identifierType": "int",
+					"identifierGenerationOnAdd": true,
+					"tableName": "Buildings",
+					"name": "BuildingData",
+					"classificationKey": "Building",
+					"createRepository": true,
+					"isChild": true,
+					"referencedParent": "LocationData",
+					"properties": [
+						{
+							"type": "string",
+							"name": "Name"
+						},
+						{
+							"type": "int",
+							"name": "LocationId",
+							"isReference": true,
+							"referenceType": "LocationData",
+							"referenceDomain": null,
+							"isParentReference": true
+						},
+						{
+							"type": "LocationData",
+							"name": "Location",
+							"referenceType": "LocationData",
+							"referencePropertyName": "LocationId",
+							"referenceDomain": null,
+							"skipFromDomainModel": true
+						}
+					]
+				},
+				{
+					"identifierType": "int",
+					"identifierGenerationOnAdd": true,
+					"tableName": "Contacts",
+					"name": "ContactData",
+					"classificationKey": "Contact",
+					"createRepository": true,
+					"isChild": true,
+					"referencedParent": "CustomerData",
+					"properties": [
+						{
+							"type": "string",
+							"name": "FirstName"
+						},
+						{
+							"type": "string",
+							"name": "LastName"
+						},
+						{
+							"type": "int",
+							"name": "CustomerId",
+							"isReference": true,
+							"referenceType": "CustomerData",
+							"referenceDomain": null,
+							"isParentReference": true
+						},
+						{
+							"type": "CustomerData",
+							"name": "Customer",
+							"referenceType": "CustomerData",
+							"referencePropertyName": "CustomerId",
+							"referenceDomain": null,
+							"skipFromDomainModel": true
+						}
+					]
+				},
+				{
+					"identifierType": "int",
+					"identifierGenerationOnAdd": true,
+					"tableName": "Communications",
+					"name": "CommunicationData",
+					"classificationKey": "Communication",
+					"createRepository": true,
+					"isChild": true,
+					"referencedParent": "CustomerData",
+					"properties": [
+						{
+							"type": "int",
+							"name": "TypeId"
+						},
+						{
+							"type": "string",
+							"name": "Value"
+						},
+						{
+							"type": "int",
+							"name": "CustomerId",
+							"isReference": true,
+							"referenceType": "CustomerData",
+							"referenceDomain": null,
+							"isParentReference": true
+						},
+						{
+							"type": "CustomerData",
+							"name": "Customer",
+							"referenceType": "CustomerData",
+							"referencePropertyName": "CustomerId",
+							"referenceDomain": null,
+							"skipFromDomainModel": true
+						}
+					]
+				}
+			]
+		}
+	]
+}

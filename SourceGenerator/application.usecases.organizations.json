@@ -1,0 +1,943 @@
+{
+	"namespaces": [
+		{
+			"domain": "Organizations",
+			"useCases": [
+				{
+					"type": 4,
+					"useCaseName": "Create",
+					"classificationKey": "Customer",
+					"featureName": "CustomerFeature",
+					"addValidationConfigurationMethod": true,
+					"validationConfigurationAsTreeStructure": true,
+					"checkForeignKeyReferencesAutomatically": true,
+					"mainDto": "CustomerCreate",
+					"dtos": [
+						{
+							"name": "CustomerCreate",
+							"referenceModelName": "CustomerDDD",
+							"properties": [
+								{
+									"name": "Name",
+									"type": "string"
+								},
+								{
+									"name": "MainOfficeId",
+									"type": "int?"
+								},
+								{
+									"name": "MainBillingOfficeId",
+									"type": "int?"
+								},
+								{
+									"name": "Offices",
+									"type": "OfficeCreate",
+									"isEnumerable": true
+								}
+							]
+						},
+						{
+							"name": "OfficeCreate",
+							"referenceModelName": "OfficeDDD",
+							"properties": [
+								{
+									"name": "Name",
+									"type": "string"
+								},
+								{
+									"name": "Locations",
+									"type": "LocationCreate",
+									"isEnumerable": true
+								}
+							]
+						},
+						{
+							"name": "LocationCreate",
+							"referenceModelName": "LocationDDD",
+							"properties": [
+								{
+									"name": "Name",
+									"type": "string"
+								},
+								{
+									"name": "Buildings",
+									"type": "BuildingCreate",
+									"isEnumerable": true
+								}
+							]
+						},
+						{
+							"name": "BuildingCreate",
+							"referenceModelName": "BuildingDDD",
+							"properties": [
+								{
+									"name": "Name",
+									"type": "string"
+								}
+							]
+						}
+					],
+					"attributes": [
+						{
+							"name": "UseCaseClass",
+							"usingForType": "Eshava.Example.Application.Common.Attributes",
+							"parameters": [
+								{
+									"name": "name",
+									"type": "string",
+									"value": "Customer"
+								}
+							]
+						}
+					]
+				},
+				{
+					"type": 4,
+					"useCaseName": "CreateWithSingleOfficeAndLocation",
+					"classificationKey": "Customer",
+					"featureName": "CustomerFeature",
+					"addValidationConfigurationMethod": true,
+					"validationConfigurationAsTreeStructure": true,
+					"checkForeignKeyReferencesAutomatically": true,
+					"mainDto": "CustomerCreate",
+					"dtos": [
+						{
+							"name": "CustomerCreate",
+							"referenceModelName": "CustomerDDD",
+							"properties": [
+								{
+									"name": "Name",
+									"type": "string"
+								},
+								{
+									"name": "Office",
+									"type": "OfficeCreate",
+									"isEnumerable": false
+								}
+							]
+						},
+						{
+							"name": "OfficeCreate",
+							"referenceModelName": "OfficeDDD",
+							"properties": [
+								{
+									"name": "Name",
+									"type": "string"
+								},
+								{
+									"name": "Location",
+									"type": "LocationCreate",
+									"isEnumerable": false
+								}
+							]
+						},
+						{
+							"name": "LocationCreate",
+							"referenceModelName": "LocationDDD",
+							"properties": [
+								{
+									"name": "Name",
+									"type": "string"
+								}
+							]
+						}
+					],
+					"attributes": [
+						{
+							"name": "UseCaseClass",
+							"usingForType": "Eshava.Example.Application.Common.Attributes",
+							"parameters": [
+								{
+									"name": "name",
+									"type": "string",
+									"value": "Customer"
+								}
+							]
+						}
+					]
+				},
+				{
+					"type": 4,
+					"useCaseName": "CreateOffice",
+					"classificationKey": "Customer",
+					"featureName": "CustomerFeature",
+					"addValidationConfigurationMethod": true,
+					"validationConfigurationAsTreeStructure": true,
+					"checkForeignKeyReferencesAutomatically": true,
+					"mainDto": "OfficeCreate",
+					"dtos": [
+						{
+							"name": "OfficeCreate",
+							"referenceModelName": "OfficeDDD",
+							"properties": [
+								{
+									"name": "Name",
+									"type": "string"
+								},
+								{
+									"name": "Locations",
+									"type": "LocationCreate",
+									"isEnumerable": true
+								}
+							]
+						},
+						{
+							"name": "LocationCreate",
+							"referenceModelName": "LocationDDD",
+							"properties": [
+								{
+									"name": "Name",
+									"type": "string"
+								}
+							]
+						}
+					],
+					"attributes": [
+						{
+							"name": "UseCaseClass",
+							"usingForType": "Eshava.Example.Application.Common.Attributes",
+							"parameters": [
+								{
+									"name": "name",
+									"type": "string",
+									"value": "Customer"
+								}
+							]
+						}
+					]
+				},
+				{
+					"type": 4,
+					"useCaseName": "CreateLocation",
+					"classificationKey": "Office",
+					"featureName": "CustomerFeature",
+					"addValidationConfigurationMethod": true,
+					"validationConfigurationAsTreeStructure": true,
+					"checkForeignKeyReferencesAutomatically": true,
+					"ReadAggregateByChildId": true,
+					"mainDto": "LocationCreate",
+					"dtos": [
+						{
+							"name": "LocationCreate",
+							"referenceModelName": "LocationDDD",
+							"properties": [
+								{
+									"name": "Name",
+									"type": "string"
+								}
+							]
+						}
+					],
+					"attributes": [
+						{
+							"name": "UseCaseClass",
+							"usingForType": "Eshava.Example.Application.Common.Attributes",
+							"parameters": [
+								{
+									"name": "name",
+									"type": "string",
+									"value": "Customer"
+								}
+							]
+						}
+					]
+				},
+				{
+					"type": 4,
+					"useCaseName": "CreateBuilding",
+					"classificationKey": "Location",
+					"featureName": "CustomerFeature",
+					"addValidationConfigurationMethod": true,
+					"validationConfigurationAsTreeStructure": true,
+					"checkForeignKeyReferencesAutomatically": true,
+					"ReadAggregateByChildId": true,
+					"mainDto": "BuildingCreate",
+					"dtos": [
+						{
+							"name": "BuildingCreate",
+							"referenceModelName": "BuildingDDD",
+							"properties": [
+								{
+									"name": "Name",
+									"type": "string"
+								}
+							]
+						}
+					],
+					"attributes": [
+						{
+							"name": "UseCaseClass",
+							"usingForType": "Eshava.Example.Application.Common.Attributes",
+							"parameters": [
+								{
+									"name": "name",
+									"type": "string",
+									"value": "Customer"
+								}
+							]
+						}
+					]
+				},
+				{
+					"type": 5,
+					"useCaseName": "Update",
+					"classificationKey": "Customer",
+					"featureName": "CustomerFeature",
+					"addValidationConfigurationMethod": true,
+					"validationConfigurationAsTreeStructure": true,
+					"checkForeignKeyReferencesAutomatically": true,
+					"mainDto": "CustomerUpdate",
+					"dtos": [
+						{
+							"name": "CustomerUpdate",
+							"referenceModelName": "CustomerDDD",
+							"properties": [
+								{
+									"name": "Name",
+									"type": "string"
+								},
+								{
+									"name": "MainOfficeId",
+									"type": "int?"
+								},
+								{
+									"name": "MainBillingOfficeId",
+									"type": "int?"
+								},
+								{
+									"name": "Offices",
+									"type": "OfficeUpdate",
+									"isEnumerable": true
+								}
+							]
+						},
+						{
+							"name": "OfficeUpdate",
+							"referenceModelName": "OfficeDDD",
+							"properties": [
+								{
+									"name": "Id",
+									"type": "int",
+									"attributes": [
+										{
+											"name": "JsonIgnore",
+											"usingForType": "System.Text.Json.Serialization"
+										}
+									]
+								},
+								{
+									"name": "Name",
+									"type": "string"
+								},
+								{
+									"name": "Locations",
+									"type": "LocationUpdate",
+									"isEnumerable": true
+								}
+							]
+						},
+						{
+							"name": "LocationUpdate",
+							"referenceModelName": "LocationDDD",
+							"properties": [
+								{
+									"name": "Id",
+									"type": "int",
+									"attributes": [
+										{
+											"name": "JsonIgnore",
+											"usingForType": "System.Text.Json.Serialization"
+										}
+									]
+								},
+								{
+									"name": "Name",
+									"type": "string"
+								},
+								{
+									"name": "Buildings",
+									"type": "BuildingCreate",
+									"isEnumerable": true
+								}
+							]
+						},
+						{
+							"name": "BuildingCreate",
+							"referenceModelName": "BuildingDDD",
+							"properties": [
+								{
+									"name": "Id",
+									"type": "int",
+									"attributes": [
+										{
+											"name": "JsonIgnore",
+											"usingForType": "System.Text.Json.Serialization"
+										}
+									]
+								},
+								{
+									"name": "Name",
+									"type": "string"
+								}
+							]
+						}
+					],
+					"attributes": [
+						{
+							"name": "UseCaseClass",
+							"usingForType": "Eshava.Example.Application.Common.Attributes",
+							"parameters": [
+								{
+									"name": "name",
+									"type": "string",
+									"value": "Customer"
+								}
+							]
+						}
+					]
+				},
+				{
+					"type": 5,
+					"useCaseName": "UpdateOffice",
+					"classificationKey": "Customer",
+					"featureName": "CustomerFeature",
+					"addValidationConfigurationMethod": true,
+					"validationConfigurationAsTreeStructure": true,
+					"checkForeignKeyReferencesAutomatically": true,
+					"mainDto": "OfficeUpdate",
+					"dtos": [
+						{
+							"name": "OfficeUpdate",
+							"referenceModelName": "OfficeDDD",
+							"properties": [
+								{
+									"name": "Name",
+									"type": "string"
+								},
+								{
+									"name": "Locations",
+									"type": "LocationUpdate",
+									"isEnumerable": true
+								}
+							]
+						},
+						{
+							"name": "LocationUpdate",
+							"referenceModelName": "LocationDDD",
+							"properties": [
+								{
+									"name": "Name",
+									"type": "string"
+								}
+							]
+						}
+					],
+					"attributes": [
+						{
+							"name": "UseCaseClass",
+							"usingForType": "Eshava.Example.Application.Common.Attributes",
+							"parameters": [
+								{
+									"name": "name",
+									"type": "string",
+									"value": "Customer"
+								}
+							]
+						}
+					]
+				},
+				{
+					"type": 5,
+					"useCaseName": "UpdateLocation",
+					"classificationKey": "Office",
+					"featureName": "CustomerFeature",
+					"addValidationConfigurationMethod": true,
+					"validationConfigurationAsTreeStructure": true,
+					"checkForeignKeyReferencesAutomatically": true,
+					"mainDto": "LocationUpdate",
+					"dtos": [
+						{
+							"name": "LocationUpdate",
+							"referenceModelName": "LocationDDD",
+							"properties": [
+								{
+									"name": "Name",
+									"type": "string"
+								}
+							]
+						}
+					],
+					"attributes": [
+						{
+							"name": "UseCaseClass",
+							"usingForType": "Eshava.Example.Application.Common.Attributes",
+							"parameters": [
+								{
+									"name": "name",
+									"type": "string",
+									"value": "Customer"
+								}
+							]
+						}
+					]
+				},
+				{
+					"type": 5,
+					"useCaseName": "UpdateBuilding",
+					"classificationKey": "Location",
+					"featureName": "CustomerFeature",
+					"addValidationConfigurationMethod": true,
+					"validationConfigurationAsTreeStructure": true,
+					"checkForeignKeyReferencesAutomatically": true,
+					"readAggregateByChildId": true,
+					"mainDto": "BuildingUpdate",
+					"dtos": [
+						{
+							"name": "BuildingUpdate",
+							"referenceModelName": "BuildingDDD",
+							"properties": [
+								{
+									"name": "Name",
+									"type": "string"
+								}
+							]
+						}
+					],
+					"attributes": [
+						{
+							"name": "UseCaseClass",
+							"usingForType": "Eshava.Example.Application.Common.Attributes",
+							"parameters": [
+								{
+									"name": "name",
+									"type": "string",
+									"value": "Customer"
+								}
+							]
+						}
+					]
+				},
+				{
+					"type": 5,
+					"useCaseName": "UpdateWithSingleOffice",
+					"classificationKey": "Customer",
+					"featureName": "CustomerFeature",
+					"addValidationConfigurationMethod": true,
+					"validationConfigurationAsTreeStructure": true,
+					"checkForeignKeyReferencesAutomatically": true,
+					"mainDto": "CustomerUpdate",
+					"dtos": [
+						{
+							"name": "CustomerUpdate",
+							"referenceModelName": "CustomerDDD",
+							"properties": [
+								{
+									"name": "Name",
+									"type": "string"
+								},
+								{
+									"name": "Office",
+									"type": "OfficeUpdate",
+									"isEnumerable": false
+								}
+							]
+						},
+						{
+							"name": "OfficeUpdate",
+							"referenceModelName": "OfficeDDD",
+							"properties": [
+								{
+									"name": "Name",
+									"type": "string"
+								},
+								{
+									"name": "Locations",
+									"type": "LocationUpdate",
+									"isEnumerable": true
+								}
+							]
+						},
+						{
+							"name": "LocationUpdate",
+							"referenceModelName": "LocationDDD",
+							"properties": [
+								{
+									"name": "Name",
+									"type": "string"
+								},
+								{
+									"name": "Buildings",
+									"type": "BuildingUpdate",
+									"isEnumerable": true
+								}
+							]
+						},
+						{
+							"name": "BuildingUpdate",
+							"referenceModelName": "BuildingDDD",
+							"properties": [
+								{
+									"name": "Name",
+									"type": "string"
+								}
+							]
+						}
+					],
+					"attributes": [
+						{
+							"name": "UseCaseClass",
+							"usingForType": "Eshava.Example.Application.Common.Attributes",
+							"parameters": [
+								{
+									"name": "name",
+									"type": "string",
+									"value": "Customer"
+								}
+							]
+						}
+					]
+				},
+				{
+					"type": 5,
+					"useCaseName": "UpdateOfficeWithSingleLocation",
+					"classificationKey": "Customer",
+					"featureName": "CustomerFeature",
+					"addValidationConfigurationMethod": true,
+					"validationConfigurationAsTreeStructure": true,
+					"checkForeignKeyReferencesAutomatically": true,
+					"mainDto": "OfficeUpdate",
+					"dtos": [
+						{
+							"name": "OfficeUpdate",
+							"referenceModelName": "OfficeDDD",
+							"properties": [
+								{
+									"name": "Name",
+									"type": "string"
+								},
+								{
+									"name": "Location",
+									"type": "LocationUpdate",
+									"isEnumerable": false
+								}
+							]
+						},
+						{
+							"name": "LocationUpdate",
+							"referenceModelName": "LocationDDD",
+							"properties": [
+								{
+									"name": "Name",
+									"type": "string"
+								},
+								{
+									"name": "Building",
+									"type": "BuildingUpdate",
+									"isEnumerable": false
+								}
+							]
+						},
+						{
+							"name": "BuildingUpdate",
+							"referenceModelName": "BuildingDDD",
+							"properties": [
+								{
+									"name": "Name",
+									"type": "string"
+								}
+							]
+						}
+					],
+					"attributes": [
+						{
+							"name": "UseCaseClass",
+							"usingForType": "Eshava.Example.Application.Common.Attributes",
+							"parameters": [
+								{
+									"name": "name",
+									"type": "string",
+									"value": "Customer"
+								}
+							]
+						}
+					]
+				},
+				{
+					"type": 6,
+					"useCaseName": "Deactivate",
+					"classificationKey": "Customer",
+					"featureName": "CustomerFeature",
+					"domainModelReference": "CustomerDDD",
+					"checkForeignKeyReferencesAutomatically": true,
+					"deactivateBefore": [
+						{
+							"name": "OrderDDD",
+							"domain": "Ordering"
+						}
+					],
+					"attributes": [
+						{
+							"name": "UseCaseClass",
+							"usingForType": "Eshava.Example.Application.Common.Attributes",
+							"parameters": [
+								{
+									"name": "name",
+									"type": "string",
+									"value": "Customer"
+								}
+							]
+						}
+					]
+				},
+				{
+					"type": 6,
+					"useCaseName": "DeactivateOffice",
+					"classificationKey": "Customer",
+					"featureName": "CustomerFeature",
+					"domainModelReference": "OfficeDDD",
+					"checkForeignKeyReferencesAutomatically": true,
+					"readAggregateByChildId": true,
+					"attributes": [
+						{
+							"name": "UseCaseClass",
+							"usingForType": "Eshava.Example.Application.Common.Attributes",
+							"parameters": [
+								{
+									"name": "name",
+									"type": "string",
+									"value": "Office"
+								}
+							]
+						}
+					]
+				},
+				{
+					"type": 6,
+					"useCaseName": "DeactivateLocation",
+					"classificationKey": "Office",
+					"featureName": "CustomerFeature",
+					"domainModelReference": "LocationDDD",
+					"checkForeignKeyReferencesAutomatically": true,
+					"readAggregateByChildId": true,
+					"attributes": [
+						{
+							"name": "UseCaseClass",
+							"usingForType": "Eshava.Example.Application.Common.Attributes",
+							"parameters": [
+								{
+									"name": "name",
+									"type": "string",
+									"value": "Location"
+								}
+							]
+						}
+					]
+				},
+				{
+					"type": 6,
+					"useCaseName": "DeactivateBuilding",
+					"classificationKey": "Location",
+					"featureName": "CustomerFeature",
+					"domainModelReference": "BuildingDDD",
+					"checkForeignKeyReferencesAutomatically": true,
+					"readAggregateByChildId": true,
+					"attributes": [
+						{
+							"name": "UseCaseClass",
+							"usingForType": "Eshava.Example.Application.Common.Attributes",
+							"parameters": [
+								{
+									"name": "name",
+									"type": "string",
+									"value": "Building"
+								}
+							]
+						}
+					]
+				},
+				{
+					"type": 1,
+					"useCaseName": "Read",
+					"classificationKey": "Customer",
+					"featureName": "CustomerFeature",
+					"mainDto": "CustomerRead",
+					"dtos": [
+						{
+							"name": "CustomerRead",
+							"referenceModelName": "CustomerData",
+							"properties": [
+								{
+									"name": "Id",
+									"type": "int"
+								},
+								{
+									"name": "Name",
+									"type": "string",
+									"referenceProperty": "CompanyName"
+								},
+								{
+									"name": "MainProductId",
+									"type": "int?"
+								},
+								{
+									"name": "MainProduct",
+									"type": "string",
+									"referenceProperty": "MainProduct.Name"
+								},
+								{
+									"name": "Offices",
+									"type": "OfficeRead",
+									"isEnumerable": true
+								},
+								{
+									"name": "Communications",
+									"type": "CommunicationRead",
+									"isEnumerable": true
+								}
+							]
+						},
+						{
+							"name": "CommunicationRead",
+							"referenceModelName": "CommunicationData",
+							"properties": [
+								{
+									"name": "Id",
+									"type": "int"
+								},
+								{
+									"name": "TypeId",
+									"type": "int"
+								},
+								{
+									"name": "Value",
+									"type": "string"
+								}							
+							]
+						},
+						{
+							"name": "OfficeRead",
+							"referenceModelName": "OfficeData",
+							"properties": [
+								{
+									"name": "Id",
+									"type": "int"
+								},
+								{
+									"name": "ReferenceProductId",
+									"type": "int?"
+								},
+								{
+									"name": "ReferenceProduct",
+									"type": "string",
+									"referenceProperty": "ReferenceProduct.Name"
+								},
+								{
+									"name": "Name",
+									"type": "string"
+								},
+								{
+									"name": "AlternativeCustomerId",
+									"type": "int?"
+								},
+								{
+									"name": "AlternativeCustomer",
+									"referenceProperty": "AlternativeCustomer.CompanyName",
+									"type": "string"
+								},
+								{
+									"name": "Locations",
+									"type": "LocationRead",
+									"isEnumerable": true
+								}
+							]
+						},
+						{
+							"name": "LocationRead",
+							"referenceModelName": "LocationData",
+							"properties": [
+								{
+									"name": "Id",
+									"type": "int"
+								},
+								{
+									"name": "Name",
+									"type": "string"
+								},
+								{
+									"name": "Buildings",
+									"type": "BuildingRead",
+									"isEnumerable": true
+								}
+							]
+						},
+						{
+							"name": "BuildingRead",
+							"referenceModelName": "BuildingData",
+							"properties": [
+								{
+									"name": "Id",
+									"type": "int"
+								},
+								{
+									"name": "Name",
+									"type": "string"
+								}
+							]
+						}
+					],
+					"attributes": [
+						{
+							"name": "UseCaseClass",
+							"usingForType": "Eshava.Example.Application.Common.Attributes",
+							"parameters": [
+								{
+									"name": "name",
+									"type": "string",
+									"value": "Customer"
+								}
+							]
+						}
+					]
+				},
+				{
+					"type": 1,
+					"useCaseName": "ReadBillingOffice",
+					"classificationKey": "Office",
+					"featureName": "CustomerFeature",
+					"dataModelTypeProperty": "TypeId",
+					"dataModelTypePropertyValue": "2",
+					"mainDto": "OfficeRead",
+					"dtos": [
+						{
+							"name": "BillingOfficeRead",
+							"referenceModelName": "OfficeData",
+							"properties": [
+								{
+									"name": "Id",
+									"type": "int"
+								},
+								{
+									"name": "Name",
+									"type": "string"
+								}
+							]
+						}
+					],
+					"attributes": [
+						{
+							"name": "UseCaseClass",
+							"usingForType": "Eshava.Example.Application.Common.Attributes",
+							"parameters": [
+								{
+									"name": "name",
+									"type": "string",
+									"value": "Customer"
+								}
+							]
+						}
+					]
+				}
+			]
+		}
+	]
+}

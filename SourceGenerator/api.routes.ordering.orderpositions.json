@@ -1,0 +1,32 @@
+{
+	"Routes": [
+		{
+			"namespace": "Ordering",
+			"Name": "OrderPositions",
+			"endpoints": [
+				{
+					"httpMethod": "POST",
+					"route": "/orders/positions/search",
+					"useCase": {
+						"domain": "Ordering",
+						"classificationKey": "OrderPosition",
+						"useCaseName": "Search"
+					},
+					"authorizationPolicies": [
+						{
+							"isString": false,
+							"name": "CustomAuthorizationPolicy.Order",
+							"using": "Eshava.Example.Api.Policies"
+						}
+					],
+					"apiRouteEndpointFilters": [
+						{
+							"name": "CustomEndpointFilter",
+							"using": "Eshava.Example.Api.Filters"
+						}
+					]
+				}
+			]
+		}
+	]
+}

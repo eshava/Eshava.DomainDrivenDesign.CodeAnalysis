@@ -1,0 +1,131 @@
+{
+	"Routes": [
+		{
+			"namespace": "Ordering",
+			"Name": "Orders",
+			"endpoints": [
+				{
+					"httpMethod": "GET",
+					"route": "/orders/{id}",
+					"useCase": {
+						"domain": "Ordering",
+						"classificationKey": "Order",
+						"useCaseName": "Read"
+					},
+					"parameters": [
+						{
+							"parameterType": "Route",
+							"parameterName": null,
+							"type": "int",
+							"usingForType": null,
+							"name": "id",
+							"requestPropertyName": "OrderId"
+
+						}
+					],
+					"authorizationPolicies": [
+						{
+							"isString": false,
+							"name": "CustomAuthorizationPolicy.Order",
+							"using": "Eshava.Example.Api.Policies"
+						}
+					],
+					"apiRouteEndpointFilters": [
+						{
+							"name": "CustomEndpointFilter",
+							"using": "Eshava.Example.Api.Filters"
+						}
+					]
+				},
+				{
+					"httpMethod": "POST",
+					"route": "/orders",
+					"useCase": {
+						"domain": "Ordering",
+						"classificationKey": "Order",
+						"useCaseName": "Create"
+					},
+					"authorizationPolicies": [
+						{
+							"isString": false,
+							"name": "CustomAuthorizationPolicy.Order",
+							"using": "Eshava.Example.Api.Policies"
+						}
+					],
+					"apiRouteEndpointFilters": [
+						{
+							"name": "CustomEndpointFilter",
+							"using": "Eshava.Example.Api.Filters"
+						}
+					]
+				},
+				{
+					"httpMethod": "PUT",
+					"route": "/orders/{id}",
+					"useCase": {
+						"domain": "Ordering",
+						"classificationKey": "Order",
+						"useCaseName": "Update"
+					},
+					"parameters": [
+						{
+							"parameterType": "Route",
+							"parameterName": null,
+							"type": "int",
+							"usingForType": null,
+							"name": "id",
+							"requestPropertyName": "OrderId"
+
+						}
+					],
+					"authorizationPolicies": [
+						{
+							"isString": false,
+							"name": "CustomAuthorizationPolicy.Order",
+							"using": "Eshava.Example.Api.Policies"
+						}
+					],
+					"apiRouteEndpointFilters": [
+						{
+							"name": "CustomEndpointFilter",
+							"using": "Eshava.Example.Api.Filters"
+						}
+					]
+				},
+				{
+					"httpMethod": "DELETE",
+					"route": "/orders/{id}",
+					"useCase": {
+						"domain": "Ordering",
+						"classificationKey": "Order",
+						"useCaseName": "Deactivate"
+					},
+					"parameters": [
+						{
+							"parameterType": "Route",
+							"parameterName": null,
+							"type": "int",
+							"usingForType": null,
+							"name": "id",
+							"requestPropertyName": "OrderId"
+
+						}
+					],
+					"authorizationPolicies": [
+						{
+							"isString": false,
+							"name": "CustomAuthorizationPolicy.Order",
+							"using": "Eshava.Example.Api.Policies"
+						}
+					],
+					"apiRouteEndpointFilters": [
+						{
+							"name": "CustomEndpointFilter",
+							"using": "Eshava.Example.Api.Filters"
+						}
+					]
+				}
+			]
+		}
+	]
+}

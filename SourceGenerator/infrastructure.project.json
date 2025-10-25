@@ -1,0 +1,11 @@
+{
+	"fullQualifiedNamespace": "Eshava.Example.Infrastructure",
+	"alternativeUsing": null,
+	"alternativeAbstractDatabaseModel": "AbstractExampleDatabaseModel",
+	"alternativeAbstractDomainModelRepository": "AbstractExampleDomainModelRepository",
+	"alternativeAbstractChildDomainModelRepository": "AbstractExampleChildDomainModelRepository",
+	"alternativeAbstractQueryRepository": "AbstractExampleQueryRepository",
+	"scopedSettingsClass": "ExampleScopedSettings",
+	"scopedSettingsUsing": "Eshava.Example.Application.Settings",
+	"implementSoftDelete": true
+}

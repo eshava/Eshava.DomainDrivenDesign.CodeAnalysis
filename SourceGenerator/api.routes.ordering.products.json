@@ -1,0 +1,346 @@
+{
+	"Routes": [
+		{
+			"namespace": "Ordering",
+			"Name": "Products",
+			"endpoints": [
+				{
+					"httpMethod": "GET",
+					"route": "/products/{id}",
+					"useCase": {
+						"domain": "Ordering",
+						"classificationKey": "Product",
+						"referenceModel": "ProductData",
+						"useCaseName": "Read"
+					},
+					"parameters": [
+						{
+							"parameterType": "Route",
+							"parameterName": null,
+							"type": "int",
+							"usingForType": null,
+							"name": "id",
+							"requestPropertyName": "ProductId"
+
+						}
+					],
+					"authorizationPolicies": [
+						{
+							"isString": false,
+							"name": "CustomAuthorizationPolicy.Product",
+							"using": "Eshava.Example.Api.Policies"
+						}
+					],
+					"apiRouteEndpointFilters": [
+						{
+							"name": "CustomEndpointFilter",
+							"using": "Eshava.Example.Api.Filters"
+						}
+					]
+				},
+				{
+					"httpMethod": "POST",
+					"route": "/products/search",
+					"useCase": {
+						"domain": "Ordering",
+						"classificationKey": "Product",
+						"useCaseName": "Search"
+					},
+					"authorizationPolicies": [
+						{
+							"isString": false,
+							"name": "CustomAuthorizationPolicy.Product",
+							"using": "Eshava.Example.Api.Policies"
+						}
+					],
+					"apiRouteEndpointFilters": [
+						{
+							"name": "CustomEndpointFilter",
+							"using": "Eshava.Example.Api.Filters"
+						}
+					]
+				},
+				{
+					"httpMethod": "POST",
+					"route": "/products",
+					"useCase": {
+						"domain": "Ordering",
+						"classificationKey": "Product",
+						"referenceModel": "ProductDDD",
+						"useCaseName": "Create"
+					},
+					"parameters": [
+						{
+							"parameterType": "Query",
+							"parameterName": null,
+							"type": "int?",
+							"usingForType": null,
+							"name": "someId",
+							"requestPropertyName": "SomeId",
+							"mapToDtoProperty": true
+						}
+					],
+					"authorizationPolicies": [
+						{
+							"isString": false,
+							"name": "CustomAuthorizationPolicy.Product",
+							"using": "Eshava.Example.Api.Policies"
+						}
+					],
+					"apiRouteEndpointFilters": [
+						{
+							"name": "CustomEndpointFilter",
+							"using": "Eshava.Example.Api.Filters"
+						}
+					]
+				},
+				{
+					"httpMethod": "GET",
+					"route": "/products/configuration/validation/type/0",
+					"useCase": {
+						"domain": "Ordering",
+						"classificationKey": "Product",
+						"useCaseName": "Create",
+						"MethodToCall": "GetValidationConfiguration",
+						"IsAsync": false
+					},
+					"authorizationPolicies": [
+						{
+							"isString": false,
+							"name": "CustomAuthorizationPolicy.Product",
+							"using": "Eshava.Example.Api.Policies"
+						}
+					],
+					"apiRouteEndpointFilters": [
+						{
+							"name": "CustomEndpointFilter",
+							"using": "Eshava.Example.Api.Filters"
+						}
+					]
+				},
+				{
+					"httpMethod": "PUT",
+					"route": "/products/{id}",
+					"useCase": {
+						"domain": "Ordering",
+						"classificationKey": "Product",
+						"useCaseName": "Update"
+					},
+					"parameters": [
+						{
+							"parameterType": "Route",
+							"parameterName": null,
+							"type": "int",
+							"usingForType": null,
+							"name": "id",
+							"requestPropertyName": "ProductId"
+
+						}
+					],
+					"authorizationPolicies": [
+						{
+							"isString": false,
+							"name": "CustomAuthorizationPolicy.Product",
+							"using": "Eshava.Example.Api.Policies"
+						}
+					],
+					"apiRouteEndpointFilters": [
+						{
+							"name": "CustomEndpointFilter",
+							"using": "Eshava.Example.Api.Filters"
+						}
+					]
+				},
+				{
+					"httpMethod": "GET",
+					"route": "/products/configuration/validation/type/1",
+					"useCase": {
+						"domain": "Ordering",
+						"classificationKey": "Product",
+						"useCaseName": "Update",
+						"MethodToCall": "GetValidationConfiguration",
+						"IsAsync": false
+					},
+					"authorizationPolicies": [
+						{
+							"isString": false,
+							"name": "CustomAuthorizationPolicy.Product",
+							"using": "Eshava.Example.Api.Policies"
+						}
+					],
+					"apiRouteEndpointFilters": [
+						{
+							"name": "CustomEndpointFilter",
+							"using": "Eshava.Example.Api.Filters"
+						}
+					]
+				},
+				{
+					"httpMethod": "DELETE",
+					"route": "/products/{id}",
+					"useCase": {
+						"domain": "Ordering",
+						"classificationKey": "Product",
+						"useCaseName": "Deactivate"
+					},
+					"parameters": [
+						{
+							"parameterType": "Route",
+							"parameterName": null,
+							"type": "int",
+							"usingForType": null,
+							"name": "id",
+							"requestPropertyName": "ProductId"
+
+						}
+					],
+					"authorizationPolicies": [
+						{
+							"isString": false,
+							"name": "CustomAuthorizationPolicy.Product",
+							"using": "Eshava.Example.Api.Policies"
+						}
+					],
+					"apiRouteEndpointFilters": [
+						{
+							"name": "CustomEndpointFilter",
+							"using": "Eshava.Example.Api.Filters"
+						}
+					]
+				},
+				{
+					"httpMethod": "GET",
+					"route": "/products/unique",
+					"useCase": {
+						"domain": "Ordering",
+						"classificationKey": "Product",
+						"useCaseName": "CheckUniqueName"
+					},
+					"parameters": [
+						{
+							"parameterType": "Query",
+							"parameterName": null,
+							"type": "int?",
+							"usingForType": null,
+							"name": "productId",
+							"requestPropertyName": "Id"
+						},
+						{
+							"parameterType": "Query",
+							"parameterName": null,
+							"type": "string",
+							"usingForType": null,
+							"name": "name",
+							"requestPropertyName": "Name"
+						}
+					],
+					"authorizationPolicies": [
+						{
+							"isString": false,
+							"name": "CustomAuthorizationPolicy.Product",
+							"using": "Eshava.Example.Api.Policies"
+						}
+					],
+					"apiRouteEndpointFilters": [
+						{
+							"name": "CustomEndpointFilter",
+							"using": "Eshava.Example.Api.Filters"
+						}
+					]
+				},
+				{
+					"httpMethod": "POST",
+					"route": "/products/unique",
+					"useCase": {
+						"domain": "Ordering",
+						"classificationKey": "Product",
+						"useCaseName": "CheckUniqueName"
+					},
+					"authorizationPolicies": [
+						{
+							"isString": false,
+							"name": "CustomAuthorizationPolicy.Product",
+							"using": "Eshava.Example.Api.Policies"
+						}
+					],
+					"apiRouteEndpointFilters": [
+						{
+							"name": "CustomEndpointFilter",
+							"using": "Eshava.Example.Api.Filters"
+						}
+					]
+				},
+				{
+					"httpMethod": "GET",
+					"route": "/products/suggest/name",
+					"useCase": {
+						"domain": "Ordering",
+						"classificationKey": "Product",
+						"useCaseName": "SuggestProductName"
+					},
+					"parameters": [
+						{
+							"parameterType": "Query",
+							"parameterName": null,
+							"type": "string",
+							"usingForType": null,
+							"name": "searchTerm",
+							"requestPropertyName": "SearchTerm"
+						},
+						{
+							"parameterType": "Query",
+							"parameterName": null,
+							"type": "CompareOperator",
+							"usingForType": "Eshava.Core.Linq.Enums",
+							"name": "searchOperation",
+							"requestPropertyName": "SearchOperation"
+						},
+						{
+							"parameterType": "Query",
+							"parameterName": null,
+							"type": "SortOrder",
+							"usingForType": "Eshava.Core.Linq.Enums",
+							"name": "sortOrder",
+							"requestPropertyName": "SortOrder"
+						}
+					],
+					"authorizationPolicies": [
+						{
+							"isString": false,
+							"name": "CustomAuthorizationPolicy.Product",
+							"using": "Eshava.Example.Api.Policies"
+						}
+					],
+					"apiRouteEndpointFilters": [
+						{
+							"name": "CustomEndpointFilter",
+							"using": "Eshava.Example.Api.Filters"
+						}
+					]
+				},
+				{
+					"httpMethod": "POST",
+					"route": "/products/suggest/name",
+					"useCase": {
+						"domain": "Ordering",
+						"classificationKey": "Product",
+						"useCaseName": "SuggestProductName"
+					},
+					"authorizationPolicies": [
+						{
+							"isString": false,
+							"name": "CustomAuthorizationPolicy.Product",
+							"using": "Eshava.Example.Api.Policies"
+						}
+					],
+					"apiRouteEndpointFilters": [
+						{
+							"name": "CustomEndpointFilter",
+							"using": "Eshava.Example.Api.Filters"
+						}
+					]
+				}
+			]
+		}
+	]
+}
