@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Linq;
 using Eshava.CodeAnalysis.Extensions;
 using Eshava.DomainDrivenDesign.CodeAnalysis.Constants;
@@ -44,6 +43,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Domain
 			{
 				unitInformation.AddUsing(CommonNames.Namespaces.Eshava.DomainDrivenDesign.Domain.MODELS);
 			}
+
+			AddEventDomainProperty(unitInformation, domainModelMap.Domain);
 
 			foreach (var property in domainModelMap.DomainModel.Properties)
 			{
@@ -115,6 +116,9 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Domain
 				unitInformation.AddMethod(CreateAreAllChildsValidMethod(domainModelMap.ChildDomainModels));
 				unitInformation.AddMethod(CreateHasChangesInChildsMethod(domainModelMap.ChildDomainModels));
 				unitInformation.AddMethod(CreateSetChildMethod(domainModelMap.ChildDomainModels));
+				unitInformation.AddMethod(CreateClearChildChangesMethod(domainModelMap.ChildDomainModels));
+				unitInformation.AddMethod(CreateClearChildEventsMethod(domainModelMap.ChildDomainModels));
+				unitInformation.AddMethod(CreateGetChildDomainEventsMethod(domainModelMap.ChildDomainModels));
 
 				var childDelegateMethods = CreateChildDelegateAndAggregateInitMethods(domainModelMap, domainModelMap.ChildDomainModels);
 				foreach (var childMethod in childDelegateMethods)
@@ -482,6 +486,109 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Domain
 			);
 		}
 
+		private static (string Name, MemberDeclarationSyntax Method) CreateClearChildChangesMethod(IEnumerable<ReferenceDomainModelMap> childDomainModels)
+		{
+			return CreateChildClearMethod(childDomainModels, "ClearChildChanges");
+		}
+
+		private static (string Name, MemberDeclarationSyntax Method) CreateClearChildEventsMethod(IEnumerable<ReferenceDomainModelMap> childDomainModels)
+		{
+			return CreateChildClearMethod(childDomainModels, "ClearChildEvents");
+		}
+
+		private static (string Name, MemberDeclarationSyntax Method) CreateChildClearMethod(IEnumerable<ReferenceDomainModelMap> childDomainModels, string methodName)
+		{
+			var statements = new List<StatementSyntax>();
+			if (childDomainModels?.Any() ?? false)
+			{
+				foreach (var childDomainModel in childDomainModels)
+				{
+					var fieldName = childDomainModel.ChildEnumerableName.ToFieldName().ToPlural();
+					statements.Add(
+						methodName
+							.AsGeneric(childDomainModel.DomainModelName, childDomainModel.DomainModel.IdentifierType)
+							.Call(fieldName.ToArgument())
+							.ToExpressionStatement()
+					);
+				}
+			}
+
+			return (
+				methodName,
+				methodName.ToMethod(
+					Eshava.CodeAnalysis.SyntaxConstants.Void,
+					statements,
+					SyntaxKind.ProtectedKeyword,
+					SyntaxKind.OverrideKeyword
+				)
+			);
+		}
+
+		private static (string Name, MemberDeclarationSyntax Method) CreateGetChildDomainEventsMethod(IEnumerable<ReferenceDomainModelMap> childDomainModels)
+		{
+			var methodName = "GetChildDomainEvents";
+			var domainEventListName = "domainEvents";
+			var resultName = "domainEventsResult";
+
+			var statements = new List<StatementSyntax>
+			{
+				domainEventListName.ToVariableStatement("List".AsGeneric("DomainEvent").ToInstance())
+			};
+
+			if (childDomainModels?.Any() ?? false)
+			{
+				statements.Add(
+					resultName
+						.ToVariableStatement(
+							"default"
+							.ToIdentifierName()
+							.Call("IEnumerable".AsGeneric("DomainEvent").ToArgument())
+						)
+				);
+
+				foreach (var childDomainModel in childDomainModels)
+				{
+					var fieldName = childDomainModel.ChildEnumerableName.ToFieldName().ToPlural();
+					var methodCall = methodName
+							.AsGeneric(childDomainModel.DomainModelName, childDomainModel.DomainModel.IdentifierType)
+							.Call(fieldName.ToArgument());
+
+					statements.Add(
+						resultName
+							.ToIdentifierName()
+							.Assign(methodCall)
+							.ToExpressionStatement()
+					);
+
+					statements.Add(
+						resultName
+							.ToIdentifierName()
+							.Access("Any")
+							.Call()
+							.If(
+								domainEventListName
+									.ToIdentifierName()
+									.Access("AddRange")
+									.Call(resultName.ToIdentifierName().ToArgument())
+									.ToExpressionStatement()
+							)							
+					);
+				}
+			}
+
+			statements.Add(domainEventListName.ToIdentifierName().Return());
+
+			return (
+				methodName,
+				methodName.ToMethod(
+					"IEnumerable".AsGeneric("DomainEvent"),
+					statements,
+					SyntaxKind.ProtectedKeyword,
+					SyntaxKind.OverrideKeyword
+				)
+			);
+		}
+
 		private static (string Name, MemberDeclarationSyntax Method) CreateSetActionCallbackMethod(ReferenceDomainModelMap childDomainModel)
 		{
 			var statements = new List<StatementSyntax>
@@ -640,7 +747,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Domain
 			}
 
 			StatementHelpers.AddMethodCall(statements, instanceStatment, "ApplyPatches", null, null, "patches".ToIdentifierName().Access("ToList").Call());
-			StatementHelpers.AddMethodCall(statements, instanceStatment, "SetUnchanged", null, null);
+			StatementHelpers.AddMethodCall(statements, instanceStatment, "ClearChanges", null, null);
 
 			statements.Add(instanceStatment.Return());
 
@@ -901,6 +1008,16 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Domain
 			var type = domainModelMap.DomainModelName.ToType();
 
 			return type.ToInstance(validation.ToArgument());
+		}
+
+		private static void AddEventDomainProperty(UnitInformation unitInformation, string domain)
+		{
+			var propertyName = "EventDomain";
+			var property = propertyName
+				.ToProperty(Eshava.CodeAnalysis.SyntaxConstants.String, [SyntaxKind.PublicKeyword, SyntaxKind.OverrideKeyword], false, false)
+				.WithExpressionBody(domain.ToLiteralString());
+
+			unitInformation.AddProperty(property, propertyName);
 		}
 
 		private class ChildInitializerContainer

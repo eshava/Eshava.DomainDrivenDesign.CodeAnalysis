@@ -18,13 +18,23 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			var className = request.UseCase.ClassName;
 			var queryProviderType = request.UseCase.NamespaceClassificationKey.ToQueryProviderType();
 			var queryProviderName = request.UseCase.NamespaceClassificationKey.ToQueryProviderName();
+			var alternativeClass = request.AlternativeClasses.FirstOrDefault(ac => ac.Type == ApplicationUseCaseType.Suggestions);
 
 			var useCaseInterface = $"I{className}".ToType().ToSimpleBaseType();
 
 			var unitInformation = new UnitInformation(className, request.UseCaseNamespace, addAssemblyComment: request.AddAssemblyCommentToFiles);
 			unitInformation.AddClassModifier(SyntaxKind.InternalKeyword, SyntaxKind.PartialKeyword);
 			unitInformation.AddContructorModifier(SyntaxKind.PublicKeyword);
-			unitInformation.AddBaseType(useCaseInterface);
+
+			if (alternativeClass is null)
+			{
+				unitInformation.AddBaseType(useCaseInterface);
+			}
+			else
+			{
+				unitInformation.AddBaseType(alternativeClass.ClassName.ToSimpleBaseType(), useCaseInterface);
+				unitInformation.AddUsing(alternativeClass.Using);
+			}
 
 			if ((request.UseCase.Attributes?.Count ?? 0) > 0)
 			{
@@ -52,23 +62,43 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			unitInformation.AddUsing(CommonNames.Namespaces.Eshava.DomainDrivenDesign.Domain.EXTENSIONS);
 			unitInformation.AddUsing(CommonNames.Namespaces.LOGGING);
 
-			unitInformation.AddScopedSettings(request.ScopedSettingsUsing, request.ScopedSettingsClass);
+			var scopedSettingsTargetType = ParameterTargetTypes.Field;
+			if (alternativeClass?.ConstructorParameters?.Any(cp => cp.Type == request.ScopedSettingsClass) ?? false)
+			{
+				scopedSettingsTargetType |= ParameterTargetTypes.Argument;
+			}
+
+			unitInformation.AddScopedSettings(request.ScopedSettingsUsing, request.ScopedSettingsClass, scopedSettingsTargetType);
 			unitInformation.AddSortQueryEngine();
 			unitInformation.AddConstructorParameter(queryProviderName, queryProviderType);
 
-			foreach (var additionalContructorParameter in request.UseCase.AdditionalContructorParameter)
-			{
-				unitInformation.AddUsing(additionalContructorParameter.UsingForType);
-				unitInformation.AddConstructorParameter(additionalContructorParameter.Name, additionalContructorParameter.Type);
-			}
-
-			CodeSnippetHelpers.AddConstructorParameters(unitInformation, codeSnippets);
+			CheckAndAddProviderReferences(unitInformation, request.UseCase, alternativeClass, codeSnippets);
 
 			unitInformation.AddLogger(className);
 
 			unitInformation.AddMethod(CreateSuggestionMethod(request.UseCase, codeSnippets));
 
 			return unitInformation.CreateCodeString();
+		}
+
+		private static void CheckAndAddProviderReferences(UnitInformation unitInformation, ApplicationUseCase applicationUseCase, ApplicationProjectAlternativeClass alternativeClass, List<UseCaseCodeSnippet> codeSnippets)
+		{
+			if (alternativeClass?.ConstructorParameters?.Any() ?? false)
+			{
+				foreach (var additionalContructorParameter in alternativeClass.ConstructorParameters)
+				{
+					unitInformation.AddUsing(additionalContructorParameter.UsingForType);
+					unitInformation.AddConstructorParameter(additionalContructorParameter.Name, additionalContructorParameter.Type, ParameterTargetTypes.Argument);
+				}
+			}
+
+			foreach (var additionalContructorParameter in applicationUseCase.AdditionalContructorParameter)
+			{
+				unitInformation.AddUsing(additionalContructorParameter.UsingForType);
+				unitInformation.AddConstructorParameter(additionalContructorParameter.Name, additionalContructorParameter.Type);
+			}
+
+			CodeSnippetHelpers.AddConstructorParameters(unitInformation, codeSnippets);
 		}
 
 		private static (string Name, MemberDeclarationSyntax) CreateSuggestionMethod(ApplicationUseCase useCase, List<UseCaseCodeSnippet> codeSnippets)

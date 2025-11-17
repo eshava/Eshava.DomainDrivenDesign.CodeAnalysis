@@ -15,6 +15,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models.Application
 		public DtoReferenceMap DtoReferenceMap { get; set; }
 		public UseCasesMap UseCasesMap { get; set; }
 		public List<UseCaseCodeSnippet> CodeSnippets { get; set; }
+		public List<ApplicationProjectAlternativeClass> AlternativeClasses { get; set; }
 		public bool AddAssemblyCommentToFiles { get; set; }
 	}
 }

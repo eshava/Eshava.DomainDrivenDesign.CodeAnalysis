@@ -2,10 +2,85 @@
 	"fullQualifiedNamespace": "Eshava.Example.Infrastructure",
 	"alternativeUsing": null,
 	"alternativeAbstractDatabaseModel": "AbstractExampleDatabaseModel",
-	"alternativeAbstractDomainModelRepository": "AbstractExampleDomainModelRepository",
-	"alternativeAbstractChildDomainModelRepository": "AbstractExampleChildDomainModelRepository",
-	"alternativeAbstractQueryRepository": "AbstractExampleQueryRepository",
 	"scopedSettingsClass": "ExampleScopedSettings",
 	"scopedSettingsUsing": "Eshava.Example.Application.Settings",
-	"implementSoftDelete": true
+	"implementSoftDelete": true,
+	"alternativeClasses": [
+		{
+			"type": 1,
+			"using": null,
+			"className": "AbstractExampleDomainModelRepository",
+			"constructorParameters": [
+				{
+					"type": "IOptions<AppSettings>",
+					"name": "appSettings",
+					"usingForType": "Eshava.Example.Application.Settings|Microsoft.Extensions.Options"
+				}
+			]
+		},
+		{
+			"type": 2,
+			"using": null,
+			"className": "AbstractExampleChildDomainModelRepository",
+			"constructorParameters": [
+				{
+					"type": "IOptions<AppSettings>",
+					"name": "appSettings",
+					"usingForType": "Eshava.Example.Application.Settings|Microsoft.Extensions.Options"
+				}
+			]
+		},
+		{
+			"type": 3,
+			"using": null,
+			"className": "AbstractExampleQueryRepository",
+			"constructorParameters": [
+				{
+					"type": "ExampleScopedSettings",
+					"name": "scopedSettings"
+				},
+				{
+					"type": "IOptions<AppSettings>",
+					"name": "appSettings",
+					"usingForType": "Eshava.Example.Application.Settings|Microsoft.Extensions.Options"
+				}
+			]
+		},
+		{
+			"type": 4,
+			"using": null,
+			"className": "AbstractExampleInfrastructureProviderService",
+			"constructorParameters": [
+				{
+					"type": "IOptions<AppSettings>",
+					"name": "appSettings",
+					"usingForType": "Eshava.Example.Application.Settings|Microsoft.Extensions.Options"
+				}
+			]
+		},
+		{
+			"type": 5,
+			"using": null,
+			"className": "AbstractExampleAggregateInfrastructureProviderService",
+			"constructorParameters": [
+				{
+					"type": "IOptions<AppSettings>",
+					"name": "appSettings",
+					"usingForType": "Eshava.Example.Application.Settings|Microsoft.Extensions.Options"
+				}
+			]
+		},
+		{
+			"type": 6,
+			"using": null,
+			"className": "AbstractExampleInfrastructureQueryProviderService",
+			"constructorParameters": [
+				{
+					"type": "IOptions<AppSettings>",
+					"name": "appSettings",
+					"usingForType": "Eshava.Example.Application.Settings|Microsoft.Extensions.Options"
+				}
+			]
+		}
+	]
 }

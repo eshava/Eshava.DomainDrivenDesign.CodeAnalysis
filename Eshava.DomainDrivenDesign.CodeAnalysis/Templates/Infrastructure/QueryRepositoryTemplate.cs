@@ -29,7 +29,6 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			string databaseSettingsInterfaceUsing
 		)
 		{
-			var scopedSettings = new NameAndType(CommonNames.SCOPEDSETTINGS, project.ScopedSettingsClass.ToType());
 			NameAndType databaseSettings;
 			if (databaseSettingsInterface.IsNullOrEmpty())
 			{
@@ -65,18 +64,23 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			unitInformation.AddUsing(CommonNames.Namespaces.Eshava.DomainDrivenDesign.Infrastructure.INTERFACES);
 			unitInformation.AddUsing(CommonNames.Namespaces.Eshava.DomainDrivenDesign.Infrastructure.PROVIDERS);
 			unitInformation.AddUsing(CommonNames.Namespaces.Eshava.DomainDrivenDesign.Infrastructure.MODELS);
-			unitInformation.AddUsing(project.ScopedSettingsUsing);
 			unitInformation.AddUsing(project.AlternativeUsing);
 			unitInformation.AddUsing(databaseSettingsInterfaceUsing);
 
-			var baseClass = project.AlternativeAbstractQueryRepository;
+			var alternativeClass = project.AlternativeClasses.FirstOrDefault(ac => ac.Type == InfrastructureAlternativeClassType.QueryRepository);
+
+			var baseClass = alternativeClass?.ClassName;
 			if (baseClass.IsNullOrEmpty())
 			{
 				baseClass = InfrastructureNames.ABSTRACTQUERYREPOSITORY;
 				unitInformation.AddUsing(CommonNames.Namespaces.Eshava.DomainDrivenDesign.Infrastructure.REPOSITORIES);
 			}
+			else
+			{
+				unitInformation.AddUsing(alternativeClass.Using);
+			}
 
-			var baseType = baseClass.AsGeneric(model.Name, model.IdentifierType).ToSimpleBaseType();
+			var baseType = baseClass.ToSimpleBaseType();
 			var repositoryInterface = $"I{className}".ToType().ToSimpleBaseType();
 			unitInformation.AddBaseType(baseType, repositoryInterface);
 
@@ -94,9 +98,16 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				unitInformation.AddField(modelConstantName.Field);
 			}
 
-			unitInformation.AddConstructorParameter(scopedSettings);
-			unitInformation.AddConstructorParameter(databaseSettings, ParameterTargetType.Argument);
-			unitInformation.AddConstructorParameter(InfrastructureNames.Transform.Parameter, ParameterTargetType.Argument);
+			var scopedSettingsTargetType = ParameterTargetTypes.Field;
+			if (alternativeClass?.ConstructorParameters?.Any(cp => cp.Type == project.ScopedSettingsClass) ?? false)
+			{
+				scopedSettingsTargetType |= ParameterTargetTypes.Argument;
+			}
+
+			unitInformation.AddScopedSettings(project.ScopedSettingsUsing, project.ScopedSettingsClass, scopedSettingsTargetType);
+			unitInformation.AddConstructorParameter(databaseSettings, ParameterTargetTypes.Argument);
+			unitInformation.AddConstructorParameter(InfrastructureNames.Transform.Parameter, ParameterTargetTypes.Argument);
+			CheckAndAddProviderReferences(unitInformation, alternativeClass);
 
 			var fieldsForPropertyTypeMapping = new List<(string DataType, string FieldName, FieldDeclarationSyntax Declaration)>();
 
@@ -180,6 +191,20 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			unitInformation.AddLogger(className, true);
 
 			return unitInformation.CreateCodeString();
+		}
+
+		private static void CheckAndAddProviderReferences(UnitInformation unitInformation, InfrastructureProjectAlternativeClass alternativeClass)
+		{
+			if (!(alternativeClass?.ConstructorParameters?.Any() ?? false))
+			{
+				return;
+			}
+
+			foreach (var constructorParameter in alternativeClass.ConstructorParameters)
+			{
+				unitInformation.AddUsing(constructorParameter.UsingForType);
+				unitInformation.AddConstructorParameter(constructorParameter.Name, constructorParameter.Type.ToIdentifierName(), Enums.ParameterTargetTypes.Argument);
+			}
 		}
 
 		private static (List<string> Usings, (string Name, MethodDeclarationSyntax Method) Method) CreateExistsMethod(InfrastructureModel model, UseCaseQueryProviderMethodMap methodMap, bool implementSoftDelete)
@@ -830,7 +855,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 					.ToIdentifierName()
 					.Assign(
 						"AddStatusQueryConditions"
-						.ToIdentifierName()
+						.AsGeneric(model.Name, model.IdentifierType)
 						.Call("dbFilterRequest".ToIdentifierName().ToArgument())
 					)
 					.ToExpressionStatement()
@@ -952,7 +977,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 					.ToIdentifierName()
 					.Assign(
 						"AddStatusQueryConditions"
-						.ToIdentifierName()
+						.AsGeneric(model.Name, model.IdentifierType)
 						.Call("dbFilterRequest".ToIdentifierName().ToArgument())
 					)
 					.ToExpressionStatement());
