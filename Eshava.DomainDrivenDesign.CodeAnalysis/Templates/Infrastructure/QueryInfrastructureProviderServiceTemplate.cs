@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using System.Xml;
 using Eshava.CodeAnalysis.Extensions;
 using Eshava.DomainDrivenDesign.CodeAnalysis.Constants;
 using Eshava.DomainDrivenDesign.CodeAnalysis.Extensions;
@@ -14,6 +15,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 	public static class QueryInfrastructureProviderServiceTemplate
 	{
 		public static string GetProviderService(
+			InfrastructureProject project,
 			InfrastructureModel model,
 			QueryProviderMap queryProviderMap,
 			string fullQualifiedDomainNamespace,
@@ -40,12 +42,21 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			unitInformation.AddUsing(CommonNames.Namespaces.Eshava.DomainDrivenDesign.Infrastructure.PROVIDERS);
 			unitInformation.AddUsing($"{fullQualifiedApplicationNamespace}.{featureNameNamespace}{model.ClassificationKey.ToPlural()}.Queries");
 
-			var providerServiceInterface = $"I{className}".ToType().ToSimpleBaseType();
-			unitInformation.AddBaseType(providerServiceInterface);
+			var alternativeClass = project.AlternativeClasses.FirstOrDefault(ac => ac.Type == InfrastructureAlternativeClassType.QueryProviderService);
+
+			var providerServiceBaseTypes = new List<SimpleBaseTypeSyntax>();
+			if (alternativeClass is not null)
+			{
+				unitInformation.AddUsing(alternativeClass.Using);
+				providerServiceBaseTypes.Add(alternativeClass.ClassName.ToType().ToSimpleBaseType());
+			}
+
+			providerServiceBaseTypes.Add($"I{className}".ToType().ToSimpleBaseType());
+			unitInformation.AddBaseType(providerServiceBaseTypes.ToArray());
 
 			unitInformation.AddConstructorParameter($"{model.ClassificationKey.ToVariableName()}QueryRepository", $"I{model.ClassificationKey}QueryRepository".ToIdentifierName());
 
-			CheckAndAddProviderReferences(unitInformation, model);
+			CheckAndAddProviderReferences(unitInformation, model, alternativeClass);
 
 			foreach (var methodMap in queryProviderMap.Methods)
 			{
@@ -57,8 +68,17 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			return unitInformation.CreateCodeString();
 		}
 
-		private static void CheckAndAddProviderReferences(UnitInformation unitInformation, InfrastructureModel model)
+		private static void CheckAndAddProviderReferences(UnitInformation unitInformation, InfrastructureModel model, InfrastructureProjectAlternativeClass alternativeClass)
 		{
+			if (alternativeClass?.ConstructorParameters?.Any() ?? false)
+			{
+				foreach (var constructorParameter in alternativeClass.ConstructorParameters)
+				{
+					unitInformation.AddUsing(constructorParameter.UsingForType);
+					unitInformation.AddConstructorParameter(constructorParameter.Name, constructorParameter.Type.ToIdentifierName(), Enums.ParameterTargetTypes.Argument);
+				}
+			}
+
 			foreach (var constructorParameter in model.QueryProviderServiceConstructorParameters)
 			{
 				unitInformation.AddUsing(constructorParameter.UsingForType);

@@ -41,6 +41,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			var @namespace = $"{fullQualifiedDomainNamespace}.{model.ClassificationKey.ToPlural()}";
 			var className = $"{domainModelMap.DomainModelName}Repository";
 			string baseClass;
+			InfrastructureProjectAlternativeClass alternativeClass;
 
 			var unitInformation = new UnitInformation(className, @namespace, addAssemblyComment: project.AddAssemblyCommentToFiles);
 			unitInformation.AddClassModifier(SyntaxKind.InternalKeyword, SyntaxKind.PartialKeyword);
@@ -62,9 +63,9 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			unitInformation.AddUsing(project.AlternativeUsing);
 			unitInformation.AddUsing(databaseSettingsInterfaceUsing);
 
-			unitInformation.AddConstructorParameter(databaseSettings, ParameterTargetType.Argument);
-			unitInformation.AddConstructorParameter(scopedSettings, ParameterTargetType.Argument);
-			unitInformation.AddConstructorParameter(InfrastructureNames.Transform.Parameter, ParameterTargetType.Argument);
+			unitInformation.AddConstructorParameter(databaseSettings, ParameterTargetTypes.Argument);
+			unitInformation.AddConstructorParameter(scopedSettings, ParameterTargetTypes.Argument);
+			unitInformation.AddConstructorParameter(InfrastructureNames.Transform.Parameter, ParameterTargetTypes.Argument);
 
 			var fullDomainModelName = $"Domain.{domain}.{domainModelMap.DomainModel.NamespaceDirectory}.{domainModelMap.DomainModelName}";
 
@@ -77,15 +78,16 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			if (model.IsChild)
 			{
 				unitInformation.AddUsing($"{project.FullQualifiedNamespace}.{domain}.{domainModelMap.AggregateDomainModel.ClassificationKey.ToPlural()}");
+				alternativeClass = project.AlternativeClasses.FirstOrDefault(ac => ac.Type == InfrastructureAlternativeClassType.ChildDomainModelRepository);
 
-				if (project.AlternativeAbstractChildDomainModelRepository.IsNullOrEmpty())
+				if (alternativeClass is null)
 				{
 					baseClass = InfrastructureNames.ABSTRACTCHILDDOMAINMODELREPOSITORY;
 					unitInformation.AddUsing(CommonNames.Namespaces.Eshava.DomainDrivenDesign.Infrastructure.REPOSITORIES);
 				}
 				else
 				{
-					baseClass = project.AlternativeAbstractChildDomainModelRepository;
+					baseClass = alternativeClass.ClassName;
 				}
 			}
 			else
@@ -103,14 +105,16 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 
 				unitInformation.AddConstructorParameter(DomainNames.VALIDATION.Parameter);
 
-				if (project.AlternativeAbstractDomainModelRepository.IsNullOrEmpty())
+				alternativeClass = project.AlternativeClasses.FirstOrDefault(ac => ac.Type == InfrastructureAlternativeClassType.DomainModelRepository);
+
+				if (alternativeClass is null)
 				{
 					baseClass = InfrastructureNames.ABSTRACTDOMAINMODELREPOSITORY;
 					unitInformation.AddUsing(CommonNames.Namespaces.Eshava.DomainDrivenDesign.Infrastructure.REPOSITORIES);
 				}
 				else
 				{
-					baseClass = project.AlternativeAbstractDomainModelRepository;
+					baseClass = alternativeClass.ClassName;
 				}
 
 				unitInformation.AddMethod(CreateReadMethod(model, domainModelMap, fullDomainModelName, childsForModel, relatedDataModels, project.ImplementSoftDelete));
@@ -121,6 +125,9 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				: baseClass.AsGeneric(fullDomainModelName, model.Name, model.IdentifierType, project.ScopedSettingsClass).ToSimpleBaseType();
 			var repositoryInterface = $"I{className}".ToType().ToSimpleBaseType();
 			unitInformation.AddBaseType(baseType, repositoryInterface);
+			unitInformation.AddUsing(alternativeClass?.Using);
+
+			CheckAndAddProviderReferences(unitInformation, alternativeClass);
 
 			foreach (var property in model.Properties)
 			{
@@ -151,6 +158,20 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			unitInformation.AddMethod(CreateGetPropertyNameMethod(domainModelMap));
 
 			return unitInformation.CreateCodeString();
+		}
+
+		private static void CheckAndAddProviderReferences(UnitInformation unitInformation, InfrastructureProjectAlternativeClass alternativeClass)
+		{
+			if (!(alternativeClass?.ConstructorParameters?.Any() ?? false))
+			{
+				return;
+			}
+
+			foreach (var constructorParameter in alternativeClass.ConstructorParameters)
+			{
+				unitInformation.AddUsing(constructorParameter.UsingForType);
+				unitInformation.AddConstructorParameter(constructorParameter.Name, constructorParameter.Type.ToIdentifierName(), Enums.ParameterTargetTypes.Argument);
+			}
 		}
 
 		private static (string Name, MemberDeclarationSyntax) CreateReadMethod(

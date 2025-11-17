@@ -59,6 +59,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			}
 
 			string baseClass;
+			InfrastructureProjectAlternativeClass alternativeClass;
 			if (domainModelMap.ChildDomainModels.Any())
 			{
 				unitInformation.AddUsing(CommonNames.Namespaces.TASKS);
@@ -69,11 +70,17 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				var childMethods = GetProcessChildsMethods(model, childsForModel, domainModelMap, domain, true).ToList();
 				childMethods.ForEach(m => unitInformation.AddMethod(m));
 
-				baseClass = InfrastructureNames.ABSTRACTAGGREGATEINFRASTRUCTUREPROVIDER;
+				alternativeClass = project.AlternativeClasses.FirstOrDefault(ac => ac.Type == InfrastructureAlternativeClassType.AggregateProviderService);
+				baseClass = alternativeClass is null
+					? InfrastructureNames.ABSTRACTAGGREGATEINFRASTRUCTUREPROVIDER
+					: alternativeClass.ClassName;
 			}
 			else
 			{
-				baseClass = InfrastructureNames.ABSTRACTINFRASTRUCTUREPROVIDER;
+				alternativeClass = project.AlternativeClasses.FirstOrDefault(ac => ac.Type == InfrastructureAlternativeClassType.ProviderService);
+				baseClass = alternativeClass is null
+					? InfrastructureNames.ABSTRACTINFRASTRUCTUREPROVIDER
+					: alternativeClass.ClassName;
 			}
 
 			var fullDomainModelName = $"Domain.{domain}.{domainModelMap.DomainModel.NamespaceDirectory}.{domainModelMap.DomainModelName}";
@@ -81,11 +88,10 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			var baseType = baseClass.AsGeneric(fullDomainModelName, model.IdentifierType).ToSimpleBaseType();
 			var providerServiceInterface = $"I{className}".ToType().ToSimpleBaseType();
 			unitInformation.AddBaseType(baseType, providerServiceInterface);
+			unitInformation.AddUsing(alternativeClass?.Using);
 
-			unitInformation.AddConstructorParameter(databaseSettings);
-			unitInformation.AddConstructorArgument(databaseSettings.Name);
-
-			unitInformation.AddConstructorParameter($"{domainModelMap.DomainModelName.ToVariableName()}Repository", $"I{domainModelMap.DomainModelName}Repository".ToIdentifierName());
+			var fieldAndArgument = Enums.ParameterTargetTypes.Field | Enums.ParameterTargetTypes.Argument;
+			unitInformation.AddConstructorParameter(databaseSettings, fieldAndArgument);
 			unitInformation.AddConstructorArgument($"{domainModelMap.DomainModelName.ToVariableName()}Repository");
 
 			if (domainModelMap is not null)
@@ -105,7 +111,11 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 					unitInformation.AddMethod(CreateReadForMethod(domainModelMap, foreignKeyReference, fullDomainModelName));
 				}
 
-				CheckAndAddProviderReferences(unitInformation, domainModelMap);
+				CheckAndAddProviderReferences(unitInformation, domainModelMap, alternativeClass);
+			}
+			else
+			{
+				CheckAndAddProviderReferences(unitInformation, null, alternativeClass);
 			}
 
 			unitInformation.AddConstructorParameter(DomainNames.VALIDATION.Parameter);
@@ -114,8 +124,22 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			return unitInformation.CreateCodeString();
 		}
 
-		private static void CheckAndAddProviderReferences(UnitInformation unitInformation, ReferenceDomainModelMap domainModelMap)
+		private static void CheckAndAddProviderReferences(UnitInformation unitInformation, ReferenceDomainModelMap domainModelMap, InfrastructureProjectAlternativeClass alternativeClass)
 		{
+			if (alternativeClass?.ConstructorParameters?.Any() ?? false)
+			{
+				foreach (var constructorParameter in alternativeClass.ConstructorParameters)
+				{
+					unitInformation.AddUsing(constructorParameter.UsingForType);
+					unitInformation.AddConstructorParameter(constructorParameter.Name, constructorParameter.Type.ToIdentifierName(), Enums.ParameterTargetTypes.Argument);
+				}
+			}
+
+			if (domainModelMap is null)
+			{
+				return;
+			}
+
 			foreach (var constructorParameter in domainModelMap.DomainModel.ProviderServiceConstructorParameters)
 			{
 				unitInformation.AddUsing(constructorParameter.UsingForType);
@@ -124,7 +148,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 
 			foreach (var child in domainModelMap.ChildDomainModels)
 			{
-				CheckAndAddProviderReferences(unitInformation, child);
+				CheckAndAddProviderReferences(unitInformation, child, null);
 			}
 		}
 

@@ -62,6 +62,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 						ScopedSettingsUsing = applicationProjectConfig.ScopedSettingsUsing,
 						UseCasesMap = useCasesMap,
 						CodeSnippets = codeSnippets,
+						AlternativeClasses = applicationProjectConfig.AlternativeClasses,
 						AddAssemblyCommentToFiles = applicationProjectConfig.AddAssemblyCommentToFiles
 					};
 

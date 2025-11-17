@@ -3,6 +3,7 @@ using System.Collections.Immutable;
 using System.Linq;
 using Eshava.CodeAnalysis.Extensions;
 using Eshava.DomainDrivenDesign.CodeAnalysis.Constants;
+using Eshava.DomainDrivenDesign.CodeAnalysis.Enums;
 using Eshava.DomainDrivenDesign.CodeAnalysis.Extensions;
 using Eshava.DomainDrivenDesign.CodeAnalysis.Models;
 using Eshava.DomainDrivenDesign.CodeAnalysis.Models.Application;
@@ -33,14 +34,18 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			}
 
 			var domainModelTypeName = domainModelMap.GetDomainModelTypeName(request.DomainProjectNamespace);
+			var alternativeClass = request.AlternativeClasses.FirstOrDefault(ac => ac.Type == ApplicationUseCaseType.Create);
 
-			var baseType = CommonNames.Application.Abstracts.CREATEUSECASE.AsGeneric(request.UseCase.MainDto, domainModelTypeName, domainModelMap.IdentifierType).ToSimpleBaseType();
+			var baseType = alternativeClass is null
+				? CommonNames.Application.Abstracts.CREATEUSECASE.AsGeneric(request.UseCase.MainDto, domainModelTypeName, domainModelMap.IdentifierType).ToSimpleBaseType()
+				: alternativeClass.ClassName.AsGeneric(request.UseCase.MainDto, domainModelTypeName, domainModelMap.IdentifierType).ToSimpleBaseType();
 			var useCaseInterface = $"I{className}".ToType().ToSimpleBaseType();
 
 			var unitInformation = new UnitInformation(className, request.UseCaseNamespace, addAssemblyComment: request.AddAssemblyCommentToFiles);
 			unitInformation.AddClassModifier(SyntaxKind.InternalKeyword, SyntaxKind.PartialKeyword);
 			unitInformation.AddContructorModifier(SyntaxKind.PublicKeyword);
 			unitInformation.AddBaseType(baseType, useCaseInterface);
+			unitInformation.AddUsing(alternativeClass?.Using);
 
 			if ((request.UseCase.Attributes?.Count ?? 0) > 0)
 			{
@@ -63,7 +68,13 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			unitInformation.AddUsing(CommonNames.Namespaces.Eshava.DomainDrivenDesign.Domain.CONSTANTS);
 			unitInformation.AddUsing(CommonNames.Namespaces.Eshava.DomainDrivenDesign.Domain.EXTENSIONS);
 
-			unitInformation.AddScopedSettings(request.ScopedSettingsUsing, request.ScopedSettingsClass);
+			var scopedSettingsTargetType = ParameterTargetTypes.Field;
+			if (alternativeClass?.ConstructorParameters?.Any(cp => cp.Type == request.ScopedSettingsClass) ?? false)
+			{
+				scopedSettingsTargetType |= ParameterTargetTypes.Argument;
+			}
+
+			unitInformation.AddScopedSettings(request.ScopedSettingsUsing, request.ScopedSettingsClass, scopedSettingsTargetType);
 			unitInformation.AddValidationEngine();
 
 			TemplateMethods.AddDomainModelUsings(unitInformation, domainModelMap, request.DomainProjectNamespace, request.Domain);
@@ -138,17 +149,31 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 				}
 			}
 
-			foreach (var additionalContructorParameter in request.UseCase.AdditionalContructorParameter)
+			CheckAndAddProviderReferences(unitInformation, request.UseCase, alternativeClass, codeSnippets);
+
+			unitInformation.AddLogger(className);
+
+			return unitInformation.CreateCodeString();
+		}
+
+		private static void CheckAndAddProviderReferences(UnitInformation unitInformation, ApplicationUseCase applicationUseCase, ApplicationProjectAlternativeClass alternativeClass, List<UseCaseCodeSnippet> codeSnippets)
+		{
+			if (alternativeClass?.ConstructorParameters?.Any() ?? false)
+			{
+				foreach (var additionalContructorParameter in alternativeClass.ConstructorParameters)
+				{
+					unitInformation.AddUsing(additionalContructorParameter.UsingForType);
+					unitInformation.AddConstructorParameter(additionalContructorParameter.Name, additionalContructorParameter.Type, ParameterTargetTypes.Argument);
+				}
+			}
+
+			foreach (var additionalContructorParameter in applicationUseCase.AdditionalContructorParameter)
 			{
 				unitInformation.AddUsing(additionalContructorParameter.UsingForType);
 				unitInformation.AddConstructorParameter(additionalContructorParameter.Name, additionalContructorParameter.Type);
 			}
 
 			CodeSnippetHelpers.AddConstructorParameters(unitInformation, codeSnippets);
-
-			unitInformation.AddLogger(className);
-
-			return unitInformation.CreateCodeString();
 		}
 
 		private static List<StatementSyntax> CreateCreateMethodActions(

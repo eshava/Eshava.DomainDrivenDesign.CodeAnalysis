@@ -49,7 +49,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models
 		public bool IsEnumeration { get; }
 		public bool HasConstructor { get; }
 		public HashSet<string> Usings { get; set; }
-		public IEnumerable<FieldDeclarationSyntax> Fields => _fields.OrderBy(field => field.FieldName).Select(field => field.Declaration).ToList();
+		public IEnumerable<FieldDeclarationSyntax> Fields => _fields.OrderBy(@field => @field.FieldName).Select(@field => @field.Declaration).ToList();
 		public IEnumerable<NameAndType> ConstructorParameters => _constructorParameters;
 		public IEnumerable<ArgumentSyntax> ConstructorArguments => _constructorArguments.Select(argument => argument.Argument).ToList();
 		public IEnumerable<StatementSyntax> ConstructorBodyStatements => _constructorBodyStatements.Select(statement => statement.Statement).ToList();
@@ -63,14 +63,19 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models
 
 		public void AddUsing(string @using)
 		{
-			if (@using == Namespace)
+			if (@using == Namespace || @using.IsNullOrEmpty())
 			{
 				return;
 			}
 
-			if (!@using.IsNullOrEmpty() && !Usings.Contains(@using))
+			var @usings = @using.Split(['|'], System.StringSplitOptions.RemoveEmptyEntries);
+			foreach (var usingPart in @usings)
 			{
-				Usings.Add(@using);
+				var usingTrimmed = usingPart.Trim(); 
+				if (!Usings.Contains(usingTrimmed))
+				{
+					Usings.Add(usingTrimmed);
+				}
 			}
 		}
 
@@ -167,23 +172,24 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models
 			}
 		}
 
-		public void AddScopedSettings(string scopedSettingsUsing, string scopedSettingsClass, bool asArgument = false)
+		public void AddScopedSettings(string scopedSettingsUsing, string scopedSettingsClass, ParameterTargetTypes targetType = ParameterTargetTypes.Field)
 		{
 			if (!scopedSettingsUsing.IsNullOrEmpty())
 			{
 				Usings.Add(scopedSettingsUsing);
 			}
 
-			var nameAndType = new NameAndType("scopedSettings", scopedSettingsClass.ToIdentifierName());
+			var nameAndType = new NameAndType(CommonNames.SCOPEDSETTINGS, scopedSettingsClass.ToIdentifierName());
 			AddConstructorParameter(nameAndType);
 
-			if (asArgument)
-			{
-				AddConstructorArgument("scopedSettings");
-			}
-			else
+			if (targetType.HasFlag(ParameterTargetTypes.Field))
 			{
 				AddConstructorBodyStatementAndField(nameAndType);
+			}
+
+			if (targetType.HasFlag(ParameterTargetTypes.Argument))
+			{
+				AddConstructorArgument(nameAndType.Name);
 			}
 		}
 
@@ -256,7 +262,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models
 			}
 		}
 
-		public void AddConstructorParameter(NameAndType nameAndType, ParameterTargetType targetType = ParameterTargetType.Field)
+		public void AddConstructorParameter(NameAndType nameAndType, ParameterTargetTypes targetType = ParameterTargetTypes.Field)
 		{
 			if (ConstructorParameters.Any(p => p.Name == nameAndType.Name))
 			{
@@ -264,33 +270,34 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models
 			}
 
 			AddConstructorParameter(nameAndType);
-			switch (targetType)
+
+			if (targetType.HasFlag(ParameterTargetTypes.Field))
 			{
-				case ParameterTargetType.Field:
-					AddConstructorBodyStatementAndField(nameAndType);
+				AddConstructorBodyStatementAndField(nameAndType);
+			}
 
-					break;
-				case ParameterTargetType.Argument:
-					AddConstructorArgument(nameAndType.Name);
+			if (targetType.HasFlag(ParameterTargetTypes.Argument))
+			{
+				AddConstructorArgument(nameAndType.Name);
+			}
 
-					break;
-				case ParameterTargetType.Property:
-					AddConstructorBodyStatementAndProperty(nameAndType, false);
+			if (targetType.HasFlag(ParameterTargetTypes.Property))
+			{
+				AddConstructorBodyStatementAndProperty(nameAndType, false);
+			}
 
-					break;
-				case ParameterTargetType.PropertyReadonly:
-					AddConstructorBodyStatementAndProperty(nameAndType, true);
-
-					break;
+			if (targetType.HasFlag(ParameterTargetTypes.PropertyReadonly))
+			{
+				AddConstructorBodyStatementAndProperty(nameAndType, true);
 			}
 		}
 
-		public void AddConstructorParameter(string name, TypeSyntax type, ParameterTargetType targetType = ParameterTargetType.Field)
+		public void AddConstructorParameter(string name, TypeSyntax type, ParameterTargetTypes targetType = ParameterTargetTypes.Field)
 		{
 			AddConstructorParameter(new NameAndType(name, type), targetType);
 		}
 
-		public void AddConstructorParameter(string name, string type, ParameterTargetType targetType = ParameterTargetType.Field)
+		public void AddConstructorParameter(string name, string type, ParameterTargetTypes targetType = ParameterTargetTypes.Field)
 		{
 			AddConstructorParameter(new NameAndType(name, type.ToType()), targetType);
 		}

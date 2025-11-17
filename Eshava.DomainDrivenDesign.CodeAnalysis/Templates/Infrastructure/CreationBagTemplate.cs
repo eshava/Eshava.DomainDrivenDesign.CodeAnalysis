@@ -22,12 +22,12 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 
 			unitInformation.AddUsing(CommonNames.Namespaces.SYSTEM);
 
-			unitInformation.AddConstructorParameter($"{model.ClassificationKey.ToVariableName()}Id", model.IdentifierType.ToType(), Enums.ParameterTargetType.PropertyReadonly);
+			unitInformation.AddConstructorParameter($"{model.ClassificationKey.ToVariableName()}Id", model.IdentifierType.ToType(), Enums.ParameterTargetTypes.PropertyReadonly);
 
 
 			foreach (var property in model.Properties.Where(p => p.AddToCreationBag))
 			{
-				unitInformation.AddConstructorParameter(property.Name.ToVariableName(), property.Type.ToType(), Enums.ParameterTargetType.PropertyReadonly);
+				unitInformation.AddConstructorParameter(property.Name.ToVariableName(), property.Type.ToType(), Enums.ParameterTargetTypes.PropertyReadonly);
 			}
 
 			return unitInformation.CreateCodeString();

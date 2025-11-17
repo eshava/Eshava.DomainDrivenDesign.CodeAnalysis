@@ -1,5 +1,103 @@
 {
 	"fullQualifiedNamespace": "Eshava.Example.Application",
 	"scopedSettingsClass": "ExampleScopedSettings",
-	"scopedSettingsUsing": "Eshava.Example.Application.Settings"
+	"scopedSettingsUsing": "Eshava.Example.Application.Settings",
+	"alternativeClasses": [
+		{
+			"type": 1,
+			"using": "Eshava.Example.Application.Common",
+			"className": "AbstractExampleReadUseCase",
+			"constructorParameters": [
+				{
+					"type": "IOptions<AppSettings>",
+					"name": "appSettings",
+					"usingForType": "Eshava.Example.Application.Settings|Microsoft.Extensions.Options"
+				}
+			]
+		},
+		{
+			"type": 2,
+			"using": "Eshava.Example.Application.Common",
+			"className": "AbstractExampleSearchUseCase",
+			"constructorParameters": [
+				{
+					"type": "IOptions<AppSettings>",
+					"name": "appSettings",
+					"usingForType": "Eshava.Example.Application.Settings|Microsoft.Extensions.Options"
+				}
+			]
+		},
+		{
+			"type": 3,
+			"using": "Eshava.Example.Application.Common",
+			"className": "AbstractExampleSearchCountUseCase",
+			"constructorParameters": [
+				{
+					"type": "IOptions<AppSettings>",
+					"name": "appSettings",
+					"usingForType": "Eshava.Example.Application.Settings|Microsoft.Extensions.Options"
+				}
+			]
+		},
+		{
+			"type": 4,
+			"using": "Eshava.Example.Application.Common",
+			"className": "AbstractExampleCreateUseCase",
+			"constructorParameters": [
+				{
+					"type": "IOptions<AppSettings>",
+					"name": "appSettings",
+					"usingForType": "Eshava.Example.Application.Settings|Microsoft.Extensions.Options"
+				}
+			]
+		},
+		{
+			"type": 5,
+			"using": "Eshava.Example.Application.Common",
+			"className": "AbstractExampleUpdateUseCase",
+			"constructorParameters": [
+				{
+					"type": "IOptions<AppSettings>",
+					"name": "appSettings",
+					"usingForType": "Eshava.Example.Application.Settings|Microsoft.Extensions.Options"
+				}
+			]
+		},
+		{
+			"type": 6,
+			"using": "Eshava.Example.Application.Common",
+			"className": "AbstractExampleDeactivateUseCase",
+			"constructorParameters": [
+				{
+					"type": "IOptions<AppSettings>",
+					"name": "appSettings",
+					"usingForType": "Eshava.Example.Application.Settings|Microsoft.Extensions.Options"
+				}
+			]
+		},
+		{
+			"type": 7,
+			"using": "Eshava.Example.Application.Common",
+			"className": "AbstractExampleUniqueUseCase",
+			"constructorParameters": [
+				{
+					"type": "IOptions<AppSettings>",
+					"name": "appSettings",
+					"usingForType": "Eshava.Example.Application.Settings|Microsoft.Extensions.Options"
+				}
+			]
+		},
+		{
+			"type": 8,
+			"using": "Eshava.Example.Application.Common",
+			"className": "AbstractExampleSuggestionsUseCase",
+			"constructorParameters": [
+				{
+					"type": "IOptions<AppSettings>",
+					"name": "appSettings",
+					"usingForType": "Eshava.Example.Application.Settings|Microsoft.Extensions.Options"
+				}
+			]
+		}
+	]
 }

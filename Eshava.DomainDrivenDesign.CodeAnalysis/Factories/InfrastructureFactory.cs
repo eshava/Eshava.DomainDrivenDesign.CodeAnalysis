@@ -144,6 +144,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 
 						AddQueryProviderService(
 							factoryResult,
+							infrastructureProjectConfig,
 							model,
 							domainNamespace,
 							applicationNamespace,
@@ -307,6 +308,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 
 		private static void AddQueryProviderService(
 			FactoryResult factoryResult,
+			InfrastructureProject infrastructureProject,
 			InfrastructureModel model,
 			string domainNamespace,
 			string applicationNamespace,
@@ -316,6 +318,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 		)
 		{
 			var providerService = QueryInfrastructureProviderServiceTemplate.GetProviderService(
+				infrastructureProject,
 				model,
 				queryProviderMap,
 				domainNamespace,
