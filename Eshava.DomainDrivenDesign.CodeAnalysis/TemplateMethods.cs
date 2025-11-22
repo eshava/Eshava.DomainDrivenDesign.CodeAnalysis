@@ -1085,6 +1085,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis
 			}
 			else
 			{
+				var addedSelectParts = new HashSet<string>();
 				foreach (var item in relatedDataModels)
 				{
 					if (item.DtoProperty is null || item.DtoProperty.IsVirtualProperty)
@@ -1108,14 +1109,24 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis
 
 					if (item.DtoProperty.Name == "*")
 					{
-						interpolatedColumnParts.Add(item.TableAliasConstant.ToIdentifierName().Interpolate());
-						interpolatedColumnParts.Add(".*".Interpolate());
+						var selectPart = $"{item.TableAliasConstant}.*";
+						if (!addedSelectParts.Contains(selectPart))
+						{
+							interpolatedColumnParts.Add(item.TableAliasConstant.ToIdentifierName().Interpolate());
+							interpolatedColumnParts.Add(".*".Interpolate());
+							addedSelectParts.Add(selectPart);
+						}
 					}
 					else
 					{
-						interpolatedColumnParts.Add(item.TableAliasConstant.ToIdentifierName().Interpolate());
-						interpolatedColumnParts.Add(".".Interpolate());
-						interpolatedColumnParts.Add(Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(dataType.Access(item.Property.Name).ToArgument()).Interpolate());
+						var selectPart = $"{item.TableAliasConstant}.{item.Property.Name}";
+						if (!addedSelectParts.Contains(selectPart))
+						{
+							interpolatedColumnParts.Add(item.TableAliasConstant.ToIdentifierName().Interpolate());
+							interpolatedColumnParts.Add(".".Interpolate());
+							interpolatedColumnParts.Add(Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(dataType.Access(item.Property.Name).ToArgument()).Interpolate());
+							addedSelectParts.Add(selectPart);
+						}
 					}
 				}
 			}

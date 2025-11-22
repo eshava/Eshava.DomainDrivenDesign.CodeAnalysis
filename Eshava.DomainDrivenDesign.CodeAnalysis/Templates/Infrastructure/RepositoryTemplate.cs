@@ -311,7 +311,14 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 
 					if (domainModelPropery is not null)
 					{
-						statements.Add(instanceVar.Access(propery.Name).Assign(modelVar.Access(domainModelPropery.Name)).ToExpressionStatement());
+						if (propery.Type != domainModelPropery.Type)
+						{
+							statements.Add(instanceVar.Access(propery.Name).Assign(modelVar.Access(domainModelPropery.Name).Cast(propery.Type.ToType())).ToExpressionStatement());
+						}
+						else
+						{
+							statements.Add(instanceVar.Access(propery.Name).Assign(modelVar.Access(domainModelPropery.Name)).ToExpressionStatement());
+						}
 					}
 				}
 			}
@@ -534,7 +541,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 
 		private static SimpleLambdaExpressionSyntax GetMapperExpression(ReferenceDomainModelMap domainModelMap, InfrastructureModel model, Dictionary<string, List<InfrastructureModel>> childsForModel)
 		{
-			var mapperStatements = CreateMapperStatements(null, domainModelMap, model, childsForModel).ToList();
+			var mapperStatements = CreateMapperStatements(null, domainModelMap, model, childsForModel, [], false).ToList();
 
 			mapperStatements.Add(
 				model.ClassificationKey
@@ -546,82 +553,80 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			return "mapper".ToParameterExpression(mapperStatements.ToArray());
 		}
 
-		private static IEnumerable<StatementSyntax> CreateMapperStatements(InfrastructureModel parentModel, ReferenceDomainModelMap domainModelMap, InfrastructureModel model, Dictionary<string, List<InfrastructureModel>> childsForModel)
+		private static IEnumerable<StatementSyntax> CreateMapperStatements(InfrastructureModel parentModel, ReferenceDomainModelMap domainModelMap, InfrastructureModel model, Dictionary<string, List<InfrastructureModel>> childsForModel, HashSet<string> processedDataModels, bool checkOnlyChilds)
 		{
 			var mapperStatements = new List<StatementSyntax>();
-			var modelConstantName = model.Name.GetModelConstantName().ToIdentifierName().ToArgument();
-			var modelVariableName = model.ClassificationKey.ToVariableName();
-			var modelType = parentModel is null
-				? model.Name
-				: $"{model.ClassificationKey.ToPlural()}.{model.Name}";
-
-
-			if (parentModel is null)
+			if (!checkOnlyChilds)
 			{
-				mapperStatements.Add(
-					 modelVariableName
-					.ToVariableStatement(
-						"mapper"
-						.Access("Map".AsGeneric(modelType))
-						.Call(modelConstantName)
-					)
-				);
-			}
-			else
-			{
-				var parentModelVariableName = parentModel.ClassificationKey.ToVariableName();
-				var parentPropertyName = parentModel.Properties.FirstOrDefault(p => p.ReferenceType == p.Type && p.ReferenceType == model.Name)?.Name ?? model.ClassificationKey;
+				var modelConstantName = model.Name.GetModelConstantName().ToIdentifierName().ToArgument();
+				var modelVariableName = model.ClassificationKey.ToVariableName();
+				var modelType = parentModel is null
+					? model.Name
+					: $"{model.ClassificationKey.ToPlural()}.{model.Name}";
 
-				mapperStatements.Add(
-					 modelVariableName
-					.ToVariableStatement(
-						modelType.DefaultOf()
-					)
-				);
 
-				mapperStatements.Add(
-					parentModelVariableName
-					.ToIdentifierName()
-					.IsNotNull()
-					.And(
-						"mapper"
-						.Access("GetValue".AsGeneric(model.IdentifierType))
-						.Call(
-							"Id".ToLiteralString().ToArgument(),
-							modelConstantName
+				if (parentModel is null)
+				{
+					mapperStatements.Add(
+						 modelVariableName
+						.ToVariableStatement(
+							"mapper"
+							.Access("Map".AsGeneric(modelType))
+							.Call(modelConstantName)
 						)
-						.GreaterThan("0".ToLiteralInt())
-					)
-					.If(
-						modelVariableName
-							.ToIdentifierName()
-							.Assign(
-								"mapper"
-								.Access("Map".AsGeneric(modelType))
-								.Call(modelConstantName)
-							)
-							.ToExpressionStatement(),
-						parentModelVariableName
-							.Access(parentPropertyName)
-							.Assign(modelVariableName.ToIdentifierName())
-							.ToExpressionStatement()
-					)
-				);
-			}
+					);
+				}
+				else
+				{
+					var parentModelVariableName = parentModel.ClassificationKey.ToVariableName();
+					var parentPropertyName = parentModel.Properties.FirstOrDefault(p => p.ReferenceType == p.Type && p.ReferenceType == model.Name)?.Name ?? model.ClassificationKey;
 
+					mapperStatements.Add(
+						 modelVariableName
+						.ToVariableStatement(
+							modelType.DefaultOf()
+						)
+					);
+
+					mapperStatements.Add(
+						parentModelVariableName
+						.ToIdentifierName()
+						.IsNotNull()
+						.And(
+							"mapper"
+							.Access("GetValue".AsGeneric(model.IdentifierType))
+							.Call(
+								"Id".ToLiteralString().ToArgument(),
+								modelConstantName
+							)
+							.GreaterThan("0".ToLiteralInt())
+						)
+						.If(
+							modelVariableName
+								.ToIdentifierName()
+								.Assign(
+									"mapper"
+									.Access("Map".AsGeneric(modelType))
+									.Call(modelConstantName)
+								)
+								.ToExpressionStatement(),
+							parentModelVariableName
+								.Access(parentPropertyName)
+								.Assign(modelVariableName.ToIdentifierName())
+								.ToExpressionStatement()
+						)
+					);
+				}
+			}
 
 			if (!childsForModel.TryGetValue(model.Name, out var childs))
 			{
 				childs = new List<InfrastructureModel>();
 			}
 
-			var processedDataModels = new HashSet<string>();
 			foreach (var childDomainModel in domainModelMap.ChildDomainModels)
 			{
-				if (processedDataModels.Contains(childDomainModel.DataModelName))
-				{
-					continue;
-				}
+				checkOnlyChilds = processedDataModels.Contains(childDomainModel.DataModelName);
 
 				var child = childs.FirstOrDefault(c => c.Name == childDomainModel.DataModelName);
 				if (child is null)
@@ -629,8 +634,12 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 					continue;
 				}
 
-				mapperStatements.AddRange(CreateMapperStatements(model, childDomainModel, child, childsForModel));
-				processedDataModels.Add(childDomainModel.DataModelName);
+				mapperStatements.AddRange(CreateMapperStatements(model, childDomainModel, child, childsForModel, processedDataModels, checkOnlyChilds));
+
+				if (!processedDataModels.Contains(childDomainModel.DataModelName))
+				{
+					processedDataModels.Add(childDomainModel.DataModelName);
+				}
 			}
 
 			return mapperStatements;
@@ -837,7 +846,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 		private static IEnumerable<StatementSyntax> GetGroupDataModelStatements(InfrastructureModel model, ReferenceDomainModelMap domainModelMap, Dictionary<string, List<InfrastructureModel>> childsForModel)
 		{
 			var statments = new List<StatementSyntax>();
-			(var rawItemsStatments, var itemsStatments, _) = GetGroupDataModelStatements(null, model, domainModelMap, childsForModel, new HashSet<string>());
+			(var rawItemsStatments, var itemsStatments, _) = GetGroupDataModelStatements(null, model, domainModelMap, childsForModel, [], false);
 
 			statments.AddRange(rawItemsStatments);
 			statments.AddRange(itemsStatments);
@@ -850,70 +859,75 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			InfrastructureModel model,
 			ReferenceDomainModelMap domainModelMap,
 			Dictionary<string, List<InfrastructureModel>> childsForModel,
-			HashSet<string> processDataModels
+			HashSet<string> processDataModels,
+			bool checkOnlyChilds
 		)
 		{
-			var isTopLevelCall = parentModel is null;
 			var rawItemsStatments = new List<StatementSyntax>();
 			var itemsStatments = new List<StatementSyntax>();
-			var itemsListName = isTopLevelCall
-				? $"{model.ClassificationKey.ToVariableName()}Items"
-				: $"{model.ClassificationKey.ToVariableName()}ItemsByParent";
-
-			if (isTopLevelCall)
+			if (!checkOnlyChilds)
 			{
-				rawItemsStatments.Add(
-					$"{model.ClassificationKey.ToVariableName()}RawItems"
-					.ToVariableStatement(
-						"result".ToIdentifierName()
-					)
-				);
-			}
-			else
-			{
-				var propertyName = parentModel.Properties.FirstOrDefault(p => p.ReferenceType == p.Type && p.ReferenceType == model.Name)?.Name ?? model.ClassificationKey;
+				var isTopLevelCall = parentModel is null;
 
-				rawItemsStatments.Add(
-					$"{model.ClassificationKey.ToVariableName()}RawItems"
-					.ToVariableStatement(
-						$"{parentModel.ClassificationKey.ToVariableName()}RawItems"
-						.Access("Where")
-						.Call("p".ToParameterExpression("p".Access(propertyName).IsNotNull()).ToArgument())
+				var itemsListName = isTopLevelCall
+					? $"{model.ClassificationKey.ToVariableName()}Items"
+					: $"{model.ClassificationKey.ToVariableName()}ItemsByParent";
+
+				if (isTopLevelCall)
+				{
+					rawItemsStatments.Add(
+						$"{model.ClassificationKey.ToVariableName()}RawItems"
+						.ToVariableStatement(
+							"result".ToIdentifierName()
+						)
+					);
+				}
+				else
+				{
+					var propertyName = parentModel.Properties.FirstOrDefault(p => p.ReferenceType == p.Type && p.ReferenceType == model.Name)?.Name ?? model.ClassificationKey;
+
+					rawItemsStatments.Add(
+						$"{model.ClassificationKey.ToVariableName()}RawItems"
+						.ToVariableStatement(
+							$"{parentModel.ClassificationKey.ToVariableName()}RawItems"
+							.Access("Where")
+							.Call("p".ToParameterExpression("p".Access(propertyName).IsNotNull()).ToArgument())
+							.Access("Select")
+							.Call("p".ToPropertyExpression(propertyName).ToArgument())
+							.Access("ToList")
+							.Call()
+						)
+					);
+				}
+
+				var itemGroupExpression = $"{model.ClassificationKey.ToVariableName()}RawItems"
+						.Access("GroupBy")
+						.Call("p".ToPropertyExpression("Id").ToArgument())
 						.Access("Select")
-						.Call("p".ToPropertyExpression(propertyName).ToArgument())
+						.Call("p".ToParameterExpression("p".Access("First").Call()).ToArgument());
+
+				if (isTopLevelCall)
+				{
+					itemGroupExpression = itemGroupExpression
 						.Access("ToList")
-						.Call()
-					)
+						.Call();
+				}
+				else
+				{
+					var parentProperty = model.Properties.First(p => p.IsReference && p.ReferenceType == parentModel.Name);
+					itemGroupExpression = itemGroupExpression
+						.Access("GroupBy")
+						.Call("p".ToPropertyExpression(parentProperty.Name).ToArgument())
+						.Access("ToDictionary")
+						.Call("p".ToPropertyExpression("Key").ToArgument(), "p".ToParameterExpression("p".Access("ToList").Call()).ToArgument())
+						;
+				}
+
+				itemsStatments.Add(
+					itemsListName
+					.ToVariableStatement(itemGroupExpression)
 				);
 			}
-
-			var itemGroupExpression = $"{model.ClassificationKey.ToVariableName()}RawItems"
-					.Access("GroupBy")
-					.Call("p".ToPropertyExpression("Id").ToArgument())
-					.Access("Select")
-					.Call("p".ToParameterExpression("p".Access("First").Call()).ToArgument());
-
-			if (isTopLevelCall)
-			{
-				itemGroupExpression = itemGroupExpression
-					.Access("ToList")
-					.Call();
-			}
-			else
-			{
-				var parentProperty = model.Properties.First(p => p.IsReference && p.ReferenceType == parentModel.Name);
-				itemGroupExpression = itemGroupExpression
-					.Access("GroupBy")
-					.Call("p".ToPropertyExpression(parentProperty.Name).ToArgument())
-					.Access("ToDictionary")
-					.Call("p".ToPropertyExpression("Key").ToArgument(), "p".ToParameterExpression("p".Access("ToList").Call()).ToArgument())
-					;
-			}
-
-			itemsStatments.Add(
-				itemsListName
-				.ToVariableStatement(itemGroupExpression)
-			);
 
 			if (!childsForModel.TryGetValue(model.Name, out var childs))
 			{
@@ -922,19 +936,20 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 
 			foreach (var childDomainModel in domainModelMap.ChildDomainModels)
 			{
-				if (processDataModels.Contains(childDomainModel.DataModelName))
-				{
-					continue;
-				}
+				checkOnlyChilds = processDataModels.Contains(childDomainModel.DataModelName);
 
 				var child = childs.FirstOrDefault(c => c.Name == childDomainModel.DataModelName);
 				if (child is null)
 				{
 					continue;
 				}
-				processDataModels.Add(childDomainModel.DataModelName);
 
-				(var raw, var items, processDataModels) = GetGroupDataModelStatements(model, child, childDomainModel, childsForModel, processDataModels);
+				if (!processDataModels.Contains(childDomainModel.DataModelName))
+				{
+					processDataModels.Add(childDomainModel.DataModelName);
+				}
+
+				(var raw, var items, processDataModels) = GetGroupDataModelStatements(model, child, childDomainModel, childsForModel, processDataModels, checkOnlyChilds);
 
 				rawItemsStatments.AddRange(raw);
 				itemsStatments.AddRange(items);
