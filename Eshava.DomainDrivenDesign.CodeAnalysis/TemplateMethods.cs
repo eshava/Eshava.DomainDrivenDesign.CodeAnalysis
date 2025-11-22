@@ -1094,24 +1094,14 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis
 					}
 
 					var dataType = item.GetDataType(domain, model.Name);
-
-					if (isFirstColum)
-					{
-						interpolatedColumnParts.Add(@"
-					 ".Interpolate());
-						isFirstColum = false;
-					}
-					else
-					{
-						interpolatedColumnParts.Add(@"
-					,".Interpolate());
-					}
-
+					
 					if (item.DtoProperty.Name == "*")
 					{
 						var selectPart = $"{item.TableAliasConstant}.*";
 						if (!addedSelectParts.Contains(selectPart))
 						{
+							AddSelectColumnSeparator(interpolatedColumnParts, ref isFirstColum);
+
 							interpolatedColumnParts.Add(item.TableAliasConstant.ToIdentifierName().Interpolate());
 							interpolatedColumnParts.Add(".*".Interpolate());
 							addedSelectParts.Add(selectPart);
@@ -1122,6 +1112,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis
 						var selectPart = $"{item.TableAliasConstant}.{item.Property.Name}";
 						if (!addedSelectParts.Contains(selectPart))
 						{
+							AddSelectColumnSeparator(interpolatedColumnParts, ref isFirstColum);
+
 							interpolatedColumnParts.Add(item.TableAliasConstant.ToIdentifierName().Interpolate());
 							interpolatedColumnParts.Add(".".Interpolate());
 							interpolatedColumnParts.Add(Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(dataType.Access(item.Property.Name).ToArgument()).Interpolate());
@@ -1149,6 +1141,21 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis
 			interpolatedStringParts.AddRange(interpolatedTableParts);
 
 			return interpolatedStringParts;
+		}
+
+		private static void AddSelectColumnSeparator(List<InterpolatedStringContentSyntax> interpolatedColumnParts, ref bool isFirstColum)
+		{
+			if (isFirstColum)
+			{
+				interpolatedColumnParts.Add(@"
+					 ".Interpolate());
+				isFirstColum = false;
+			}
+			else
+			{
+				interpolatedColumnParts.Add(@"
+					,".Interpolate());
+			}
 		}
 
 		/// <summary>
