@@ -199,8 +199,8 @@
 					"addInfrastructureProviderServiceByPassMethod": true,
 					"providerServiceConstructorParameters": [
 						{
-							"name": "productDDDInfrastructureProviderService",
-							"type": "ProductDDDInfrastructureProviderService",
+							"name": "productDDDRepository",
+							"type": "IProductDDDRepository",
 							"usingForType": "Eshava.Example.Infrastructure.Ordering.Products"
 						}
 					],
