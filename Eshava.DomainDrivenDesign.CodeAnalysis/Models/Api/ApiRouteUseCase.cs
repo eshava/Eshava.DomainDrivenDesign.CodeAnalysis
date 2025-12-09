@@ -8,5 +8,6 @@
 		public string UseCaseName { get; set; }
 		public string MethodToCall { get; set; }
 		public bool IsAsync { get; set; }
+		public int? HttpStatusCode { get; set; }
 	}
 }

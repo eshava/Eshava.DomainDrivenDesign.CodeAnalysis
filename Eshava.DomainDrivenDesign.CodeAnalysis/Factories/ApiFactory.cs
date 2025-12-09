@@ -66,7 +66,17 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 			var apiNamespace = $"{apiProjectConfig.FullQualifiedNamespace}{endpointNamespace}.{@namespace.Namespace}";
 
 			var routesClassName = @namespace.Name + "Routes";
-			var routesTemplate = EndpointRouteTemplate.GetRoute(@namespace.Endpoints, routesClassName, apiNamespace, apiProjectConfig.ResponseDataExtensionsUsing, useCasesMap, codeSnippets, apiProjectConfig.AddAssemblyCommentToFiles);
+			var routesTemplate = EndpointRouteTemplate.GetRoute(
+				@namespace.Endpoints, 
+				routesClassName, 
+				apiNamespace, 
+				apiProjectConfig.ResponseDataExtensionsUsing, 
+				apiProjectConfig.ErrorResponseClass, 
+				apiProjectConfig.ErrorResponseUsing, 
+				useCasesMap, 
+				codeSnippets, 
+				apiProjectConfig.AddAssemblyCommentToFiles
+			);
 
 			if (!routesTemplate.IsNullOrEmpty())
 			{

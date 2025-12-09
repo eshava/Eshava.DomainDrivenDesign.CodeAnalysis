@@ -3,5 +3,8 @@
 	"endpointNamespace": "Endpoints",
 	"scopedSettingsClass": "ExampleScopedSettings",
 	"scopedSettingsUsing": "Eshava.Example.Application.Settings",
-	"responseDataExtensionsUsing": "Eshava.Example.Api.Extensions"
+	"responseDataExtensionsUsing": "Eshava.Example.Api.Extensions",
+	"errorResponseClass": "ErrorResponseDto",
+	"errorResponseUsing": "Eshava.Example.Api.Dtos"
+
 }
