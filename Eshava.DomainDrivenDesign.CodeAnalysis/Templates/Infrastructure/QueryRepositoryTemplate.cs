@@ -1111,7 +1111,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			return catchBlockStatements;
 		}
 
-		private static List<(string Using, (string FieldName, FieldDeclarationSyntax Declaration) Field)> CreateModelConstantNames(
+		private static List<(string Using, (string FieldName, FieldType Type, FieldDeclarationSyntax Declaration) Field)> CreateModelConstantNames(
 			InfrastructureModel model,
 			IEnumerable<InfrastructureModel> childsForModel,
 			Dictionary<string, InfrastructureModel> allModelsForDomain,
@@ -1119,7 +1119,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			string fullQualifiedDomainNamespace
 		)
 		{
-			var fields = new List<(string Using, (string FieldName, FieldDeclarationSyntax Declaration) Field)>();
+			var fields = new List<(string Using, (string FieldName, FieldType Type, FieldDeclarationSyntax Declaration) Field)>();
 
 			// Workaround to allow multiple data models for the same classification key (see InfrastructureFactory)
 			// Create constants for all data models with the same classification key

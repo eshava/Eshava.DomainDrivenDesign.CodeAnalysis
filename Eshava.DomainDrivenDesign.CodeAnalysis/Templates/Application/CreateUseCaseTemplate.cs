@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Net.Http.Headers;
 using Eshava.CodeAnalysis.Extensions;
 using Eshava.DomainDrivenDesign.CodeAnalysis.Constants;
 using Eshava.DomainDrivenDesign.CodeAnalysis.Enums;
@@ -89,6 +90,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			unitInformation.AddConstructorParameter(provider.Name, provider.Type);
 
 			var foreignKeyReferenceContainer = TemplateMethods.CollectForeignKeyReferenceTypes(request.DomainProjectNamespace, domainModelMap);
+			var domainModelWithMappings = CheckForPropertyMappings(unitInformation, request.Domain, request.UseCase.Dtos, request.DomainModelReferenceMap);
 
 			unitInformation.AddMethod(
 				TemplateMethods.CreateUseCaseMainMethod(
@@ -98,6 +100,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 					request.DtoReferenceMap,
 					request.DomainProjectNamespace,
 					foreignKeyReferenceContainer,
+					domainModelWithMappings,
 					codeSnippets,
 					CreateCreateMethodActions
 				)
@@ -108,7 +111,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 				unitInformation.AddMethod(TemplateMethods.CreateValidationConfigurationMethod(request.UseCase));
 			}
 
-			var childCreateMethodsResult = TemplateMethods.CreateCreateChildsMethods(request, domainModelMap, foreignKeyReferenceContainer, true, true);
+			var childCreateMethodsResult = TemplateMethods.CreateCreateChildsMethods(request, domainModelMap, foreignKeyReferenceContainer, domainModelWithMappings, true, true);
 			foreach (var childCreateMethods in childCreateMethodsResult)
 			{
 				unitInformation.AddMethod(childCreateMethods);
@@ -156,6 +159,107 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			return unitInformation.CreateCodeString();
 		}
 
+		private static HashSet<string> CheckForPropertyMappings(UnitInformation unitInformation, string domain, IEnumerable<ApplicationUseCaseDto> useCaseDtos, ReferenceMap domainModelReferenceMap)
+		{
+			var domainModelWithMappings = new HashSet<string>();
+
+			var dtoDic = useCaseDtos.ToDictionary(dto => dto.Name, dto => dto);
+
+			foreach (var useCaseDto in useCaseDtos)
+			{
+				if (!domainModelReferenceMap.TryGetDomainModel(domain, useCaseDto.ReferenceModelName, out var domainModel) || domainModel.IsValueObject)
+				{
+					continue;
+				}
+
+				var mappings = new List<(string DtoProperty, string DomainProperty)>();
+
+				foreach (var useCaseDtoProperty in useCaseDto.Properties)
+				{
+					if (!useCaseDtoProperty.ReferenceProperty.IsNullOrEmpty())
+					{
+						mappings.Add((useCaseDtoProperty.Name, useCaseDtoProperty.ReferenceProperty));
+
+						continue;
+					}
+
+					if (useCaseDtoProperty.IsEnumerable || !dtoDic.TryGetValue(useCaseDtoProperty.Type, out var referenceDto))
+					{
+						continue;
+					}
+
+					if (!domainModelReferenceMap.TryGetDomainModel(domain, referenceDto.ReferenceModelName, out var referenceDomainModel) || !referenceDomainModel.IsValueObject)
+					{
+						continue;
+					}
+
+					foreach (var referenceDtoProperty in referenceDto.Properties)
+					{
+						var domainProperties = domainModel.DomainModel.Properties.Where(p => p.Type == referenceDto.ReferenceModelName).ToList();
+						var domainProperty = domainProperties.Count == 1
+							? domainProperties[0]
+							: domainProperties.FirstOrDefault(p => p.Name == referenceDtoProperty.Name);
+
+						if (domainProperty is null)
+						{
+							continue;
+						}
+
+						if (!referenceDtoProperty.ReferenceProperty.IsNullOrEmpty())
+						{
+							var referencePropertyName = referenceDtoProperty.ReferenceProperty;
+							if (!referenceDtoProperty.ReferenceProperty.Contains("."))
+							{
+								referencePropertyName = $"{domainProperty.Name}.{referencePropertyName}";
+							}
+
+							mappings.Add(($"{useCaseDtoProperty.Name}.{referenceDtoProperty.Name}", referencePropertyName));
+
+							continue;
+						}
+
+						var referenceDomainProperty = referenceDomainModel.DomainModel.Properties.FirstOrDefault(p => p.Name == referenceDtoProperty.Name);
+						if (referenceDomainProperty is null)
+						{
+							continue;
+						}
+
+						mappings.Add(($"{useCaseDtoProperty.Name}.{referenceDtoProperty.Name}", $"{domainProperty.Name}.{referenceDomainProperty.Name}"));
+					}
+				}
+
+				if (mappings.Count > 0)
+				{
+					var fieldName = $"{useCaseDto.ReferenceModelName.ToFieldName()}Mappings";
+					var dtoType = "Dto".ToPropertyExpressionTupleElement(useCaseDto.Name);
+					var domainType = "Domain".ToPropertyExpressionTupleElement(useCaseDto.ReferenceModelName);
+					var tupleType = dtoType.ToTupleType(domainType);
+					var dtoToDomainType = "List".AsGeneric(tupleType);
+
+					var dataToDomainInstance = dtoToDomainType.ToCollectionExpressionWithInitializer(
+							mappings
+							.Select(p => "dto"
+								.ToPropertyExpression(p.DtoProperty)
+								.ToArgument()
+								.ToTuple("domain"
+									.ToPropertyExpression(p.DomainProperty)
+									.ToArgument()
+								)
+							).ToArray()
+						);
+
+
+					var field = fieldName.ToStaticReadonlyField(dtoToDomainType, dataToDomainInstance);
+
+					domainModelWithMappings.Add(useCaseDto.ReferenceModelName);
+					unitInformation.AddUsing(CommonNames.Namespaces.EXPRESSION);
+					unitInformation.AddField((fieldName, FieldType.Static, field));
+				}
+			}
+
+			return domainModelWithMappings;
+		}
+
 		private static void CheckAndAddProviderReferences(UnitInformation unitInformation, ApplicationUseCase applicationUseCase, ApplicationProjectAlternativeClass alternativeClass, List<UseCaseCodeSnippet> codeSnippets)
 		{
 			if (alternativeClass?.ConstructorParameters?.Any() ?? false)
@@ -187,6 +291,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			string domainProjectNamespace,
 			bool hasValidationRules,
 			ForeignKeyReferenceContainer foreignKeyReferenceContainer,
+			HashSet<string> domainModelWithMappings,
 			List<UseCaseCodeSnippet> codeSnippets
 		)
 		{
@@ -274,7 +379,18 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 					}
 				}
 
-				StatementHelpers.AddMethodCallAndFaultyCheck(statements, domainModelName, "CreateEntity", createResult, returnDataType, dto, DomainNames.VALIDATION.ENGINE.ToFieldName().ToIdentifierName());
+				var methodArguments = new List<ExpressionSyntax>
+				{
+					dto,
+					DomainNames.VALIDATION.ENGINE.ToFieldName().ToIdentifierName()
+				};
+
+				if (domainModelWithMappings.Contains(domainModelName))
+				{
+					methodArguments.Add($"{domainModelName.ToFieldName()}Mappings".ToIdentifierName());
+				}
+
+				StatementHelpers.AddMethodCallAndFaultyCheck(statements, domainModelName, "CreateEntity", createResult, returnDataType, methodArguments.ToArray());
 			}
 
 			if (domainModelMap.IsAggregate && !domainModelMap.IsChildDomainModel)

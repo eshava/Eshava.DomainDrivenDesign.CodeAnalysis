@@ -18,8 +18,9 @@
 							"referenceModelName": "CustomerDDD",
 							"properties": [
 								{
-									"name": "Name",
-									"type": "string"
+									"name": "Company",
+									"type": "string",
+									"referenceProperty": "Name"
 								},
 								{
 									"name": "MainOfficeId",
@@ -28,6 +29,31 @@
 								{
 									"name": "MainBillingOfficeId",
 									"type": "int?"
+								},
+								{
+									"name": "Street",
+									"type": "string",
+									"referenceProperty": "Address.Street"
+								},
+								{
+									"name": "StreetNumber",
+									"type": "string",
+									"referenceProperty": "Address.StreetNumber"
+								},
+								{
+									"name": "City",
+									"type": "string",
+									"referenceProperty": "Address.City"
+								},
+								{
+									"name": "ZipCode",
+									"type": "string",
+									"referenceProperty": "Address.ZipCode"
+								},
+								{
+									"name": "Country",
+									"type": "string",
+									"referenceProperty": "Address.Country"
 								},
 								{
 									"name": "Offices",
@@ -43,6 +69,10 @@
 								{
 									"name": "Name",
 									"type": "string"
+								},
+								{
+									"name": "Address",
+									"type": "AddressCreate"
 								},
 								{
 									"name": "Locations",
@@ -72,6 +102,34 @@
 							"properties": [
 								{
 									"name": "Name",
+									"type": "string"
+								}
+							]
+						},
+						{
+							"name": "AddressCreate",
+							"referenceModelName": "AddressVO",
+							"properties": [
+								{
+									"name": "StreetName",
+									"type": "string",
+									"referenceProperty": "Street"
+								},
+								{
+									"name": "HouseNumber",
+									"type": "string",
+									"referenceProperty": "Address.StreetNumber"
+								},
+								{
+									"name": "City",
+									"type": "string"
+								},
+								{
+									"name": "ZipCode",
+									"type": "string"
+								},
+								{
+									"name": "Country",
 									"type": "string"
 								}
 							]
@@ -305,6 +363,26 @@
 									"type": "int?"
 								},
 								{
+									"name": "Street",
+									"type": "string"
+								},
+								{
+									"name": "StreetNumber",
+									"type": "string"
+								},
+								{
+									"name": "City",
+									"type": "string"
+								},
+								{
+									"name": "ZipCode",
+									"type": "string"
+								},
+								{
+									"name": "Country",
+									"type": "string"
+								},
+								{
 									"name": "Offices",
 									"type": "OfficeUpdate",
 									"isEnumerable": true
@@ -328,6 +406,10 @@
 								{
 									"name": "Name",
 									"type": "string"
+								},
+								{
+									"name": "Address",
+									"type": "AddressUpdate"
 								},
 								{
 									"name": "Locations",
@@ -362,7 +444,7 @@
 							]
 						},
 						{
-							"name": "BuildingCreate",
+							"name": "BuildingUpdate",
 							"referenceModelName": "BuildingDDD",
 							"properties": [
 								{
@@ -377,6 +459,32 @@
 								},
 								{
 									"name": "Name",
+									"type": "string"
+								}
+							]
+						},
+						{
+							"name": "AddressUpdate",
+							"referenceModelName": "AddressVO",
+							"properties": [
+								{
+									"name": "Street",
+									"type": "string"
+								},
+								{
+									"name": "StreetNumber",
+									"type": "string"
+								},
+								{
+									"name": "City",
+									"type": "string"
+								},
+								{
+									"name": "ZipCode",
+									"type": "string"
+								},
+								{
+									"name": "Country",
 									"type": "string"
 								}
 							]
@@ -785,6 +893,26 @@
 									"referenceProperty": "MainProduct.Name"
 								},
 								{
+									"name": "Street",
+									"type": "string"
+								},
+								{
+									"name": "StreetNumber",
+									"type": "string"
+								},
+								{
+									"name": "City",
+									"type": "string"
+								},
+								{
+									"name": "ZipCode",
+									"type": "string"
+								},
+								{
+									"name": "Country",
+									"type": "string"
+								},
+								{
 									"name": "Offices",
 									"type": "OfficeRead",
 									"isEnumerable": true
@@ -811,7 +939,7 @@
 								{
 									"name": "Value",
 									"type": "string"
-								}							
+								}
 							]
 						},
 						{
@@ -843,6 +971,10 @@
 									"name": "AlternativeCustomer",
 									"referenceProperty": "AlternativeCustomer.CompanyName",
 									"type": "string"
+								},
+								{
+									"name": "Address",
+									"type": "AddressRead"
 								},
 								{
 									"name": "Locations",
@@ -883,6 +1015,32 @@
 									"type": "string"
 								}
 							]
+						},
+						{
+							"name": "OfficeAddressRead",
+							"referenceModelName": "OfficeData",
+							"properties": [
+								{
+									"name": "Street",
+									"type": "string"
+								},
+								{
+									"name": "StreetNumber",
+									"type": "string"
+								},
+								{
+									"name": "City",
+									"type": "string"
+								},
+								{
+									"name": "ZipCode",
+									"type": "string"
+								},
+								{
+									"name": "Country",
+									"type": "string"
+								}
+							]
 						}
 					],
 					"attributes": [
@@ -919,6 +1077,36 @@
 								{
 									"name": "Name",
 									"type": "string"
+								},
+								{
+									"name": "Address",
+									"type": "BillingOfficeAddressRead"
+								}
+							]
+						},
+						{
+							"name": "BillingOfficeAddressRead",
+							"referenceModelName": "OfficeData",
+							"properties": [
+								{
+									"name": "Street",
+									"type": "string"
+								},
+								{
+									"name": "StreetNumber",
+									"type": "string"
+								},
+								{
+									"name": "City",
+									"type": "string"
+								},
+								{
+									"name": "ZipCode",
+									"type": "string"
+								},
+								{
+									"name": "Country",
+									"type": "string"
 								}
 							]
 						}
@@ -932,6 +1120,335 @@
 									"name": "name",
 									"type": "string",
 									"value": "Customer"
+								}
+							]
+						}
+					]
+				},
+				{
+					"type": 2,
+					"useCaseName": "Search",
+					"classificationKey": "Customer",
+					"featureName": "CustomerFeature",
+					"dtos": [
+						{
+							"name": "CustomerItem",
+							"referenceModelName": "CustomerData",
+							"properties": [
+								{
+									"name": "Id",
+									"type": "int",
+									"isSortable": false,
+									"isSearchable": false
+								},
+								{
+									"name": "Name",
+									"type": "string",
+									"isSortable": true,
+									"isSearchable": true,
+									"searchOperations": [
+										"Equal",
+										"Contains"
+									]
+								},
+								{
+									"name": "Street",
+									"type": "string",
+									"isSortable": true,
+									"isSearchable": true,
+									"searchOperations": [
+										"Equal",
+										"Contains"
+									]
+								},
+								{
+									"name": "StreetNumber",
+									"type": "string",
+									"isSortable": true,
+									"isSearchable": true,
+									"searchOperations": [
+										"Equal",
+										"Contains"
+									]
+								},
+								{
+									"name": "City",
+									"type": "string",
+									"isSortable": true,
+									"isSearchable": true,
+									"searchOperations": [
+										"Equal",
+										"Contains"
+									]
+								},
+								{
+									"name": "ZipCode",
+									"type": "string",
+									"isSortable": true,
+									"isSearchable": true,
+									"searchOperations": [
+										"Equal",
+										"Contains"
+									]
+								},
+								{
+									"name": "Country",
+									"type": "string",
+									"isSortable": true,
+									"isSearchable": true,
+									"searchOperations": [
+										"Equal",
+										"Contains"
+									]
+								}
+							]
+						}
+					],
+					"attributes": [
+						{
+							"name": "UseCaseClass",
+							"usingForType": "Eshava.Example.Application.Common.Attributes",
+							"parameters": [
+								{
+									"name": "name",
+									"type": "string",
+									"value": "Product"
+								}
+							]
+						}
+					]
+				},
+
+				{
+					"type": 2,
+					"useCaseName": "Search",
+					"classificationKey": "Office",
+					"featureName": "CustomerFeature",
+					"dtos": [
+						{
+							"name": "OfficeItem",
+							"referenceModelName": "OfficeData",
+							"properties": [
+								{
+									"name": "Id",
+									"type": "int",
+									"isSortable": false,
+									"isSearchable": false
+								},
+								{
+									"name": "Name",
+									"type": "string",
+									"isSortable": true,
+									"isSearchable": true,
+									"searchOperations": [
+										"Equal",
+										"Contains"
+									]
+								},
+								{
+									"name": "CustomerId",
+									"type": "int",
+									"isSortable": false,
+									"isSearchable": false
+								},
+								{
+									"name": "CustomerName",
+									"type": "string",
+									"referenceProperty": "Customer.CompanyName",
+									"isSortable": true,
+									"isSearchable": true,
+									"searchOperations": [
+										"Equal",
+										"Contains"
+									]
+								},
+								{
+									"name": "Street",
+									"type": "string",
+									"isSortable": true,
+									"isSearchable": true,
+									"searchOperations": [
+										"Equal",
+										"Contains"
+									]
+								},
+								{
+									"name": "StreetNumber",
+									"type": "string",
+									"isSortable": true,
+									"isSearchable": true,
+									"searchOperations": [
+										"Equal",
+										"Contains"
+									]
+								},
+								{
+									"name": "City",
+									"type": "string",
+									"isSortable": true,
+									"isSearchable": true,
+									"searchOperations": [
+										"Equal",
+										"Contains"
+									]
+								},
+								{
+									"name": "ZipCode",
+									"type": "string",
+									"isSortable": true,
+									"isSearchable": true,
+									"searchOperations": [
+										"Equal",
+										"Contains"
+									]
+								},
+								{
+									"name": "Country",
+									"type": "string",
+									"isSortable": true,
+									"isSearchable": true,
+									"searchOperations": [
+										"Equal",
+										"Contains"
+									]
+								},
+								{
+									"name": "CustomerAddress",
+									"type": "CustomerAddressItem",
+									"isSortable": true,
+									"isSearchable": true
+								},
+								{
+									"name": "OfficeAddress",
+									"type": "OfficeAddressItem",
+									"isSortable": true,
+									"isSearchable": true
+								}
+
+							]
+						},
+						{
+							"name": "CustomerAddressItem",
+							"referenceModelName": "CustomerData",
+							"properties": [
+								{
+									"name": "Street",
+									"type": "string",
+									"isSortable": true,
+									"isSearchable": true,
+									"searchOperations": [
+										"Equal",
+										"Contains"
+									]
+								},
+								{
+									"name": "StreetNumber",
+									"type": "string",
+									"isSortable": true,
+									"isSearchable": true,
+									"searchOperations": [
+										"Equal",
+										"Contains"
+									]
+								},
+								{
+									"name": "City",
+									"type": "string",
+									"isSortable": true,
+									"isSearchable": true,
+									"searchOperations": [
+										"Equal",
+										"Contains"
+									]
+								},
+								{
+									"name": "ZipCode",
+									"type": "string",
+									"isSortable": true,
+									"isSearchable": true,
+									"searchOperations": [
+										"Equal",
+										"Contains"
+									]
+								},
+								{
+									"name": "Country",
+									"type": "string",
+									"isSortable": true,
+									"isSearchable": true,
+									"searchOperations": [
+										"Equal",
+										"Contains"
+									]
+								}
+							]
+						},
+						{
+							"name": "OfficeAddressItem",
+							"referenceModelName": "OfficeData",
+							"properties": [
+								{
+									"name": "Street",
+									"type": "string",
+									"isSortable": true,
+									"isSearchable": true,
+									"searchOperations": [
+										"Equal",
+										"Contains"
+									]
+								},
+								{
+									"name": "StreetNumber",
+									"type": "string",
+									"isSortable": true,
+									"isSearchable": true,
+									"searchOperations": [
+										"Equal",
+										"Contains"
+									]
+								},
+								{
+									"name": "City",
+									"type": "string",
+									"isSortable": true,
+									"isSearchable": true,
+									"searchOperations": [
+										"Equal",
+										"Contains"
+									]
+								},
+								{
+									"name": "ZipCode",
+									"type": "string",
+									"isSortable": true,
+									"isSearchable": true,
+									"searchOperations": [
+										"Equal",
+										"Contains"
+									]
+								},
+								{
+									"name": "Country",
+									"type": "string",
+									"isSortable": true,
+									"isSearchable": true,
+									"searchOperations": [
+										"Equal",
+										"Contains"
+									]
+								}
+							]
+						}
+					],
+					"attributes": [
+						{
+							"name": "UseCaseClass",
+							"usingForType": "Eshava.Example.Application.Common.Attributes",
+							"parameters": [
+								{
+									"name": "name",
+									"type": "string",
+									"value": "Product"
 								}
 							]
 						}

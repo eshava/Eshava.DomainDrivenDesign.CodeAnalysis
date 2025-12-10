@@ -95,6 +95,11 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models
 		{
 			foreach (var domainModelReference in domainModelReferenceMap.GetReferenceDomainModelMaps())
 			{
+				if (domainModelReference.IsValueObject)
+				{
+					continue;
+				}
+
 				foreach (var referenceToMe in domainModelReference.ReferencesToMe)
 				{
 					if (referenceToMe.IsProcessingProperty)

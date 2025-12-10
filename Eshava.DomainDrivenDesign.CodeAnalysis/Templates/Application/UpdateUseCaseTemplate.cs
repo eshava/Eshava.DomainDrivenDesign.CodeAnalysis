@@ -94,6 +94,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			unitInformation.AddConstructorParameter(provider.Name, provider.Type);
 
 			var foreignKeyReferenceContainer = TemplateMethods.CollectForeignKeyReferenceTypes(request.DomainProjectNamespace, domainModelMap);
+			var domainModelWithMappings = new HashSet<string>(); /* ToDo */
 
 			unitInformation.AddMethod(
 				TemplateMethods.CreateUseCaseMainMethod(
@@ -103,6 +104,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 					request.DtoReferenceMap,
 					request.DomainProjectNamespace,
 					foreignKeyReferenceContainer,
+					domainModelWithMappings,
 					codeSnippets,
 					CreateUpdateMethodActions
 				)
@@ -113,7 +115,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 				unitInformation.AddMethod(TemplateMethods.CreateValidationConfigurationMethod(request.UseCase));
 			}
 
-			var childCreateMethodsResult = CreateProcessChildsMethods(request, domainModelMap, foreignKeyReferenceContainer, true, false);
+			var childCreateMethodsResult = CreateProcessChildsMethods(request, domainModelMap, foreignKeyReferenceContainer, domainModelWithMappings, true, false);
 			foreach (var childCreateMethods in childCreateMethodsResult)
 			{
 				unitInformation.AddMethod(childCreateMethods);
@@ -194,6 +196,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			string domainProjectNamespace,
 			bool hasValidationRules,
 			ForeignKeyReferenceContainer foreignKeyReferenceContainer,
+			HashSet<string> domainModelWithMappings,
 			List<UseCaseCodeSnippet> codeSnippets
 		)
 		{
@@ -495,6 +498,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			UseCaseTemplateRequest request,
 			ReferenceDomainModelMap domainModelMap,
 			ForeignKeyReferenceContainer foreignKeyReferenceContainer,
+			HashSet<string> domainModelWithMappings,
 			bool topLevelCall,
 			bool pretendTopLevelCall
 		)
@@ -545,11 +549,11 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 						methodDeclarations.Add(TemplateMethods.CreateCollectChildWrapperMethodForUpdate(domainModelMap, dtoMap, request.DomainProjectNamespace, request.UseCase.ReadAggregateByChildId));
 					}
 
-					methodDeclarations.AddRange(CreateUpdateChildMethod(request, foreignKeyReferenceContainer, domainModelMap, dtoMap, aggregateParameterName, domainModelType, request.DomainProjectNamespace, dtoForeignKeyReferences, true, true));
+					methodDeclarations.AddRange(CreateUpdateChildMethod(request, foreignKeyReferenceContainer, domainModelMap, dtoMap, aggregateParameterName, domainModelType, request.DomainProjectNamespace, dtoForeignKeyReferences, domainModelWithMappings, true, true));
 				}
 				else if (!domainModelMap.IsAggregate)
 				{
-					methodDeclarations.AddRange(CreateUpdateChildMethod(request, foreignKeyReferenceContainer, domainModelMap, dtoMap, aggregateParameterName, domainModelType, request.DomainProjectNamespace, dtoForeignKeyReferences, true, false));
+					methodDeclarations.AddRange(CreateUpdateChildMethod(request, foreignKeyReferenceContainer, domainModelMap, dtoMap, aggregateParameterName, domainModelType, request.DomainProjectNamespace, dtoForeignKeyReferences, domainModelWithMappings, true, false));
 				}
 
 				return methodDeclarations;
@@ -655,9 +659,9 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 
 				if (topLevelCall || pretendTopLevelCall)
 				{
-					methodDeclarations.AddRange(TemplateMethods.CreateCreateChildsMethods(request, domainModelMap, foreignKeyReferenceContainer, false, false));
+					methodDeclarations.AddRange(TemplateMethods.CreateCreateChildsMethods(request, domainModelMap, foreignKeyReferenceContainer, domainModelWithMappings, false, false));
 				}
-				methodDeclarations.AddRange(CreateUpdateChildMethod(request, foreignKeyReferenceContainer, childDomainModel, childReferenceProperty.Dto, aggregateParameterName, domainModelType, request.DomainProjectNamespace, dtoForeignKeyReferences, false, false));
+				methodDeclarations.AddRange(CreateUpdateChildMethod(request, foreignKeyReferenceContainer, childDomainModel, childReferenceProperty.Dto, aggregateParameterName, domainModelType, request.DomainProjectNamespace, dtoForeignKeyReferences, domainModelWithMappings, false, false));
 
 				if (childReferenceProperty.Property.IsEnumerable)
 				{
@@ -707,6 +711,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			TypeSyntax aggregateDomainModelType,
 			string domainProjectNamespace,
 			List<(ForeignKeyCache ForeignKey, ApplicationUseCaseDtoProperty Property)> foreignKeyHashSets,
+			HashSet<string> domainModelWithMappings,
 			bool skipForeignKeyHashsetParameter,
 			bool pretentTopLevelCall
 		)
@@ -766,7 +771,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			var documentLayerVariableName = $"{childDomainModel.ClassificationKey.ToVariableName()}DocumentLayer";
 			if (subChildDomainModelsWithReferences.Count > 0)
 			{
-				methodDeclarations.AddRange(CreateProcessChildsMethods(request, childDomainModel, foreignKeyReferenceContainer, false, pretentTopLevelCall));
+				methodDeclarations.AddRange(CreateProcessChildsMethods(request, childDomainModel, foreignKeyReferenceContainer, domainModelWithMappings, false, pretentTopLevelCall));
 
 				foreach (var reference in subChildDomainModelsWithReferences)
 				{

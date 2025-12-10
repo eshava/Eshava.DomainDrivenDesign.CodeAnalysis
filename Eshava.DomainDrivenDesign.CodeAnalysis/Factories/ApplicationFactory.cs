@@ -291,15 +291,15 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 			var domainNamespace = "";
 			foreach (var domainModelMap in referenceMap.GetReferenceDomainModelMaps())
 			{
+				if (domainModelMap.IsChildDomainModel || domainModelMap.IsValueObject)
+				{
+					continue;
+				}
+
 				if (currentDomain != domainModelMap.Domain)
 				{
 					currentDomain = domainModelMap.Domain;
 					domainNamespace = $"{applicationNamespace}.{domainModelMap.Domain}";
-				}
-
-				if (domainModelMap.IsChildDomainModel)
-				{
-					continue;
 				}
 
 				var featureName = useCasesMap.GetFeatureName(domainModelMap.Domain, domainModelMap.ClassificationKey);

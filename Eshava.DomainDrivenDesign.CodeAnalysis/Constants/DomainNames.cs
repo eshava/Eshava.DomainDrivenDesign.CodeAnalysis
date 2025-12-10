@@ -8,6 +8,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Constants
 		public const string ABSTRACTDOMAINMODEL = "AbstractDomainModel";
 		public const string ABSTRACTAGGREGATE = "AbstractAggregate";
 		public const string ABSTRACTCHILDDOMAINMODEL = "AbstractChildDomainModel";
+		public const string ABSTRACTVALUEOBJECT = "AbstractValueObject";
 
 		public const string CALLBACK = "actionCallback";
 		public const string CALLBACKFIELD = "_" + CALLBACK;

@@ -3,5 +3,6 @@
 	"alternativeUsing": null,
 	"alternativeAbstractAggregate": null,
 	"alternativeAbstractDomainModel": null,
-	"alternativeAbstractChildDomainModel": null
+	"alternativeAbstractChildDomainModel": null,
+	"alternativeAbstractValueObject": null
 }

@@ -14,6 +14,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models.Domain
 		}
 
 		public bool IsAggregate { get; set; }
+		public bool IsValueObject { get; set; }
 		public List<string> ChildDomainModels { get; set; }
 		public List<ConstructorParameter> ProviderServiceConstructorParameters { get; set; }
 		public string IdentifierType { get; set; }

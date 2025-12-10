@@ -70,10 +70,10 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			var fullDomainModelName = $"Domain.{domain}.{domainModelMap.DomainModel.NamespaceDirectory}.{domainModelMap.DomainModelName}";
 
 			var relatedDataModels = CollectDataModelsForReferenceProperties(model, domainModelMap, childsForModel, true);
-			relatedDataModels.ForEach(relation => unitInformation.AddField((relation.TableAliasConstant, relation.TableAliasField)));
+			relatedDataModels.ForEach(relation => unitInformation.AddField((relation.TableAliasConstant, FieldType.Const, relation.TableAliasField)));
 
 			var collectPropertyMappings = CollectDataToDomainPropertyMappings(domainModelMap);
-			collectPropertyMappings.ForEach(mapping => unitInformation.AddField((mapping.FieldName, mapping.Declaration)));
+			collectPropertyMappings.ForEach(mapping => unitInformation.AddField((mapping.FieldName, FieldType.Static, mapping.Declaration)));
 
 			if (model.IsChild)
 			{
@@ -1049,13 +1049,11 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			var domainModelProperties = domainModelMap.DomainModel.Properties.Where(p => !p.DataModelPropertyName.IsNullOrEmpty()).ToList();
 
 			var dataToDomainName = GetMappingName(domainModelMap.DataModelName, domainModelMap.DomainModelName, true);
-			//var domainToDataName = GetMappingName(domainModelMap.DataModelName, domainModelMap.DomainModelName, false);
 
 			var dataPropertyType = "Data".ToPropertyExpressionTupleElement(dataModelType);
 			var domainPropertyType = "Domain".ToPropertyExpressionTupleElement(fullDomainModelName);
 
 			var dataToDomainType = "List".AsGeneric(dataPropertyType.ToTupleType(domainPropertyType));
-			//var domainToDataType = "List".AsGeneric(domainPropertyType.ToTupleType(dataPropertyType));
 
 			var dataToDomainInstance = domainModelProperties.Count == 0
 				? dataToDomainType.ToCollectionExpression()
@@ -1071,22 +1069,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 					).ToArray()
 				);
 
-			//var domainToDataInstance = domainModelProperties.Count == 0
-			//	? domainToDataType.ToCollectionExpression()
-			//	: domainToDataType.ToCollectionExpressionWithInitializer(
-			//		domainModelProperties
-			//		.Select(p => "p"
-			//			.ToPropertyExpression(p.Name)
-			//			.ToArgument()
-			//			.ToTuple("p"
-			//				.ToPropertyExpression(p.DataModelPropertyName)
-			//				.ToArgument()
-			//			)
-			//		).ToArray()
-			//	);
-
 			mappings.Add((dataToDomainName, dataToDomainName.ToStaticReadonlyField(dataToDomainType, dataToDomainInstance)));
-			//mappings.Add((domainToDataName, domainToDataName.ToStaticReadonlyField(domainToDataType, domainToDataInstance)));
 
 			foreach (var childDomainModel in domainModelMap.ChildDomainModels)
 			{

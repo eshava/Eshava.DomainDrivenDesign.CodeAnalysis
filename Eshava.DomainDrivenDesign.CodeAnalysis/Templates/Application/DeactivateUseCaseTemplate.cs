@@ -93,6 +93,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 					null,
 					null,
 					null,
+					null,
 					codeSnippets,
 					CreateDeactivateMethodActions
 				)
@@ -165,6 +166,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			string domainProjectNamespace,
 			bool hasValidationRules,
 			ForeignKeyReferenceContainer foreignKeyReferenceContainer,
+			HashSet<string> domainModelWithMappings,
 			List<UseCaseCodeSnippet> codeSnippets
 		)
 		{

@@ -7,6 +7,7 @@
 		public string AlternativeAbstractAggregate { get; set; }
 		public string AlternativeAbstractDomainModel { get; set; }
 		public string AlternativeAbstractChildDomainModel { get; set; }
+		public string AlternativeAbstractValueObject { get; set; }
 
 		/// <summary>
 		/// Configuration property for code compilation
