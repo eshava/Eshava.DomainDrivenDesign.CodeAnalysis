@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using Eshava.CodeAnalysis.Extensions;
@@ -94,7 +95,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			unitInformation.AddConstructorParameter(provider.Name, provider.Type);
 
 			var foreignKeyReferenceContainer = TemplateMethods.CollectForeignKeyReferenceTypes(request.DomainProjectNamespace, domainModelMap);
-			var domainModelWithMappings = new HashSet<string>(); /* ToDo */
+			var domainModelWithMappings = TemplateMethods.CheckForPropertyMappings(unitInformation, request.Domain, request.UseCase.Dtos, request.DomainModelReferenceMap);
 
 			unitInformation.AddMethod(
 				TemplateMethods.CreateUseCaseMainMethod(
@@ -214,17 +215,42 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 
 			statements.AddRange(readStatements);
 
+			var getPatchInformationArguments = domainModelWithMappings.Contains(domainModel)
+				? new List<ArgumentSyntax> { $"{domainModel.ToFieldName()}Mappings".ToArgument() }.ToArray()
+				: Array.Empty<ArgumentSyntax>();
+
 			statements.Add(
 				"patchesResult"
 				.ToVariableStatement(
 					"request"
 					.Access(domainModelMap.ClassificationKey)
-					.Access("GetPatchInformation".AsGeneric(dtoMap.DtoName, domainModel))
-					.Call()
+					.Access(getPatchInformationArguments.Length == 0
+						? "GetPatchInformation".AsGeneric(dtoMap.DtoName, domainModel)
+						: "GetPatchInformation".ToIdentifierName()
+					)
+					.Call(getPatchInformationArguments)
 				)
 			);
 
 			statements.Add("patchesResult".ToFaultyCheck(returnDataType));
+
+			if (!domainModelMap.IsChildDomainModel && domainModelMap.ForeignKeyReferences.Any(reference => reference.DomainModel.IsValueObject))
+			{
+				statements.Add(
+					"patchesResult"
+					.ToIdentifierName()
+					.Assign(
+						"patchesResult"
+						.Access("Data")
+						.Access("CheckAndConvertValueObjectPatches")
+						.Call(
+							providerResult.ToArgument()
+						)
+					)
+					.ToExpressionStatement()
+				);
+				statements.Add("patchesResult".ToFaultyCheck(returnDataType));
+			}
 
 			statements.Add(
 				"patchesResult"
@@ -582,18 +608,28 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 				var changeResult = "changesResult";
 				var changeResultData = changeResult.Access("Data");
 
-				var mappingSource = "Source".ToPropertyExpressionTupleElement(childReferenceProperty.Dto.DtoName);
-				var mappingTarget = "Target".ToPropertyExpressionTupleElement(childDomainModelType);
+				var getPatchInformationArguments = new List<ArgumentSyntax>
+				{
+					"p".ToPropertyExpression(childReferenceProperty.Property.Name).ToArgument()
+				};
+
+				if (domainModelWithMappings.Contains(domainModelMap.DomainModelName))
+				{
+					getPatchInformationArguments.Add($"{domainModelMap.DomainModelName.ToFieldName()}Mappings".ToArgument());
+				}
+				else
+				{
+					var mappingSource = "Source".ToPropertyExpressionTupleElement(childReferenceProperty.Dto.DtoName);
+					var mappingTarget = "Target".ToPropertyExpressionTupleElement(childDomainModelType);
+					getPatchInformationArguments.Add("List".AsGeneric(mappingSource.ToTupleType(mappingTarget)).ToInstance().ToArgument());
+				}
 
 				statements.Add(
 					changeResult
 					.ToVariableStatement(
 						patchDocumentName
 						.Access("GetPatchInformation".AsGeneric(dtoMap.DtoName, childReferenceProperty.Dto.DtoName, childDomainModelType, childDomainModel.IdentifierType))
-						.Call(
-							"p".ToPropertyExpression(childReferenceProperty.Property.Name).ToArgument(),
-							"List".AsGeneric(mappingSource.ToTupleType(mappingTarget)).ToInstance().ToArgument()
-						)
+						.Call(getPatchInformationArguments.ToArray())
 					)
 				);
 
@@ -754,15 +790,28 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 				hasAsyncMethodCalls = true;
 			}
 
+			var patchesResult = childDtoVariableName.Access("Value");
+			if (childDomainModel.ForeignKeyReferences.Any(reference => reference.DomainModel.IsValueObject))
+			{
+				statements.Add(
+					"patchesResult"
+					.ToVariableStatement(
+						patchesResult
+						.Access("CheckAndConvertValueObjectPatches")
+						.Call(childVariableName.Access("Data").ToArgument())
+					)
+				);
+				statements.Add("patchesResult".ToFaultyCheck(childDomainModelType));
+				patchesResult = "patchesResult".Access("Data");
+			}
+
 			statements.Add(
 				childVariablePatchName
 				.ToVariableStatement(
 					childVariableName
 					.Access("Data")
 					.Access("Patch")
-					.Call(
-						childDtoVariableName.Access("Value").ToArgument()
-					)
+					.Call(patchesResult.ToArgument())
 				)
 			);
 

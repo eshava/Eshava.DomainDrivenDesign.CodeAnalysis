@@ -233,6 +233,10 @@
 									"type": "string"
 								},
 								{
+									"name": "Address",
+									"type": "AddressCreate"
+								},
+								{
 									"name": "Locations",
 									"type": "LocationCreate",
 									"isEnumerable": true
@@ -245,6 +249,34 @@
 							"properties": [
 								{
 									"name": "Name",
+									"type": "string"
+								}
+							]
+						},
+						{
+							"name": "AddressCreate",
+							"referenceModelName": "AddressVO",
+							"properties": [
+								{
+									"name": "StreetName",
+									"type": "string",
+									"referenceProperty": "Street"
+								},
+								{
+									"name": "HouseNumber",
+									"type": "string",
+									"referenceProperty": "Address.StreetNumber"
+								},
+								{
+									"name": "City",
+									"type": "string"
+								},
+								{
+									"name": "ZipCode",
+									"type": "string"
+								},
+								{
+									"name": "Country",
 									"type": "string"
 								}
 							]
@@ -364,23 +396,28 @@
 								},
 								{
 									"name": "Street",
-									"type": "string"
+									"type": "string",
+									"referenceProperty": "Address.Street"
 								},
 								{
 									"name": "StreetNumber",
-									"type": "string"
+									"type": "string",
+									"referenceProperty": "Address.StreetNumber"
 								},
 								{
 									"name": "City",
-									"type": "string"
+									"type": "string",
+									"referenceProperty": "Address.City"
 								},
 								{
 									"name": "ZipCode",
-									"type": "string"
+									"type": "string",
+									"referenceProperty": "Address.ZipCode"
 								},
 								{
 									"name": "Country",
-									"type": "string"
+									"type": "string",
+									"referenceProperty": "Address.Country"
 								},
 								{
 									"name": "Offices",
@@ -468,12 +505,14 @@
 							"referenceModelName": "AddressVO",
 							"properties": [
 								{
-									"name": "Street",
-									"type": "string"
+									"name": "StreetName",
+									"type": "string",
+									"referenceProperty": "Street"
 								},
 								{
-									"name": "StreetNumber",
-									"type": "string"
+									"name": "HouseNumber",
+									"type": "string",
+									"referenceProperty": "Address.StreetNumber"
 								},
 								{
 									"name": "City",
@@ -523,6 +562,10 @@
 									"type": "string"
 								},
 								{
+									"name": "Address",
+									"type": "AddressUpdate"
+								},
+								{
 									"name": "Locations",
 									"type": "LocationUpdate",
 									"isEnumerable": true
@@ -535,6 +578,35 @@
 							"properties": [
 								{
 									"name": "Name",
+									"type": "string"
+								}
+							]
+						},
+
+						{
+							"name": "AddressUpdate",
+							"referenceModelName": "AddressVO",
+							"properties": [
+								{
+									"name": "StreetName",
+									"type": "string",
+									"referenceProperty": "Street"
+								},
+								{
+									"name": "HouseNumber",
+									"type": "string",
+									"referenceProperty": "Address.StreetNumber"
+								},
+								{
+									"name": "City",
+									"type": "string"
+								},
+								{
+									"name": "ZipCode",
+									"type": "string"
+								},
+								{
+									"name": "Country",
 									"type": "string"
 								}
 							]
