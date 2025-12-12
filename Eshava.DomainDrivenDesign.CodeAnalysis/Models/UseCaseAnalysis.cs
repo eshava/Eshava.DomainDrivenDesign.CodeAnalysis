@@ -499,7 +499,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models
 			useCasesMap.AddQueryProviderMethod(method);
 		}
 
-		private static void AddQueryProviderUniqueMethod(UseCasesMap useCasesMap, UseCaseMap useCaseMap, ReferenceDomainModelMap domainModelMap, DomainModelPropery property, DomainModelProperyValidationRule rule)
+		private static void AddQueryProviderUniqueMethod(UseCasesMap useCasesMap, UseCaseMap useCaseMap, ReferenceDomainModelMap domainModelMap, DomainModelProperty property, DomainModelPropertyValidationRule rule)
 		{
 			var methodName = $"IsUnique{property.Name}Async";
 

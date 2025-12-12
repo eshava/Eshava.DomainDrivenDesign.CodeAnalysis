@@ -34,7 +34,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models.Domain
 		/// If set, overrides the <see cref="ClassificationKey"/>
 		/// </summary>
 		public string FeatureName { get; set; }
-		public List<DomainModelPropery> Properties { get; set; }
+		public List<DomainModelProperty> Properties { get; set; }
 		public bool AddGeneralPatchMethod { get; set; }
 		public bool AddInfrastructureProviderServiceByPassMethod { get; set; }
 		internal bool HasValidationRules => Properties.Count(p => p.ValidationRules.Count > 0) > 0;

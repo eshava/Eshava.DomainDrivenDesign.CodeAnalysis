@@ -442,8 +442,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 		private static void AddUniqueCheck(
 			List<StatementSyntax> statements,
 			ReferenceDomainModelMap domainModel,
-			DomainModelPropery property,
-			DomainModelProperyValidationRule rule,
+			DomainModelProperty property,
+			DomainModelPropertyValidationRule rule,
 			string provider,
 			string domainModelVariableName
 		)
