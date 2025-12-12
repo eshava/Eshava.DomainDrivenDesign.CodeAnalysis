@@ -191,15 +191,19 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 				|| templateRequest.UseCase.Type == ApplicationUseCaseType.SearchCount
 			)
 			{
-				var sortFieldsDto = FilterSortFieldsDtoTemplate.GetSortFieldsDto(templateRequest.UseCase, returnDto, templateRequest.UseCaseNamespace, templateRequest.AddAssemblyCommentToFiles);
-				var sortFieldsDtoSourceName = $"{templateRequest.UseCaseNamespace}.{templateRequest.UseCase.ClassificationKey}{templateRequest.UseCase.UseCaseName}SortFields.g.cs";
+				var sortFieldsDtos = FilterSortFieldsDtoTemplate.GetSortFieldsDto(templateRequest.UseCase, returnDto, templateRequest.UseCaseNamespace, templateRequest.AddAssemblyCommentToFiles);
+				foreach (var sortFieldsDto in sortFieldsDtos)
+				{
+					var sortFieldsDtoSourceName = $"{templateRequest.UseCaseNamespace}.{sortFieldsDto.ClassName}.g.cs";
+					factoryResult.AddSource(sortFieldsDtoSourceName, sortFieldsDto.SourceCode);
+				}
 
-				factoryResult.AddSource(sortFieldsDtoSourceName, sortFieldsDto);
-
-				var filterFieldsDto = FilterFilterFieldsDtoTemplate.GetFilterFieldsDto(templateRequest.UseCase, returnDto, templateRequest.UseCaseNamespace, templateRequest.AddAssemblyCommentToFiles);
-				var filterFieldsDtoSourceName = $"{templateRequest.UseCaseNamespace}.{templateRequest.UseCase.ClassificationKey}{templateRequest.UseCase.UseCaseName}FilterFields.g.cs";
-
-				factoryResult.AddSource(filterFieldsDtoSourceName, filterFieldsDto);
+				var filterFieldsDtos = FilterFilterFieldsDtoTemplate.GetFilterFieldsDto(templateRequest.UseCase, returnDto, templateRequest.UseCaseNamespace, templateRequest.AddAssemblyCommentToFiles);
+				foreach (var filterFieldsDto in filterFieldsDtos)
+				{
+					var filterFieldsDtoSourceName = $"{templateRequest.UseCaseNamespace}.{filterFieldsDto.ClassName}.g.cs";
+					factoryResult.AddSource(filterFieldsDtoSourceName, filterFieldsDto.SourceCode);
+				}
 
 				var filterDto = FilterDtoTemplate.GetFilterDto(templateRequest.UseCase, templateRequest.UseCaseNamespace, templateRequest.AddAssemblyCommentToFiles);
 				var filterDtoSourceName = $"{templateRequest.UseCaseNamespace}.{templateRequest.UseCase.ClassificationKey}{templateRequest.UseCase.UseCaseName}Filter.g.cs";

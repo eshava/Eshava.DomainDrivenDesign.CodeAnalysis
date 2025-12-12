@@ -1333,57 +1333,7 @@
 										"Equal",
 										"Contains"
 									]
-								},
-								{
-									"name": "Street",
-									"type": "string",
-									"isSortable": true,
-									"isSearchable": true,
-									"searchOperations": [
-										"Equal",
-										"Contains"
-									]
-								},
-								{
-									"name": "StreetNumber",
-									"type": "string",
-									"isSortable": true,
-									"isSearchable": true,
-									"searchOperations": [
-										"Equal",
-										"Contains"
-									]
-								},
-								{
-									"name": "City",
-									"type": "string",
-									"isSortable": true,
-									"isSearchable": true,
-									"searchOperations": [
-										"Equal",
-										"Contains"
-									]
-								},
-								{
-									"name": "ZipCode",
-									"type": "string",
-									"isSortable": true,
-									"isSearchable": true,
-									"searchOperations": [
-										"Equal",
-										"Contains"
-									]
-								},
-								{
-									"name": "Country",
-									"type": "string",
-									"isSortable": true,
-									"isSearchable": true,
-									"searchOperations": [
-										"Equal",
-										"Contains"
-									]
-								},
+								},							
 								{
 									"name": "CustomerAddress",
 									"type": "CustomerAddressItem",
