@@ -21,7 +21,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			return sortFieldClasses;
 		}
 
-		private static void CreateSortFieldsDto(
+		private static string CreateSortFieldsDto(
 			ApplicationUseCase useCase,
 			ApplicationUseCaseDto dto,
 			string namePrefix,
@@ -47,8 +47,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			{
 				if (useCaseDtos.TryGetValue(property.Type, out var propertyDto))
 				{
-					CreateSortFieldsDto(useCase, propertyDto, namePrefix + property.Name, useCaseNamespace, addAssemblyCommentToFiles, useCaseDtos, sortFieldClasses);
-					unitInformation.AddProperty(property.Name.ToProperty(property.Type.ToType(), SyntaxKind.PublicKeyword, true, true), property.Name);
+					var sortFieldName = CreateSortFieldsDto(useCase, propertyDto, namePrefix + property.Name, useCaseNamespace, addAssemblyCommentToFiles, useCaseDtos, sortFieldClasses);
+					unitInformation.AddProperty(property.Name.ToProperty(sortFieldName.ToType(), SyntaxKind.PublicKeyword, true, true), property.Name);
 
 					continue;
 				}
@@ -62,6 +62,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			}
 
 			sortFieldClasses.Add((className, unitInformation.CreateCodeString()));
+
+			return className;
 		}
 	}
 }

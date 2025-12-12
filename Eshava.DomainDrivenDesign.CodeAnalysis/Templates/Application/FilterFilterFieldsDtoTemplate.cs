@@ -22,7 +22,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			return filterFieldClasses;
 		}
 
-		private static void CreateFilterFieldsDto(
+		private static string CreateFilterFieldsDto(
 			ApplicationUseCase useCase,
 			ApplicationUseCaseDto dto,
 			string namePrefix,
@@ -50,8 +50,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			{
 				if (useCaseDtos.TryGetValue(property.Type, out var propertyDto))
 				{
-					CreateFilterFieldsDto(useCase, propertyDto, namePrefix + property.Name, useCaseNamespace, addAssemblyCommentToFiles, useCaseDtos, filterFieldClasses);
-					unitInformation.AddProperty(property.Name.ToProperty(property.Type.ToType(), SyntaxKind.PublicKeyword, true, true), property.Name);
+					var filterFieldName = CreateFilterFieldsDto(useCase, propertyDto, namePrefix + property.Name, useCaseNamespace, addAssemblyCommentToFiles, useCaseDtos, filterFieldClasses);
+					unitInformation.AddProperty(property.Name.ToProperty(filterFieldName.ToType(), SyntaxKind.PublicKeyword, true, true), property.Name);
 
 					continue;
 				}
@@ -66,6 +66,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			}
 
 			filterFieldClasses.Add((className, unitInformation.CreateCodeString()));
+
+			return className;
 		}
 
 		private static IEnumerable<AttributeDefinition> CreateOperatorAttributes(IEnumerable<string> searchOperations)
