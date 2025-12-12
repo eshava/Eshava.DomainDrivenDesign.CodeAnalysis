@@ -125,7 +125,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 
 			if (domainModelMap.DomainModel.HasValidationRules && !domainModelMap.IsChildDomainModel)
 			{
-				unitInformation.AddMethod(TemplateMethods.CreateCheckValidationConstraintsMethod(request.UseCase, request.Domain, domainModelMap, request.UseCase.MainDto.ToType()));
+				var dto = request.UseCase.Dtos.First(dto => dto.Name == request.UseCase.MainDto);
+				unitInformation.AddMethod(TemplateMethods.CreateCheckValidationConstraintsMethod(request.UseCase, request.Domain, domainModelMap, dto));
 			}
 
 			if (request.UseCase.CheckForeignKeyReferencesAutomatically)

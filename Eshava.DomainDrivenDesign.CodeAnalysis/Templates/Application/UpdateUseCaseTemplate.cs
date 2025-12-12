@@ -613,9 +613,9 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 					"p".ToPropertyExpression(childReferenceProperty.Property.Name).ToArgument()
 				};
 
-				if (domainModelWithMappings.Contains(domainModelMap.DomainModelName))
+				if (domainModelWithMappings.Contains(childDomainModel.DomainModelName))
 				{
-					getPatchInformationArguments.Add($"{domainModelMap.DomainModelName.ToFieldName()}Mappings".ToArgument());
+					getPatchInformationArguments.Add($"{childDomainModel.DomainModelName.ToFieldName()}Mappings".ToArgument());
 				}
 				else
 				{

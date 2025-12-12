@@ -4,6 +4,9 @@ using Eshava.DomainDrivenDesign.CodeAnalysis.Models.Api;
 using Eshava.DomainDrivenDesign.CodeAnalysis.Models.Application;
 using Eshava.DomainDrivenDesign.CodeAnalysis.Models.Domain;
 using Eshava.DomainDrivenDesign.CodeAnalysis.Models.Infrastructure;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Eshava.DomainDrivenDesign.CodeAnalysis.Extensions
 {
@@ -195,6 +198,27 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Extensions
 				default:
 					return null;
 			}
+		}
+
+		/// <summary>
+		/// Create a ";" statement with the comments above it
+		/// </summary>
+		/// <param name="comments">Contains only the comment text without "//"</param>
+		/// <returns></returns>
+		public static StatementSyntax CreateCommentStatement(this IEnumerable<string> comments)
+		{
+			var triviaList = new List<SyntaxTrivia>();
+			foreach (var comment in comments)
+			{
+				triviaList.Add(SyntaxFactory.Comment("// " + comment));
+				triviaList.Add(SyntaxFactory.LineFeed);
+			}
+
+			var emptyStatement = SyntaxFactory.EmptyStatement();
+			var semicolonToken = emptyStatement.SemicolonToken;
+			semicolonToken = semicolonToken.WithLeadingTrivia(SyntaxFactory.TriviaList(triviaList.ToArray()));
+
+			return emptyStatement.WithSemicolonToken(semicolonToken);
 		}
 	}
 }

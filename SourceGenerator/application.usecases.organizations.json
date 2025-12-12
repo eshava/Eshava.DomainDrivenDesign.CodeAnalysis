@@ -383,8 +383,9 @@
 							"referenceModelName": "CustomerDDD",
 							"properties": [
 								{
-									"name": "Name",
-									"type": "string"
+									"name": "Company",
+									"type": "string",
+									"referenceProperty": "Name"
 								},
 								{
 									"name": "MainOfficeId",
@@ -475,7 +476,7 @@
 								},
 								{
 									"name": "Buildings",
-									"type": "BuildingCreate",
+									"type": "BuildingUpdate",
 									"isEnumerable": true
 								}
 							]
@@ -1046,7 +1047,7 @@
 								},
 								{
 									"name": "Address",
-									"type": "AddressRead"
+									"type": "OfficeAddressRead"
 								},
 								{
 									"name": "Locations",

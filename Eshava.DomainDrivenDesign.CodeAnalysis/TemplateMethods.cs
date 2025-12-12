@@ -10,6 +10,7 @@ using Eshava.DomainDrivenDesign.CodeAnalysis.Models;
 using Eshava.DomainDrivenDesign.CodeAnalysis.Models.Application;
 using Eshava.DomainDrivenDesign.CodeAnalysis.Models.Domain;
 using Eshava.DomainDrivenDesign.CodeAnalysis.Models.Infrastructure;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
@@ -835,7 +836,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis
 			return methodDeclarations;
 		}
 
-		public static (string Name, MemberDeclarationSyntax Method) CreateCheckValidationConstraintsMethod(ApplicationUseCase useCase, string domain, ReferenceDomainModelMap domainModel, TypeSyntax dtoType)
+		public static (string Name, MemberDeclarationSyntax Method) CreateCheckValidationConstraintsMethod(ApplicationUseCase useCase, string domain, ReferenceDomainModelMap domainModel, ApplicationUseCaseDto dto)
 		{
 			var provider = domainModel.ClassificationKey.ToQueryProviderName().ToFieldName();
 			var dtoVariableName = domainModel.ClassificationKey.ToVariableName();
@@ -844,12 +845,20 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis
 
 			foreach (var property in domainModel.DomainModel.Properties)
 			{
+				var dtoProperty = dto.Properties.FirstOrDefault(p => !p.ReferenceProperty.IsNullOrEmpty() && p.ReferenceProperty == property.Name)
+					?? dto.Properties.FirstOrDefault(p => p.Name == property.Name);
+
+				if (dtoProperty is null)
+				{
+					continue;
+				}
+
 				foreach (var rule in property.ValidationRules)
 				{
 					switch (rule.Type)
 					{
 						case ValidationRuleType.Unique:
-							AddUniqueCheck(statements, domainModel, property, rule, provider, dtoVariableName);
+							AddUniqueCheck(statements, domainModel, property, rule, provider, dtoVariableName, dto, dtoProperty);
 
 							break;
 					}
@@ -870,7 +879,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis
 				.WithParameter(
 					dtoVariableName
 					.ToParameter()
-					.WithType(dtoType)
+					.WithType(dto.Name.ToType())
 				);
 
 			return (methodDeclarationName, methodDeclaration);
@@ -1862,7 +1871,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis
 
 				if (childDomainModel.DomainModel.HasValidationRules)
 				{
-					methodDeclarations.Add(CreateCheckValidationConstraintsMethod(request.UseCase, request.Domain, childDomainModel, dtoMap.DtoName.ToType()));
+					methodDeclarations.Add(CreateCheckValidationConstraintsMethod(request.UseCase, request.Domain, childDomainModel, dtoMap.Dto));
 				}
 			}
 
@@ -1892,17 +1901,49 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis
 			return additionalCreateChildStatements;
 		}
 
-		private static void AddUniqueCheck(List<StatementSyntax> statements, ReferenceDomainModelMap domainModel, DomainModelPropery property, DomainModelProperyValidationRule rule, string provider, string dtoVariableName)
+		private static void AddUniqueCheck(
+			List<StatementSyntax> statements,
+			ReferenceDomainModelMap domainModel,
+			DomainModelPropery property,
+			DomainModelProperyValidationRule rule,
+			string provider,
+			string dtoVariableName,
+			ApplicationUseCaseDto dto,
+			ApplicationUseCaseDtoProperty dtoProperty
+		)
 		{
 			var arguments = new List<ExpressionSyntax>
 			{
 				Eshava.CodeAnalysis.SyntaxConstants.Null,
-				dtoVariableName.Access(property.Name)
+				dtoVariableName.Access(dtoProperty.Name)
 			};
 
+			var relatedProperties = new List<(string Domain, string Dto)>();
+			var missingRelatedProperty = new List<string>();
 			if (rule.RelatedProperties.Count > 0)
 			{
-				arguments.AddRange(rule.RelatedProperties.Select(p => dtoVariableName.Access(p)));
+				foreach (var relatedProperty in rule.RelatedProperties)
+				{
+					var relatedDtoProperty = dto.Properties.FirstOrDefault(p => !p.ReferenceProperty.IsNullOrEmpty() && p.ReferenceProperty == relatedProperty)
+						?? dto.Properties.FirstOrDefault(p => p.Name == relatedProperty);
+
+					if (relatedDtoProperty is null)
+					{
+						missingRelatedProperty.Add($"Missing related validation property in dto: {relatedProperty}");
+
+						continue;
+					}
+
+					relatedProperties.Add((relatedProperty, relatedDtoProperty.Name));
+					arguments.Add(dtoVariableName.Access(relatedDtoProperty.Name));
+				}
+			}
+
+			if (missingRelatedProperty.Count > 0)
+			{
+				statements.Add(missingRelatedProperty.CreateCommentStatement());
+
+				return;
 			}
 
 			var resultName = $"isUnique{property.Name}Result";
@@ -1910,13 +1951,13 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis
 
 			var uniqueFaultyResult = SyntaxConstants.ResponseDataBool.CreateFaultyResponse(
 				EshavaMessageConstant.InvalidDataError.Map(),
-				(property.Name, "Unique", dtoVariableName.Access(property.Name))
+				(property.Name, "Unique", dtoVariableName.Access(dtoProperty.Name))
 			);
 
-			foreach (var relatedProperty in rule.RelatedProperties)
+			foreach (var relatedProperty in relatedProperties)
 			{
 				uniqueFaultyResult = uniqueFaultyResult
-					.AddValidationError(relatedProperty, "Unique", dtoVariableName.Access(relatedProperty));
+					.AddValidationError(relatedProperty.Domain, "Unique", dtoVariableName.Access(relatedProperty.Dto));
 			}
 
 			statements.Add(
