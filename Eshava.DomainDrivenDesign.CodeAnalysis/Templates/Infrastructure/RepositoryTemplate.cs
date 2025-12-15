@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Eshava.CodeAnalysis;
 using Eshava.CodeAnalysis.Extensions;
@@ -16,6 +17,22 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 {
 	public static class RepositoryTemplate
 	{
+		private static readonly HashSet<string> _notNullableTypes =
+		[
+			typeof(byte).Name,
+			typeof(short).Name,
+			typeof(int).Name,
+			typeof(uint).Name,
+			typeof(long).Name,
+			typeof(ulong).Name,
+			typeof(decimal).Name,
+			nameof(Single),
+			typeof(double).Name,
+			typeof(float).Name,
+			typeof(DateTime).Name,
+			typeof(bool).Name
+		];
+
 		public static string GetRepository(
 			InfrastructureModel model,
 			ReferenceDomainModelMap domainModelMap,
@@ -25,7 +42,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			string databaseSettingsInterface,
 			string databaseSettingsInterfaceUsing,
 			InfrastructureModel parentModel,
-			Dictionary<string, List<InfrastructureModel>> childsForModel
+			Dictionary<string, List<InfrastructureModel>> childsForModel,
+			ReferenceMap domainModelReferenceMap
 		)
 		{
 			var scopedSettings = new NameAndType(CommonNames.SCOPEDSETTINGS, project.ScopedSettingsClass.ToType());
@@ -119,6 +137,11 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				}
 
 				unitInformation.AddMethod(CreateReadMethod(model, domainModelMap, fullDomainModelName, childsForModel, relatedDataModels, project.ImplementSoftDelete));
+				var valueObjectCreateMethods = CreateValueObjectCreateMethods(model, domainModelMap, domainModelReferenceMap, childsForModel, true);
+				foreach (var valueObjectCreateMethod in valueObjectCreateMethods)
+				{
+					unitInformation.AddMethod(valueObjectCreateMethod);
+				}
 			}
 
 			var baseType = model.IsChild
@@ -157,6 +180,12 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 
 			unitInformation.AddMethod(CreateFromDomainModelMethod(model, fullDomainModelName, parentModel, domainModelMap));
 			unitInformation.AddMethod(CreateGetPropertyNameMethod(domainModelMap));
+
+			var valueObjectPatchMethod = CreateMapPatchesForValueObjectsMethod(model, domainModelMap);
+			if (!valueObjectPatchMethod.Name.IsNullOrEmpty())
+			{
+				unitInformation.AddMethod(valueObjectPatchMethod);
+			}
 
 			return unitInformation.CreateCodeString();
 		}
@@ -240,6 +269,155 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			);
 		}
 
+		private static IEnumerable<(string Name, MemberDeclarationSyntax)> CreateValueObjectCreateMethods(
+			InfrastructureModel model,
+			ReferenceDomainModelMap domainModelMap,
+			ReferenceMap domainModelReferenceMap,
+			Dictionary<string, List<InfrastructureModel>> childsForModel,
+			bool isTopCall
+		)
+		{
+			var methods = new List<(string Name, MemberDeclarationSyntax)>();
+			var valueObjectMethod = CreateValueObjectCreateMethods(model, domainModelMap, isTopCall);
+			if (!valueObjectMethod.Name.IsNullOrEmpty())
+			{
+				methods.Add(valueObjectMethod);
+			}
+
+			foreach (var childModel in domainModelMap.ChildDomainModels)
+			{
+				if (!childsForModel.TryGetValue(model.Name, out var childModels))
+				{
+					continue;
+				}
+
+				var childDataModel = childModels.FirstOrDefault(m => m.Name == childModel.DataModelName);
+				if (childDataModel is null)
+				{
+					continue;
+				}
+
+				if (!domainModelReferenceMap.TryGetDomainModel(childModel.Domain, childModel.DomainModelName, out var childDomainModelMap))
+				{
+					continue;
+				}
+
+				var childMethodsResult = CreateValueObjectCreateMethods(childDataModel, childDomainModelMap, domainModelReferenceMap, childsForModel, false);
+				if (childMethodsResult.Any())
+				{
+					methods.AddRange(childMethodsResult);
+				}
+			}
+
+			return methods;
+		}
+
+		private static (string Name, MemberDeclarationSyntax) CreateValueObjectCreateMethods(
+			InfrastructureModel model,
+			ReferenceDomainModelMap domainModelMap,
+			bool isTopCall
+		)
+		{
+			var valueObjects = domainModelMap.ForeignKeyReferences.Where(reference => reference.DomainModel.IsValueObject).ToList();
+			if (valueObjects.Count == 0)
+			{
+				return (null, null);
+			}
+			var @namespace = $"Domain.{domainModelMap.Domain}.{domainModelMap.DomainModel.NamespaceDirectory}";
+			var fullDomainModelName = $"{@namespace}.{domainModelMap.DomainModelName}";
+			var statements = new List<StatementSyntax>
+			{
+				"patches"
+				.ToVariableStatement(
+					"List"
+					.AsGeneric("Patch".AsGeneric(fullDomainModelName))
+					.ToInstance()
+				)
+			};
+
+			foreach (var valueObject in valueObjects)
+			{
+				var constructorParameters = new List<ArgumentSyntax>();
+				var valueObjectVariableName = valueObject.PropertyName.ToVariableName();
+
+				foreach (var property in valueObject.DomainModel.Properties)
+				{
+					var dataPropertyName = property.DataModelPropertyName.IsNullOrEmpty()
+						? property.Name
+						: property.DataModelPropertyName;
+
+					constructorParameters.Add(
+						"dataInstance"
+						.Access(dataPropertyName)
+						.ToArgument()
+					);
+				}
+
+				statements.Add(
+					valueObjectVariableName
+					.ToVariableStatement(
+						$"{@namespace}.{valueObject.DomainModelName}"
+						.ToType()
+						.ToInstance(constructorParameters.ToArray())
+					)
+				);
+
+				var validationResult = $"{valueObjectVariableName}ValidationResult";
+				statements.Add(
+					validationResult
+					.ToVariableStatement(
+						ApplicationNames.Engines.VALIDATIONENGINE
+						.Access("Validate")
+						.Call(valueObjectVariableName.ToArgument())
+					)
+				);
+
+				statements.Add(
+					validationResult
+					.Access("IsValid")
+					.If(
+						"patches"
+						.Access("Add")
+						.Call(
+							"Patch"
+							.AsGeneric(fullDomainModelName)
+							.Access("Create")
+							.Call(
+								"p".ToPropertyExpression(valueObject.PropertyName).ToArgument(),
+								valueObjectVariableName.ToArgument()
+							)
+							.ToArgument()
+						)
+						.ToExpressionStatement()
+					)
+				);
+			}
+
+			statements.Add(
+				"patches"
+				.ToIdentifierName()
+				.Return()
+			);
+
+			var methodDeclarationName = $"CreateValueObjectsFor{domainModelMap.DomainModelName}";
+			var methodDeclaration = methodDeclarationName.ToMethod(
+				"IEnumerable".AsGeneric("Patch".AsGeneric(fullDomainModelName)),
+				statements,
+				SyntaxKind.PrivateKeyword
+			);
+
+			var dataModelReferenceType = isTopCall
+				? model.Name.ToType()
+				: $"{model.ClassificationKey.ToPlural()}.{model.Name}".ToType();
+
+			var dataModelReferenceParameter = "dataInstance".ToParameter().WithType(dataModelReferenceType);
+			var validationEngineParameter = ApplicationNames.Engines.VALIDATIONENGINE.ToParameter().WithType(ApplicationNames.Engines.VALIDATIONENGINETYPE.ToType());
+
+			methodDeclaration = methodDeclaration.WithParameter(dataModelReferenceParameter, validationEngineParameter);
+
+			return (methodDeclarationName, methodDeclaration);
+		}
+
 		private static (string Name, MemberDeclarationSyntax) CreateFromDomainModelMethod(
 			InfrastructureModel model,
 			string fullDomainModelName,
@@ -304,9 +482,9 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 					var propertyValue = domainModelMap.DomainModel.DataModelTypePropertyValue;
 					ExpressionSyntax valueExpression = property.Type switch
 					{
-						"int" =>propertyValue.ToLiteralInt(),
-						"long" =>propertyValue.ToLiteralLong(),
-						"string" =>propertyValue.ToLiteralString(),
+						"int" => propertyValue.ToLiteralInt(),
+						"long" => propertyValue.ToLiteralLong(),
+						"string" => propertyValue.ToLiteralString(),
 						_ => propertyValue.ToIdentifierName()
 					};
 
@@ -538,6 +716,123 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 					.ToVariableName()
 					.ToParameter()
 					.WithType(domainModelMap.IdentifierType.ToType())
+				);
+
+			return (methodDeclarationName, methodDeclaration);
+		}
+
+		private static (string Name, MemberDeclarationSyntax) CreateMapPatchesForValueObjectsMethod(InfrastructureModel dataModel, ReferenceDomainModelMap domainModelMap)
+		{
+			var valueObjectReferences = domainModelMap.ForeignKeyReferences
+				.Where(@ref => @ref.DomainModel.IsValueObject)
+				.ToList();
+
+			if (valueObjectReferences.Count == 0)
+			{
+				return (null, null);
+			}
+
+			var fullDomainModelName = $"Domain.{domainModelMap.Domain}.{domainModelMap.DomainModel.NamespaceDirectory}.{domainModelMap.DomainModelName}";
+			var loopStatements = new List<StatementSyntax>();
+			var dataModelProperties = dataModel.Properties.ToDictionary(p => p.Name, p => p);
+
+			foreach (var valueObjectReference in valueObjectReferences)
+			{
+				var valueObjectStatements = new List<StatementSyntax>();
+				var ifStatements = new List<StatementSyntax>();
+				var elseStatements = new List<StatementSyntax>();
+				var fullValueObjectName = $"Domain.{domainModelMap.Domain}.{domainModelMap.DomainModel.NamespaceDirectory}.{valueObjectReference.DomainModelName}";
+
+				valueObjectStatements.Add(
+					valueObjectReference.PropertyName
+					.ToVariableName()
+					.ToVariableStatement(
+						"patch"
+						.Access("Value")
+						.AsType(fullValueObjectName.ToType(), false)
+					)
+				);
+
+				foreach (var property in valueObjectReference.DomainModel.Properties)
+				{
+					var dataPropertyName = property.DataModelPropertyName.IsNullOrEmpty()
+						? property.Name
+						: property.DataModelPropertyName;
+
+					if (!dataModelProperties.TryGetValue(dataPropertyName, out var dataProperty))
+					{
+						continue;
+					}
+
+					var defaultArgument = _notNullableTypes.Contains(dataProperty.Type)
+						? Eshava.CodeAnalysis.SyntaxConstants.Default.Call(dataProperty.Type.ToArgument()).ToArgument()
+						: Eshava.CodeAnalysis.SyntaxConstants.Null.ToArgument();
+
+					ifStatements.Add(
+						"dataModelChanges"
+						.Access("Add")
+						.Call(
+							dataPropertyName.ToLiteralString().ToArgument(),
+							defaultArgument
+						)
+						.ToExpressionStatement()
+					);
+
+					elseStatements.Add(
+						"dataModelChanges"
+						.Access("Add")
+						.Call(
+							dataPropertyName.ToLiteralString().ToArgument(),
+							valueObjectReference.PropertyName.ToVariableName().Access(property.Name).ToArgument()
+						)
+						.ToExpressionStatement()
+					);
+				}
+
+				valueObjectStatements.Add(
+					valueObjectReference.PropertyName
+					.ToVariableName()
+					.ToIdentifierName()
+					.IsNull()
+					.If(ifStatements.ToArray())
+					.Else(elseStatements.ToArray())
+				);
+
+				loopStatements.Add(
+					"patch"
+						.Access("PropertyName")
+						.ToEquals(valueObjectReference.PropertyName.ToLiteralString())
+						.If(valueObjectStatements.ToArray())
+				);
+
+				loopStatements.Add(
+					Eshava.CodeAnalysis.SyntaxConstants.Continue
+				);
+			}
+
+			var statements = new List<StatementSyntax>
+			{
+				"patches"
+					.ToIdentifierName()
+					.ForEach("patch",loopStatements)
+			};
+
+			var methodDeclarationName = "MapValueObjects";
+			var methodDeclaration = methodDeclarationName.ToMethod(
+				Eshava.CodeAnalysis.SyntaxConstants.Void,
+				statements,
+				SyntaxKind.ProtectedKeyword,
+				SyntaxKind.OverrideKeyword
+			);
+
+			methodDeclaration = methodDeclaration
+				.WithParameter(
+					"patches"
+					.ToParameter()
+					.WithType("IEnumerable".AsGeneric("Patch".AsGeneric(fullDomainModelName))),
+					"dataModelChanges"
+					.ToParameter()
+					.WithType("IDictionary".AsGeneric(Eshava.CodeAnalysis.SyntaxConstants.String, Eshava.CodeAnalysis.SyntaxConstants.Object))
 				);
 
 			return (methodDeclarationName, methodDeclaration);
@@ -879,10 +1174,23 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				loopParameters.Add($"{childDomainModel.DomainModelName.ToVariableName()}Models".ToArgument());
 			}
 
+			var generateDomainPatchListArguments = new List<ArgumentSyntax>
+			{
+				modelItemName.ToArgument(),
+				dataToDomainName.ToArgument(),
+				$"{domainModelMap.DomainModelName.ToFieldName()}PropertyValueToDomainMappings".ToArgument()
+			};
+
+			if (domainModelMap.ForeignKeyReferences.Any(@ref => @ref.DomainModel.IsValueObject))
+			{
+				generateDomainPatchListArguments.Add($"CreateValueObjectsFor{domainModelMap.DomainModelName}".ToArgument());
+				generateDomainPatchListArguments.Add(ApplicationNames.Engines.VALIDATIONENGINE.ToFieldName().ToArgument());
+			}
+
 			loopStatements.Add(patchesVariableName
 				.ToVariableStatement(
 					"GenerateDomainPatchList".AsGeneric(modelType, fullDomainModelName)
-					.Call(modelItemName.ToArgument(), dataToDomainName.ToArgument())
+					.Call(generateDomainPatchListArguments.ToArray())
 				)
 			);
 
@@ -1164,9 +1472,10 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				? $"{domainModelMap.ClassificationKey.ToPlural()}.{domainModelMap.DataModelName}"
 				: domainModelMap.DataModelName;
 
-			var mappings = new List<(string FieldName, FieldDeclarationSyntax Declaration)>();
+			var fieldDeclarations = new List<(string FieldName, FieldDeclarationSyntax Declaration)>();
 			var fullDomainModelName = $"Domain.{domainModelMap.Domain}.{domainModelMap.DomainModel.NamespaceDirectory}.{domainModelMap.DomainModelName}";
 
+			// Property name mappings
 			var domainModelProperties = domainModelMap.DomainModel.Properties.Where(p => !p.DataModelPropertyName.IsNullOrEmpty()).ToList();
 
 			var dataToDomainName = GetMappingName(domainModelMap.DataModelName, domainModelMap.DomainModelName, true);
@@ -1190,14 +1499,21 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 					).ToArray()
 				);
 
-			mappings.Add((dataToDomainName, dataToDomainName.ToStaticReadonlyField(dataToDomainType, dataToDomainInstance)));
+			fieldDeclarations.Add((dataToDomainName, dataToDomainName.ToStaticReadonlyField(dataToDomainType, dataToDomainInstance)));
+
+			// Property value mappings
+			var propertyValueName = $"{domainModelMap.DomainModelName.ToFieldName()}PropertyValueToDomainMappings";
+			var propertyValueType = "Dictionary".AsGeneric(Eshava.CodeAnalysis.SyntaxConstants.String, "Func".AsGeneric("object", "object"));
+			var propertyValueInstance = propertyValueType.ToCollectionExpression();
+
+			fieldDeclarations.Add((propertyValueName, propertyValueName.ToStaticReadonlyField(propertyValueType, propertyValueInstance)));
 
 			foreach (var childDomainModel in domainModelMap.ChildDomainModels)
 			{
-				mappings.AddRange(CollectDataToDomainPropertyMappings(childDomainModel));
+				fieldDeclarations.AddRange(CollectDataToDomainPropertyMappings(childDomainModel));
 			}
 
-			return mappings;
+			return fieldDeclarations;
 		}
 
 		private class ValueObjectCacheItem

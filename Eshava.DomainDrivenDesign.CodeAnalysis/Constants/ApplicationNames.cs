@@ -16,6 +16,9 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Constants
 			public const string VALIDATIONRULE = "validationConfiguration";
 			public const string VALIDATIONRULETYPE = "IValidationRuleEngine";
 
+			public const string VALIDATIONENGINE = "validationEngine";
+			public const string VALIDATIONENGINETYPE = "IValidationEngine";
+
 			public static NameAndType Where => new(WHERE, WHERETYPE.ToType());
 			public static NameAndType Sorting => new(SORTING, SORTINGTYPE.ToType());
 			public static NameAndType ValidationRule => new(VALIDATIONRULE, VALIDATIONRULETYPE.ToType());

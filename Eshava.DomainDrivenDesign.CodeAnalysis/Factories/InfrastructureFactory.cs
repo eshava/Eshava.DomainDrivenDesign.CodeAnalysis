@@ -386,6 +386,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 					modelsFromNamespace,
 					childsForModel,
 					domainModel,
+					domainModelReferenceMap,
 					dependencyInjections
 				);
 				}
@@ -404,6 +405,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 					modelsFromNamespace,
 					childsForModel,
 					null,
+					domainModelReferenceMap,
 					dependencyInjections
 				);
 			}
@@ -421,6 +423,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 			List<InfrastructureModel> modelsFromNamespace,
 			Dictionary<string, List<InfrastructureModel>> childsForModel,
 			ReferenceDomainModelMap domainModel,
+			ReferenceMap domainModelReferenceMap,
 			List<DependencyInjection> dependencyInjections
 		)
 		{
@@ -450,7 +453,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 				databaseSettingsInterface,
 				databaseSettingsInterfaceUsing,
 				parent,
-				childsForModel
+				childsForModel,
+				domainModelReferenceMap
 			);
 
 			var repositorySourceName = $"{domainNamespace}.{model.ClassificationKey.ToPlural()}.{domainModel.DomainModelName}Repository.g.cs";
