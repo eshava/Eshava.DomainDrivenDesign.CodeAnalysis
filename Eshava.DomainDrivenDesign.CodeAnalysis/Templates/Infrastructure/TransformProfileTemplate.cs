@@ -116,7 +116,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 
 				if (!property.ReferenceProperty.IsNullOrEmpty())
 				{
-					var dataName = parentDataPropertyName.IsNullOrEmpty() || property.ReferenceProperty.Contains(".")
+					var dataName = parentDataPropertyName.IsNullOrEmpty()
 						? property.ReferenceProperty
 						: $"{parentDataPropertyName}.{property.ReferenceProperty}"
 						;

@@ -1368,7 +1368,7 @@
 								{
 									"name": "HouseNumber",
 									"type": "string",
-									"referenceProperty": "Customer.StreetNumber",
+									"referenceProperty": "StreetNumber",
 									"isSortable": true,
 									"isSearchable": true,
 									"searchOperations": [
