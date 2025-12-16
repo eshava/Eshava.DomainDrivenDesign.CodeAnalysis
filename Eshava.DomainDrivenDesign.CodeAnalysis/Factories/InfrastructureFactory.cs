@@ -58,6 +58,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 					infrastructureProjectConfig.FullQualifiedNamespace,
 					applicationProjectConfig?.FullQualifiedNamespace,
 					@namespace.Domain,
+					infrastructureModels,
 					applicationUseCasesConfig?.Namespaces.FirstOrDefault(ns => ns.Domain == @namespace.Domain)?.UseCases ?? new List<ApplicationUseCase>(),
 					dependencyInjectionsTransformationProfiles,
 					infrastructureProjectConfig.AddAssemblyCommentToFiles
@@ -527,6 +528,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 			string infrastructureProjectNamespace,
 			string applicationProjectNamespace,
 			string domain,
+			Dictionary<string, Dictionary<string, string>> infrastructureModels,
 			IEnumerable<ApplicationUseCase> useCases,
 			List<DependencyInjection> dependencyInjections,
 			bool addAssemblyCommentToFiles
@@ -536,6 +538,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 				infrastructureProjectNamespace,
 				applicationProjectNamespace,
 				domain,
+				infrastructureModels,
 				useCases,
 				addAssemblyCommentToFiles
 			);

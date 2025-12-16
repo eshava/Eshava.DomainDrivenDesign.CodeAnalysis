@@ -1355,8 +1355,9 @@
 							"referenceModelName": "CustomerData",
 							"properties": [
 								{
-									"name": "Street",
+									"name": "StreetName",
 									"type": "string",
+									"referenceProperty": "Street",
 									"isSortable": true,
 									"isSearchable": true,
 									"searchOperations": [
@@ -1365,8 +1366,9 @@
 									]
 								},
 								{
-									"name": "StreetNumber",
+									"name": "HouseNumber",
 									"type": "string",
+									"referenceProperty": "Customer.StreetNumber",
 									"isSortable": true,
 									"isSearchable": true,
 									"searchOperations": [
