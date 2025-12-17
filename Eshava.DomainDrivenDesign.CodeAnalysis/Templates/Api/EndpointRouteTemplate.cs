@@ -163,7 +163,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Api
 			}
 			else
 			{
-				var useCaseResponse = useCaseMap.UseCase.ClassName.Replace("UseCase", "Response");
+				var useCaseIndex = useCaseMap.UseCase.ClassName.LastIndexOf("UseCase");
+				var useCaseResponse = useCaseMap.UseCase.ClassName.Substring(0, useCaseIndex) + "Response";
 				responseArgument = useCaseResponse.ToIdentifierName().TypeOf().ToArgument();
 			}
 
