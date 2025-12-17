@@ -173,8 +173,13 @@ In Visual Studio, this setting can be found in the options.
 
 
 ### Update Generator NuGet Package
-Due to Visual Studio, two different generator instances are maintained for compiling the project solution. One instance for the actual compilation (code) and a second instance for displaying the generated files in Visual Studio (UI).
-As a result, after updating the NuGet package, the code compiler may use a generator instance of the new version, but the UI compiler may still use the old version. 
+Due to Visual Studio, two different generator instances are maintained for compiling the project solution. One instance for the actual compilation (Build-Compiler) and a second instance for displaying the generated files in Visual Studio (Roslyn Language Service).
+As a result, after updating the NuGet package, the build compiler may use a generator instance of the new version, but the Roslyn Language Service may still use the old version. 
 Due to this behavior, you can activate in the json configuration files that the generator package version is inserted into the generated files. It is also possible that Visual Studio continues to use the old version for both compilers.
 After updating the NuGet package, all Visual Studio instances should be closed and all processes with the name “VBCSCompiler” should be terminated. In most cases, this is sufficient. 
 If the problem still occurs, you can repeat the process or restart the computer. Using Microsoft.CodeAnalysis.Generator in Visual Studio can sometimes be a little frustrating.
+
+If none of this helps, you can delete the "Component Model Cache" folder. After that, Visual Studio will take a little longer to rebuild the cache when you start it for the first time.
+1. Close all instances of Visual Studio.
+2. Open Windows Explorer and navigate to: %localappdata%\Microsoft\VisualStudio\17.0_xxxx\ComponentModelCache (The 17.0_xxxx varies depending on the version/edition installed).
+3. Delete the entire contents of this folder.
