@@ -2,9 +2,9 @@
 
 namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models.Domain
 {
-	public class DomainModelProperyValidationRule
+	public class DomainModelPropertyValidationRule
 	{
-		public DomainModelProperyValidationRule()
+		public DomainModelPropertyValidationRule()
 		{
 			RelatedProperties = [];
 		}

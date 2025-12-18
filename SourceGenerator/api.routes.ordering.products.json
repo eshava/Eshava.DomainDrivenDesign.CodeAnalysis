@@ -21,7 +21,6 @@
 							"usingForType": null,
 							"name": "id",
 							"requestPropertyName": "ProductId"
-
 						}
 					],
 					"authorizationPolicies": [
@@ -124,7 +123,8 @@
 					"useCase": {
 						"domain": "Ordering",
 						"classificationKey": "Product",
-						"useCaseName": "Update"
+						"useCaseName": "Update",
+						"httpStatusCode": 200
 					},
 					"parameters": [
 						{

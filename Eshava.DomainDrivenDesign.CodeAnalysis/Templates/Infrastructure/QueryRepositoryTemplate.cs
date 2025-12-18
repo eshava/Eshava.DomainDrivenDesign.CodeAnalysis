@@ -113,36 +113,35 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 
 			foreach (var methodMap in queryProviderMap.Methods)
 			{
-				List<string> usings = null;
-				(string Name, MethodDeclarationSyntax Method) method = default;
-				List<(string DataType, string FieldName, FieldDeclarationSyntax Declaration)> fields = null;
+				MethodCreationResult methodCreationResult = null;
+
 				var addFieldsToMapping = false;
 				switch (methodMap.Type)
 				{
 					case MethodType.Read:
-						(usings, method, fields) = CreateReadMethod(model, methodMap, infrastructureModelsConfig, project.ImplementSoftDelete);
+						methodCreationResult = CreateReadMethod(model, methodMap, infrastructureModelsConfig, project.ImplementSoftDelete);
 
 						break;
 					case MethodType.Search:
-						(usings, method, fields) = CreateSearchMethod(model, methodMap, infrastructureModelsConfig, project.ImplementSoftDelete);
+						methodCreationResult = CreateSearchMethod(model, methodMap, infrastructureModelsConfig, project.ImplementSoftDelete);
 						addFieldsToMapping = true;
 
 						break;
 					case MethodType.SearchCount:
-						(usings, method, fields) = CreateSearchCountMethod(model, methodMap, infrastructureModelsConfig, project.ImplementSoftDelete);
+						methodCreationResult = CreateSearchCountMethod(model, methodMap, infrastructureModelsConfig, project.ImplementSoftDelete);
 						addFieldsToMapping = true;
 
 						break;
 					case MethodType.Exists:
-						(usings, method) = CreateExistsMethod(model, methodMap, project.ImplementSoftDelete);
+						methodCreationResult = CreateExistsMethod(model, methodMap, project.ImplementSoftDelete);
 
 						break;
 					case MethodType.IsUnique:
-						(usings, method) = CreateIsUniqueMethod(model, methodMap, project.ImplementSoftDelete);
+						methodCreationResult = CreateIsUniqueMethod(model, methodMap, project.ImplementSoftDelete);
 
 						break;
 					case MethodType.IsUsedForeignKey:
-						(usings, method) = CreateIsUsedForeignKeyMethod(model, methodMap, project.ImplementSoftDelete);
+						methodCreationResult = CreateIsUsedForeignKeyMethod(model, methodMap, project.ImplementSoftDelete);
 
 						break;
 					case MethodType.ReadAggregateId:
@@ -159,19 +158,19 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 							}
 						}
 
-						(usings, method) = CreateReadAggregateIdMethod(model, methodMap, allModelsForDomainDic, project.ImplementSoftDelete);
+						methodCreationResult = CreateReadAggregateIdMethod(model, methodMap, allModelsForDomainDic, project.ImplementSoftDelete);
 
 						break;
 				}
 
-				if (method.Method is not null)
+				if (methodCreationResult?.Method.Method is not null)
 				{
-					usings.ForEach(unitInformation.AddUsing);
-					unitInformation.AddMethod(method);
-					fields?.ForEach(field => unitInformation.AddField(field.FieldName, field.Declaration));
-					if (fields?.Any() ?? false && addFieldsToMapping)
+					methodCreationResult.Usings.ForEach(unitInformation.AddUsing);
+					unitInformation.AddMethod(methodCreationResult.Method);
+					methodCreationResult.Fields?.ForEach(field => unitInformation.AddField(field.FieldName, field.Declaration));
+					if (methodCreationResult.Fields?.Any() ?? false && addFieldsToMapping)
 					{
-						fieldsForPropertyTypeMapping.AddRange(fields);
+						fieldsForPropertyTypeMapping.AddRange(methodCreationResult.Fields);
 					}
 
 				}
@@ -207,7 +206,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			}
 		}
 
-		private static (List<string> Usings, (string Name, MethodDeclarationSyntax Method) Method) CreateExistsMethod(InfrastructureModel model, UseCaseQueryProviderMethodMap methodMap, bool implementSoftDelete)
+		private static MethodCreationResult CreateExistsMethod(InfrastructureModel model, UseCaseQueryProviderMethodMap methodMap, bool implementSoftDelete)
 		{
 			var idParameter = methodMap.ParameterTypes.First();
 			var modelConstant = model.Name.ToUpper();
@@ -296,10 +295,16 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				)
 			};
 
-			return CreateMethod(model, methodMap, statements);
+			(var methodUsings, var method) = CreateMethod(model, methodMap, statements);
+
+			return new MethodCreationResult
+			{
+				Usings = methodUsings,
+				Method = method
+			};
 		}
 
-		private static (List<string> Usings, (string Name, MethodDeclarationSyntax Method) Method) CreateIsUniqueMethod(InfrastructureModel model, UseCaseQueryProviderMethodMap methodMap, bool implementSoftDelete)
+		private static MethodCreationResult CreateIsUniqueMethod(InfrastructureModel model, UseCaseQueryProviderMethodMap methodMap, bool implementSoftDelete)
 		{
 			var idParameter = methodMap.ParameterTypes.First();
 			var checkParameter = methodMap.ParameterTypes.Skip(1).First();
@@ -420,10 +425,16 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				)
 			};
 
-			return CreateMethod(model, methodMap, statements);
+			(var methodUsings, var method) = CreateMethod(model, methodMap, statements);
+
+			return new MethodCreationResult
+			{
+				Usings = methodUsings,
+				Method = method
+			};
 		}
 
-		private static (List<string> Usings, (string Name, MethodDeclarationSyntax Method) Method) CreateReadAggregateIdMethod(InfrastructureModel childModel, UseCaseQueryProviderMethodMap methodMap, Dictionary<string, InfrastructureModel> allModelsForDomain, bool implementSoftDelete)
+		private static MethodCreationResult CreateReadAggregateIdMethod(InfrastructureModel childModel, UseCaseQueryProviderMethodMap methodMap, Dictionary<string, InfrastructureModel> allModelsForDomain, bool implementSoftDelete)
 		{
 			var parentQuery = new Queue<InfrastructureModel>();
 			var loopModel = childModel;
@@ -587,10 +598,16 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				)
 			};
 
-			return CreateMethod(childModel, methodMap, statements);
+			(var methodUsings, var method) = CreateMethod(childModel, methodMap, statements);
+
+			return new MethodCreationResult
+			{
+				Usings = methodUsings,
+				Method = method
+			};
 		}
 
-		private static (List<string> Usings, (string Name, MethodDeclarationSyntax Method) Method) CreateIsUsedForeignKeyMethod(InfrastructureModel model, UseCaseQueryProviderMethodMap methodMap, bool implementSoftDelete)
+		private static MethodCreationResult CreateIsUsedForeignKeyMethod(InfrastructureModel model, UseCaseQueryProviderMethodMap methodMap, bool implementSoftDelete)
 		{
 			var idParameter = methodMap.ParameterTypes.First();
 			var modelConstant = model.Name.ToUpper();
@@ -680,10 +697,21 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				)
 			};
 
-			return CreateMethod(model, methodMap, statements);
+			(var methodUsings, var method) = CreateMethod(model, methodMap, statements);
+
+			return new MethodCreationResult
+			{
+				Usings = methodUsings,
+				Method = method
+			};
 		}
 
-		private static (List<string> Usings, (string Name, MethodDeclarationSyntax Method) Method, List<(string DataType, string FieldName, FieldDeclarationSyntax Declaration)> Fields) CreateReadMethod(InfrastructureModel model, UseCaseQueryProviderMethodMap methodMap, InfrastructureModels infrastructureModelsConfig, bool implementSoftDelete)
+		private static MethodCreationResult CreateReadMethod(
+			InfrastructureModel model,
+			UseCaseQueryProviderMethodMap methodMap,
+			InfrastructureModels infrastructureModelsConfig,
+			bool implementSoftDelete
+		)
 		{
 			var returnDto = methodMap.ReturnType.DtoMap;
 			var relatedDataModels = CollectDataModelsForReferenceProperties(methodMap.Domain, returnDto, model, infrastructureModelsConfig, true);
@@ -824,10 +852,15 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 
 			(var methodUsings, var method) = CreateMethod(model, methodMap, statements);
 
-			return (methodUsings, method, GetConstantFields(methodMap.Domain, model.Name, relatedDataModels));
+			return new MethodCreationResult
+			{
+				Usings = methodUsings,
+				Method = method,
+				Fields = GetConstantFields(methodMap.Domain, model.Name, relatedDataModels)
+			};
 		}
 
-		private static (List<string> Usings, (string Name, MethodDeclarationSyntax Method) Method, List<(string DataType, string FieldName, FieldDeclarationSyntax Declaration)> Fields) CreateSearchMethod(InfrastructureModel model, UseCaseQueryProviderMethodMap methodMap, InfrastructureModels infrastructureModelsConfig, bool implementSoftDelete)
+		private static MethodCreationResult CreateSearchMethod(InfrastructureModel model, UseCaseQueryProviderMethodMap methodMap, InfrastructureModels infrastructureModelsConfig, bool implementSoftDelete)
 		{
 			var returnDto = methodMap.ParameterTypes.First().Generic.First().DtoMap;
 			var relatedDataModels = CollectDataModelsForReferenceProperties(methodMap.Domain, returnDto, model, infrastructureModelsConfig, true);
@@ -947,10 +980,15 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 
 			(var methodUsings, var method) = CreateMethod(model, methodMap, statements);
 
-			return (methodUsings, method, GetConstantFields(methodMap.Domain, model.Name, relatedDataModels));
+			return new MethodCreationResult
+			{
+				Usings = methodUsings,
+				Method = method,
+				Fields = GetConstantFields(methodMap.Domain, model.Name, relatedDataModels)
+			};
 		}
 
-		private static (List<string> Usings, (string Name, MethodDeclarationSyntax Method) Method, List<(string DataType, string FieldName, FieldDeclarationSyntax Declaration)> Fields) CreateSearchCountMethod(InfrastructureModel model, UseCaseQueryProviderMethodMap methodMap, InfrastructureModels infrastructureModelsConfig, bool implementSoftDelete)
+		private static MethodCreationResult CreateSearchCountMethod(InfrastructureModel model, UseCaseQueryProviderMethodMap methodMap, InfrastructureModels infrastructureModelsConfig, bool implementSoftDelete)
 		{
 			var returnDto = methodMap.ParameterTypes.First().Generic.First().DtoMap;
 			var relatedDataModels = CollectDataModelsForReferenceProperties(methodMap.Domain, returnDto, model, infrastructureModelsConfig, true);
@@ -1054,7 +1092,12 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 
 			(var methodUsings, var method) = CreateMethod(model, methodMap, statements);
 
-			return (methodUsings, method, GetConstantFields(methodMap.Domain, model.Name, relatedDataModels));
+			return new MethodCreationResult
+			{
+				Usings = methodUsings,
+				Method = method,
+				Fields = GetConstantFields(methodMap.Domain, model.Name, relatedDataModels)
+			};
 		}
 
 		private static (List<string> Usings, (string Name, MethodDeclarationSyntax Method) Method) CreateMethod(InfrastructureModel model, UseCaseQueryProviderMethodMap methodMap, List<StatementSyntax> statements)
@@ -1111,7 +1154,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			return catchBlockStatements;
 		}
 
-		private static List<(string Using, (string FieldName, FieldDeclarationSyntax Declaration) Field)> CreateModelConstantNames(
+		private static List<(string Using, (string FieldName, FieldType Type, FieldDeclarationSyntax Declaration) Field)> CreateModelConstantNames(
 			InfrastructureModel model,
 			IEnumerable<InfrastructureModel> childsForModel,
 			Dictionary<string, InfrastructureModel> allModelsForDomain,
@@ -1119,7 +1162,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			string fullQualifiedDomainNamespace
 		)
 		{
-			var fields = new List<(string Using, (string FieldName, FieldDeclarationSyntax Declaration) Field)>();
+			var fields = new List<(string Using, (string FieldName, FieldType Type, FieldDeclarationSyntax Declaration) Field)>();
 
 			// Workaround to allow multiple data models for the same classification key (see InfrastructureFactory)
 			// Create constants for all data models with the same classification key
@@ -1424,7 +1467,15 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			return true;
 		}
 
-		private static void GetDtoInitializerExpressions(string referenceDomain, string referenceType, string parentDtoName, string dtoName, List<QueryAnalysisItem> relatedDataModels, List<ExpressionSyntax> dtoInitializerExpressions, HashSet<string> processTableAlias)
+		private static void GetDtoInitializerExpressions(
+			string referenceDomain,
+			string referenceType,
+			string parentDtoName,
+			string dtoName,
+			List<QueryAnalysisItem> relatedDataModels,
+			List<ExpressionSyntax> dtoInitializerExpressions,
+			HashSet<string> processedDtoTableAlias
+		)
 		{
 			var parentRelatedDataModels = relatedDataModels
 				.Where(m => (m.ParentDtoName is null && parentDtoName is null) || m.DtoName == dtoName)
@@ -1459,9 +1510,10 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 					)
 				);
 
-				if (!processTableAlias.Contains(item.TableAliasConstant))
+				var dtoTableAlias = $"{item.DtoName ?? ""}_{item.TableAliasConstant}";
+				if (!processedDtoTableAlias.Contains(dtoTableAlias))
 				{
-					processTableAlias.Add(item.TableAliasConstant);
+					processedDtoTableAlias.Add(dtoTableAlias);
 				}
 			}
 
@@ -1472,7 +1524,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 
 			parentDtoName = parentRelatedDataModels[0].DtoName;
 
-			var dtoRelatedDataModels = relatedDataModels.Where(m => m.ParentDtoName == parentDtoName && !processTableAlias.Contains(m.TableAliasConstant)).GroupBy(m => m.ParentDtoPropertyName);
+			var dtoRelatedDataModels = relatedDataModels.Where(m => m.ParentDtoName == parentDtoName && !processedDtoTableAlias.Contains($"{m.DtoName ?? ""}_{m.TableAliasConstant}")).GroupBy(m => m.ParentDtoPropertyName);
 			if (!dtoRelatedDataModels.Any())
 			{
 				return;
@@ -1484,7 +1536,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				dtoName = dtoReferenceItem.DtoName;
 
 				var childDtoInitializerExpressions = new List<ExpressionSyntax>();
-				GetDtoInitializerExpressions(referenceDomain, referenceType, parentDtoName, dtoName, relatedDataModels, childDtoInitializerExpressions, processTableAlias);
+				GetDtoInitializerExpressions(referenceDomain, referenceType, parentDtoName, dtoName, relatedDataModels, childDtoInitializerExpressions, processedDtoTableAlias);
 
 				ExpressionSyntax dtoInstance = dtoName.ToIdentifierName().ToInstanceWithInitializer(childDtoInitializerExpressions.ToArray());
 				if (dtoReferenceItem.IsEnumerable)
@@ -1685,6 +1737,13 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			}
 
 			return currentListName;
+		}
+
+		private class MethodCreationResult
+		{
+			public List<string> Usings { get; set; }
+			public (string Name, MethodDeclarationSyntax Method) Method { get; set; }
+			public List<(string DataType, string FieldName, FieldDeclarationSyntax Declaration)> Fields { get; set; }
 		}
 	}
 }

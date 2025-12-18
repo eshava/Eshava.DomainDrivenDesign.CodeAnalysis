@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Eshava.CodeAnalysis.Extensions;
 using Eshava.DomainDrivenDesign.CodeAnalysis.Constants;
+using Eshava.DomainDrivenDesign.CodeAnalysis.Enums;
 using Eshava.DomainDrivenDesign.CodeAnalysis.Extensions;
 using Eshava.DomainDrivenDesign.CodeAnalysis.Models;
 using Eshava.DomainDrivenDesign.CodeAnalysis.Models.Domain;
@@ -165,21 +166,21 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Domain
 			return (project.AlternativeAbstractDomainModel, false);
 		}
 
-		private static (string FieldName, FieldDeclarationSyntax Declaration) CreateChildListField(ReferenceDomainModelMap domainModelMap)
+		private static (string FieldName, FieldType Type, FieldDeclarationSyntax Declaration) CreateChildListField(ReferenceDomainModelMap domainModelMap)
 		{
 			var type = "IList".AsGeneric(domainModelMap.GetDomainModelTypeName(null));
 			var fieldName = domainModelMap.ChildEnumerableName.ToFieldName().ToPlural();
 
-			return (fieldName, fieldName.ToField(type, Eshava.CodeAnalysis.SyntaxConstants.Default));
+			return (fieldName, FieldType.Others, fieldName.ToField(type, Eshava.CodeAnalysis.SyntaxConstants.Default));
 		}
 
-		private static (string FieldName, FieldDeclarationSyntax Declaration) CreateChildChangedField(ReferenceDomainModelMap domainModelMap)
+		private static (string FieldName, FieldType Type, FieldDeclarationSyntax Declaration) CreateChildChangedField(ReferenceDomainModelMap domainModelMap)
 		{
 			var func = GetCallbackType(domainModelMap.GetDomainModelTypeName(null));
 			var fieldName = GetCallbackFieldName(domainModelMap);
 			var responseDataExpression = StatementHelpers.GetResponseData(true);
 
-			return (fieldName, fieldName.ToField(func, "p".ToParameterExpression().WithExpressionBody(responseDataExpression)));
+			return (fieldName, FieldType.Others, fieldName.ToField(func, "p".ToParameterExpression().WithExpressionBody(responseDataExpression)));
 		}
 
 		private static string GetCallbackFieldName(AbstractReferenceDomainModel domainModel)
@@ -571,7 +572,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Domain
 									.Access("AddRange")
 									.Call(resultName.ToIdentifierName().ToArgument())
 									.ToExpressionStatement()
-							)							
+							)
 					);
 				}
 			}

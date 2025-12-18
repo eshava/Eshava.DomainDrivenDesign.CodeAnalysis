@@ -31,7 +31,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 
 			foreach (var foreignKeyReference in domainModelMap.ForeignKeyReferences)
 			{
-				if (foreignKeyReference.IsProcessingProperty)
+				if (foreignKeyReference.IsProcessingProperty || foreignKeyReference.DomainModel.IsValueObject)
 				{
 					continue;
 				}

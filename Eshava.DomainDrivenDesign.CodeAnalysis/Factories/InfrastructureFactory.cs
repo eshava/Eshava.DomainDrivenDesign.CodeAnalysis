@@ -58,6 +58,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 					infrastructureProjectConfig.FullQualifiedNamespace,
 					applicationProjectConfig?.FullQualifiedNamespace,
 					@namespace.Domain,
+					infrastructureModels,
 					applicationUseCasesConfig?.Namespaces.FirstOrDefault(ns => ns.Domain == @namespace.Domain)?.UseCases ?? new List<ApplicationUseCase>(),
 					dependencyInjectionsTransformationProfiles,
 					infrastructureProjectConfig.AddAssemblyCommentToFiles
@@ -386,6 +387,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 					modelsFromNamespace,
 					childsForModel,
 					domainModel,
+					domainModelReferenceMap,
 					dependencyInjections
 				);
 				}
@@ -404,6 +406,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 					modelsFromNamespace,
 					childsForModel,
 					null,
+					domainModelReferenceMap,
 					dependencyInjections
 				);
 			}
@@ -421,6 +424,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 			List<InfrastructureModel> modelsFromNamespace,
 			Dictionary<string, List<InfrastructureModel>> childsForModel,
 			ReferenceDomainModelMap domainModel,
+			ReferenceMap domainModelReferenceMap,
 			List<DependencyInjection> dependencyInjections
 		)
 		{
@@ -450,7 +454,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 				databaseSettingsInterface,
 				databaseSettingsInterfaceUsing,
 				parent,
-				childsForModel
+				childsForModel,
+				domainModelReferenceMap
 			);
 
 			var repositorySourceName = $"{domainNamespace}.{model.ClassificationKey.ToPlural()}.{domainModel.DomainModelName}Repository.g.cs";
@@ -523,6 +528,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 			string infrastructureProjectNamespace,
 			string applicationProjectNamespace,
 			string domain,
+			Dictionary<string, Dictionary<string, string>> infrastructureModels,
 			IEnumerable<ApplicationUseCase> useCases,
 			List<DependencyInjection> dependencyInjections,
 			bool addAssemblyCommentToFiles
@@ -532,6 +538,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 				infrastructureProjectNamespace,
 				applicationProjectNamespace,
 				domain,
+				infrastructureModels,
 				useCases,
 				addAssemblyCommentToFiles
 			);

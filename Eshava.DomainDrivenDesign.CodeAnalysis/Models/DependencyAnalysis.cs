@@ -349,6 +349,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models
 
 		public bool IsChildDomainModel => AggregateDomainModel is not null;
 		public bool IsAggregate => DomainModel?.IsAggregate ?? false;
+		public bool IsValueObject => DomainModel?.IsValueObject ?? false;
 		public bool HasReferencesToMe
 		{
 			get
@@ -500,7 +501,6 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models
 		/// </summary>
 		public string PropertyName { get; set; }
 		public bool IsProcessingProperty { get; set; }
-
 		public string IsUsedMethodName => $"IsUsed{PropertyName}Async";
 	}
 

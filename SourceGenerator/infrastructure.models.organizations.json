@@ -33,6 +33,26 @@
 							"referenceType": "ProductData",
 							"referenceDomain": "Ordering",
 							"isParentReference": false
+						},
+						{
+							"type": "string",
+							"name": "Street"
+						},
+						{
+							"type": "string",
+							"name": "StreetNumber"
+						},
+						{
+							"type": "string",
+							"name": "City"
+						},
+						{
+							"type": "string",
+							"name": "ZipCode"
+						},
+						{
+							"type": "string",
+							"name": "Country"
 						}
 					]
 				},
@@ -81,6 +101,26 @@
 						{
 							"type": "int",
 							"name": "TypeId"
+						},
+						{
+							"type": "string",
+							"name": "Street"
+						},
+						{
+							"type": "string",
+							"name": "StreetNumber"
+						},
+						{
+							"type": "string",
+							"name": "City"
+						},
+						{
+							"type": "string",
+							"name": "ZipCode"
+						},
+						{
+							"type": "string",
+							"name": "Country"
 						}
 					]
 				},

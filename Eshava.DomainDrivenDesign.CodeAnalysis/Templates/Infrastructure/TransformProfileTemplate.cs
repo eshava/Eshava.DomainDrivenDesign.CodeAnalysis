@@ -22,6 +22,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			string infrastructureProjectNamespace,
 			string applicationProjectNamespace,
 			string domain,
+			Dictionary<string, Dictionary<string, string>> infrastructureModels,
 			IEnumerable<ApplicationUseCase> useCases,
 			bool addAssemblyCommentToFiles
 		)
@@ -38,6 +39,11 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 
 			unitInformation.AddUsing(CommonNames.Namespaces.Eshava.Core.Linq.NAME);
 
+			if (!infrastructureModels.TryGetValue(domain, out var dataModels))
+			{
+				dataModels = [];
+			}
+
 			foreach (var useCase in useCases)
 			{
 				if (!_allowedUseCases.Contains(useCase.Type))
@@ -45,23 +51,12 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 					continue;
 				}
 
-				var useCaseDto = useCase.Dtos.First(dto => dto.Name == useCase.MainDto);
+				var useCaseDtos = useCase.Dtos.ToDictionary(dto => dto.Name, dto => dto);
+				var useCaseDto = useCaseDtos[useCase.MainDto];
 				var dataModel = useCaseDto.ReferenceModelName;
 
-				var properties = new List<ApplicationUseCaseDtoProperty>();
-				foreach (var property in useCaseDto.Properties)
-				{
-					if (
-						(useCase.Type == ApplicationUseCaseType.Search && !(property.IsSearchable ?? false) && !(property.IsSortable ?? false))
-						|| property.ReferenceProperty.IsNullOrEmpty()
-					)
-					{
-						continue;
-					}
-
-					properties.Add(property);
-				}
-
+				var properties = new List<(string DtoPropertyName, string DataPropertyName)>();
+				CollectProperties(useCase.Type, useCaseDto, null, null, useCaseDtos, dataModels, properties);
 
 				if (properties.Count == 0)
 				{
@@ -83,8 +78,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 					map = map
 						.Access("ForPath")
 						.Call(
-							"s".ToPropertyExpression(property.Name).ToArgument(),
-							"t".ToPropertyExpression(property.ReferenceProperty).ToArgument()
+							"s".ToPropertyExpression(property.DtoPropertyName).ToArgument(),
+							"t".ToPropertyExpression(property.DataPropertyName).ToArgument()
 						);
 				}
 
@@ -97,6 +92,90 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			}
 
 			return unitInformation.CreateCodeString();
+		}
+
+		private static void CollectProperties(
+			ApplicationUseCaseType useCaseType,
+			ApplicationUseCaseDto useCaseDto,
+			string parentDtoPropertyName,
+			string parentDataPropertyName,
+			Dictionary<string, ApplicationUseCaseDto> useCaseDtos,
+			Dictionary<string, string> dataModels,
+			List<(string DtoPropertyName, string DataPropertyName)> propertiesForProfile
+		)
+		{
+			foreach (var property in useCaseDto.Properties)
+			{
+				if (
+					(useCaseType == ApplicationUseCaseType.Search && !(property.IsSearchable ?? false) && !(property.IsSortable ?? false))
+					|| (useCaseType != ApplicationUseCaseType.Search && property.ReferenceProperty.IsNullOrEmpty())
+				)
+				{
+					continue;
+				}
+
+				if (!property.ReferenceProperty.IsNullOrEmpty())
+				{
+					var dataName = parentDataPropertyName.IsNullOrEmpty()
+						? property.ReferenceProperty
+						: $"{parentDataPropertyName}.{property.ReferenceProperty}"
+						;
+
+					if (parentDtoPropertyName.IsNullOrEmpty())
+					{
+						propertiesForProfile.Add((property.Name, dataName));
+					}
+					else
+					{
+						propertiesForProfile.Add(($"{parentDtoPropertyName}.{property.Name}", dataName));
+					}
+
+					continue;
+				}
+
+				if (property.IsEnumerable)
+				{
+					continue;
+				}
+
+				if (!useCaseDtos.TryGetValue(property.Type, out var typeDto))
+				{
+					var dataName = parentDataPropertyName.IsNullOrEmpty()
+						? property.Name
+						: $"{parentDataPropertyName}.{property.Name}"
+						;
+
+					if (!parentDtoPropertyName.IsNullOrEmpty())
+					{
+						propertiesForProfile.Add(($"{parentDtoPropertyName}.{property.Name}", dataName));
+					}
+
+					continue;
+				}
+
+
+				if (!dataModels.TryGetValue(typeDto.ReferenceModelName, out var classificationKey))
+				{
+					continue;
+				}
+
+				var tempParentDtoPropertyName = parentDtoPropertyName.IsNullOrEmpty()
+					? property.Name
+					: $"{parentDtoPropertyName}.{property.Name}"
+					;
+
+				var tempParentDataPropertyName = parentDataPropertyName.IsNullOrEmpty()
+						? classificationKey
+						: $"{parentDataPropertyName}.{classificationKey}"
+						;
+
+				if (typeDto.ReferenceModelName == useCaseDto.ReferenceModelName)
+				{
+					tempParentDataPropertyName = null;
+				}
+
+				CollectProperties(useCaseType, typeDto, tempParentDtoPropertyName, tempParentDataPropertyName, useCaseDtos, dataModels, propertiesForProfile);
+			}
 		}
 	}
 }

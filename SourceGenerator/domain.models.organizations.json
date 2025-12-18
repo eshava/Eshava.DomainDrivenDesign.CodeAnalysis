@@ -58,6 +58,13 @@
 							"isProcessingProperty": true,
 							"referenceType": "BillingOfficeDDD",
 							"referenceDomain": "Organizations"
+						},
+						{
+							"type": "AddressVO",
+							"name": "Address",
+							"isReference": true,
+							"referenceType": "AddressVO",
+							"referenceDomain": "Organizations"
 						}
 					]
 				},
@@ -104,6 +111,13 @@
 									"type": 1
 								}
 							]
+						},
+						{
+							"type": "AddressVO",
+							"name": "Address",
+							"isReference": true,
+							"referenceType": "AddressVO",
+							"referenceDomain": "Organizations"
 						}
 					]
 				},
@@ -199,8 +213,8 @@
 					"addInfrastructureProviderServiceByPassMethod": true,
 					"providerServiceConstructorParameters": [
 						{
-							"name": "productDDDInfrastructureProviderService",
-							"type": "ProductDDDInfrastructureProviderService",
+							"name": "productDDDRepository",
+							"type": "IProductDDDRepository",
 							"usingForType": "Eshava.Example.Infrastructure.Ordering.Products"
 						}
 					],
@@ -227,6 +241,114 @@
 							"validationRules": [
 								{
 									"type": 1
+								}
+							]
+						}
+					]
+				},
+				{
+					"name": "AddressVO",
+					"featureName": "CustomerFeature",
+					"classificationKey": "Customer",
+					"isValueObject": true,
+					"properties": [
+						{
+							"type": "string",
+							"name": "Street",
+							"attributes": [
+								{
+									"name": "Required",
+									"usingForType": "System.ComponentModel.DataAnnotations"
+								},
+								{
+									"name": "MaxLength",
+									"usingForType": "System.ComponentModel.DataAnnotations",
+									"parameters": [
+										{
+											"type": "int",
+											"value": "50"
+										}
+									]
+								}
+							]
+						},
+						{
+							"type": "string",
+							"name": "StreetNumber",
+							"attributes": [
+								{
+									"name": "Required",
+									"usingForType": "System.ComponentModel.DataAnnotations"
+								},
+								{
+									"name": "MaxLength",
+									"usingForType": "System.ComponentModel.DataAnnotations",
+									"parameters": [
+										{
+											"type": "int",
+											"value": "10"
+										}
+									]
+								}
+							]
+						},
+						{
+							"type": "string",
+							"name": "City",
+							"attributes": [
+								{
+									"name": "Required",
+									"usingForType": "System.ComponentModel.DataAnnotations"
+								},
+								{
+									"name": "MaxLength",
+									"usingForType": "System.ComponentModel.DataAnnotations",
+									"parameters": [
+										{
+											"type": "int",
+											"value": "20"
+										}
+									]
+								}
+							]
+						},
+						{
+							"type": "string",
+							"name": "ZipCode",
+							"attributes": [
+								{
+									"name": "Required",
+									"usingForType": "System.ComponentModel.DataAnnotations"
+								},
+								{
+									"name": "MaxLength",
+									"usingForType": "System.ComponentModel.DataAnnotations",
+									"parameters": [
+										{
+											"type": "int",
+											"value": "20"
+										}
+									]
+								}
+							]
+						},
+						{
+							"type": "string",
+							"name": "Country",
+							"attributes": [
+								{
+									"name": "Required",
+									"usingForType": "System.ComponentModel.DataAnnotations"
+								},
+								{
+									"name": "MaxLength",
+									"usingForType": "System.ComponentModel.DataAnnotations",
+									"parameters": [
+										{
+											"type": "int",
+											"value": "50"
+										}
+									]
 								}
 							]
 						}

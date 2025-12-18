@@ -31,7 +31,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models.Api
 					UseCaseName = UseCase.UseCaseName + "Count",
 					ClassificationKey = UseCase.ClassificationKey,
 					ReferenceModel = UseCase.ReferenceModel,
-					Domain = UseCase.Domain
+					Domain = UseCase.Domain,
+					HttpStatusCode = UseCase.HttpStatusCode
 				},
 				Parameters = Parameters
 					.Select(p => new ApiRouteParameter

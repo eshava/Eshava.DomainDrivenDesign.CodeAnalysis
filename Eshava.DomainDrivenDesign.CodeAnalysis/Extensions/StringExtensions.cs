@@ -289,7 +289,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Extensions
 			);
 		}
 
-		public static (string FieldName, FieldDeclarationSyntax Declaration) CreateModelConstantField(this string modelName)
+		public static (string FieldName, FieldType Type, FieldDeclarationSyntax Declaration) CreateModelConstantField(this string modelName)
 		{
 			var aliasName = modelName.ToVariableName();
 			if (aliasName == "user" || aliasName == "permission")
@@ -299,7 +299,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Extensions
 
 			var constantName = GetModelConstantName(modelName);
 
-			return (constantName, constantName.ToConstField(Eshava.CodeAnalysis.SyntaxConstants.String, aliasName.ToLiteralString()));
+			return (constantName, FieldType.Const, constantName.ToConstField(Eshava.CodeAnalysis.SyntaxConstants.String, aliasName.ToLiteralString()));
 		}
 
 		public static string GetModelConstantName(this string modelName)

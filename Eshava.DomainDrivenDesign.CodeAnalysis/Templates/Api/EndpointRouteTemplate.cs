@@ -12,7 +12,17 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Api
 {
 	public class EndpointRouteTemplate
 	{
-		public static string GetRoute(List<ApiRoute> apiRoutes, string className, string routeNamespace, string responseDataExtensionsUsing, UseCasesMap useCasesMap, List<ApiRouteCodeSnippet> codeSnippets, bool addAssemblyCommentToFile)
+		public static string GetRoute(
+			List<ApiRoute> apiRoutes,
+			string className,
+			string routeNamespace,
+			string responseDataExtensionsUsing,
+			string errorResponseClass,
+			string errorResponseUsing,
+			UseCasesMap useCasesMap,
+			List<ApiRouteCodeSnippet> codeSnippets,
+			bool addAssemblyCommentToFile
+		)
 		{
 			var unitInformation = new UnitInformation(className, routeNamespace, addConstructor: false, addAssemblyComment: addAssemblyCommentToFile);
 			unitInformation.AddClassModifier(SyntaxKind.InternalKeyword, SyntaxKind.StaticKeyword);
@@ -22,7 +32,9 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Api
 			unitInformation.AddUsing(CommonNames.Namespaces.AspNetCore.HTTP);
 			unitInformation.AddUsing(CommonNames.Namespaces.AspNetCore.MVC);
 			unitInformation.AddUsing(responseDataExtensionsUsing);
+			unitInformation.AddUsing(errorResponseUsing);
 			unitInformation.AddUsing(CommonNames.Namespaces.TASKS);
+			unitInformation.AddUsing(CommonNames.Namespaces.Eshava.DomainDrivenDesign.Application.DTOS);
 
 			var apiRoutesToProcess = new List<(ApiRoute Route, UseCaseMap UseCaseMap, AdditionalApiRouteInformation Additional, List<ApiRouteCodeSnippet> CodeSnippets)>();
 			foreach (var apiRoute in apiRoutes)
@@ -98,7 +110,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Api
 				}
 			}
 
-			unitInformation.AddMethod(GetMapMethod(apiRoutesToProcess));
+			unitInformation.AddMethod(GetMapMethod(apiRoutesToProcess, errorResponseClass));
 
 			foreach (var apiRoute in apiRoutesToProcess)
 			{
@@ -108,14 +120,14 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Api
 			return unitInformation.CreateCodeString();
 		}
 
-		private static (string Name, MethodDeclarationSyntax Method) GetMapMethod(List<(ApiRoute Route, UseCaseMap UseCaseMap, AdditionalApiRouteInformation Additional, List<ApiRouteCodeSnippet> CodeSnippets)> apiRoutes)
+		private static (string Name, MethodDeclarationSyntax Method) GetMapMethod(List<(ApiRoute Route, UseCaseMap UseCaseMap, AdditionalApiRouteInformation Additional, List<ApiRouteCodeSnippet> CodeSnippets)> apiRoutes, string errorResponseClass)
 		{
 			var statements = new List<StatementSyntax>();
 			var app = "app";
 
 			foreach (var apiRoute in apiRoutes)
 			{
-				statements.Add(GetMapCall(apiRoute.Route, apiRoute.Additional, app).ToExpressionStatement());
+				statements.Add(GetMapCall(apiRoute.Route, apiRoute.UseCaseMap, apiRoute.Additional, app, errorResponseClass).ToExpressionStatement());
 			}
 
 			var methodName = "Map";
@@ -136,13 +148,68 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Api
 			return (methodName, methodDeclaration);
 		}
 
-		private static InvocationExpressionSyntax GetMapCall(ApiRoute apiRoute, AdditionalApiRouteInformation additional, string app)
+		private static InvocationExpressionSyntax GetMapCall(ApiRoute apiRoute, UseCaseMap useCaseMap, AdditionalApiRouteInformation additional, string app, string errorResponseClass)
 		{
 			var routeMethod = GetRouteMethodName(apiRoute.UseCase, apiRoute.HttpMethod.ToLower().ToPropertyName(), false);
 
 			var mapCall = app
 				.Access(GetHttpMethod(apiRoute.HttpMethod))
 				.Call(apiRoute.Route.ToLiteralArgument(), routeMethod.ToArgument());
+
+			ArgumentSyntax responseArgument;
+			if (additional?.MethodToCall == "GetValidationConfiguration")
+			{
+				responseArgument = "ValidationConfigurationResponse".ToIdentifierName().TypeOf().ToArgument();
+			}
+			else
+			{
+				var useCaseIndex = useCaseMap.UseCase.ClassName.LastIndexOf("UseCase");
+				var useCaseResponse = useCaseMap.UseCase.ClassName.Substring(0, useCaseIndex) + "Response";
+				responseArgument = useCaseResponse.ToIdentifierName().TypeOf().ToArgument();
+			}
+
+			var httpStatusCode = 200;
+			switch (apiRoute.HttpMethod.ToLower())
+			{
+				case "get":
+				case "post":
+
+					httpStatusCode = apiRoute.UseCase.HttpStatusCode ?? (int)System.Net.HttpStatusCode.OK;
+
+					mapCall = mapCall
+						.Access("Produces")
+						.Call([httpStatusCode.ToString().ToLiteralInt().ToArgument(), responseArgument]);
+
+					break;
+
+				case "patch":
+				case "put":
+				case "delete":
+
+					httpStatusCode = apiRoute.UseCase.HttpStatusCode ?? (int)System.Net.HttpStatusCode.NoContent;
+
+					if (httpStatusCode != (int)System.Net.HttpStatusCode.NoContent)
+					{
+						mapCall = mapCall
+							.Access("Produces")
+							.Call([httpStatusCode.ToString().ToLiteralInt().ToArgument(), responseArgument]);
+					}
+					else
+					{
+						mapCall = mapCall
+							.Access("Produces")
+							.Call([httpStatusCode.ToString().ToLiteralInt().ToArgument()]);
+					}
+
+					break;
+			}
+
+			if (!errorResponseClass.IsNullOrEmpty())
+			{
+				var errorResponseArgument = errorResponseClass.ToIdentifierName().TypeOf().ToArgument();
+				mapCall = mapCall.Access("Produces").Call(["400".ToLiteralInt().ToArgument(), errorResponseArgument]);
+				mapCall = mapCall.Access("Produces").Call(["500".ToLiteralInt().ToArgument(), errorResponseArgument]);
+			}
 
 			if ((apiRoute.AuthorizationPolicies?.Count ?? 0) > 0)
 			{

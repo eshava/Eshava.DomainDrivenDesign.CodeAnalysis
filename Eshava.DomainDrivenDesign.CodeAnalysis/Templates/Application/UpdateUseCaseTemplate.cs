@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using Eshava.CodeAnalysis.Extensions;
@@ -94,6 +95,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			unitInformation.AddConstructorParameter(provider.Name, provider.Type);
 
 			var foreignKeyReferenceContainer = TemplateMethods.CollectForeignKeyReferenceTypes(request.DomainProjectNamespace, domainModelMap);
+			var domainModelWithMappings = TemplateMethods.CheckForPropertyMappings(unitInformation, request.Domain, request.UseCase.Dtos, request.DomainModelReferenceMap);
 
 			unitInformation.AddMethod(
 				TemplateMethods.CreateUseCaseMainMethod(
@@ -103,6 +105,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 					request.DtoReferenceMap,
 					request.DomainProjectNamespace,
 					foreignKeyReferenceContainer,
+					domainModelWithMappings,
 					codeSnippets,
 					CreateUpdateMethodActions
 				)
@@ -113,7 +116,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 				unitInformation.AddMethod(TemplateMethods.CreateValidationConfigurationMethod(request.UseCase));
 			}
 
-			var childCreateMethodsResult = CreateProcessChildsMethods(request, domainModelMap, foreignKeyReferenceContainer, true, false);
+			var childCreateMethodsResult = CreateProcessChildsMethods(request, domainModelMap, foreignKeyReferenceContainer, domainModelWithMappings, true, false);
 			foreach (var childCreateMethods in childCreateMethodsResult)
 			{
 				unitInformation.AddMethod(childCreateMethods);
@@ -194,6 +197,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			string domainProjectNamespace,
 			bool hasValidationRules,
 			ForeignKeyReferenceContainer foreignKeyReferenceContainer,
+			HashSet<string> domainModelWithMappings,
 			List<UseCaseCodeSnippet> codeSnippets
 		)
 		{
@@ -211,17 +215,42 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 
 			statements.AddRange(readStatements);
 
+			var getPatchInformationArguments = domainModelWithMappings.Contains(domainModel)
+				? new List<ArgumentSyntax> { $"{domainModel.ToFieldName()}Mappings".ToArgument() }.ToArray()
+				: Array.Empty<ArgumentSyntax>();
+
 			statements.Add(
 				"patchesResult"
 				.ToVariableStatement(
 					"request"
 					.Access(domainModelMap.ClassificationKey)
-					.Access("GetPatchInformation".AsGeneric(dtoMap.DtoName, domainModel))
-					.Call()
+					.Access(getPatchInformationArguments.Length == 0
+						? "GetPatchInformation".AsGeneric(dtoMap.DtoName, domainModel)
+						: "GetPatchInformation".ToIdentifierName()
+					)
+					.Call(getPatchInformationArguments)
 				)
 			);
 
 			statements.Add("patchesResult".ToFaultyCheck(returnDataType));
+
+			if (!domainModelMap.IsChildDomainModel && domainModelMap.ForeignKeyReferences.Any(reference => reference.DomainModel.IsValueObject))
+			{
+				statements.Add(
+					"patchesResult"
+					.ToIdentifierName()
+					.Assign(
+						"patchesResult"
+						.Access("Data")
+						.Access("CheckAndConvertValueObjectPatches")
+						.Call(
+							providerResult.ToArgument()
+						)
+					)
+					.ToExpressionStatement()
+				);
+				statements.Add("patchesResult".ToFaultyCheck(returnDataType));
+			}
 
 			statements.Add(
 				"patchesResult"
@@ -413,8 +442,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 		private static void AddUniqueCheck(
 			List<StatementSyntax> statements,
 			ReferenceDomainModelMap domainModel,
-			DomainModelPropery property,
-			DomainModelProperyValidationRule rule,
+			DomainModelProperty property,
+			DomainModelPropertyValidationRule rule,
 			string provider,
 			string domainModelVariableName
 		)
@@ -495,6 +524,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			UseCaseTemplateRequest request,
 			ReferenceDomainModelMap domainModelMap,
 			ForeignKeyReferenceContainer foreignKeyReferenceContainer,
+			HashSet<string> domainModelWithMappings,
 			bool topLevelCall,
 			bool pretendTopLevelCall
 		)
@@ -545,11 +575,11 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 						methodDeclarations.Add(TemplateMethods.CreateCollectChildWrapperMethodForUpdate(domainModelMap, dtoMap, request.DomainProjectNamespace, request.UseCase.ReadAggregateByChildId));
 					}
 
-					methodDeclarations.AddRange(CreateUpdateChildMethod(request, foreignKeyReferenceContainer, domainModelMap, dtoMap, aggregateParameterName, domainModelType, request.DomainProjectNamespace, dtoForeignKeyReferences, true, true));
+					methodDeclarations.AddRange(CreateUpdateChildMethod(request, foreignKeyReferenceContainer, domainModelMap, dtoMap, aggregateParameterName, domainModelType, request.DomainProjectNamespace, dtoForeignKeyReferences, domainModelWithMappings, true, true));
 				}
 				else if (!domainModelMap.IsAggregate)
 				{
-					methodDeclarations.AddRange(CreateUpdateChildMethod(request, foreignKeyReferenceContainer, domainModelMap, dtoMap, aggregateParameterName, domainModelType, request.DomainProjectNamespace, dtoForeignKeyReferences, true, false));
+					methodDeclarations.AddRange(CreateUpdateChildMethod(request, foreignKeyReferenceContainer, domainModelMap, dtoMap, aggregateParameterName, domainModelType, request.DomainProjectNamespace, dtoForeignKeyReferences, domainModelWithMappings, true, false));
 				}
 
 				return methodDeclarations;
@@ -578,18 +608,28 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 				var changeResult = "changesResult";
 				var changeResultData = changeResult.Access("Data");
 
-				var mappingSource = "Source".ToPropertyExpressionTupleElement(childReferenceProperty.Dto.DtoName);
-				var mappingTarget = "Target".ToPropertyExpressionTupleElement(childDomainModelType);
+				var getPatchInformationArguments = new List<ArgumentSyntax>
+				{
+					"p".ToPropertyExpression(childReferenceProperty.Property.Name).ToArgument()
+				};
+
+				if (domainModelWithMappings.Contains(childDomainModel.DomainModelName))
+				{
+					getPatchInformationArguments.Add($"{childDomainModel.DomainModelName.ToFieldName()}Mappings".ToArgument());
+				}
+				else
+				{
+					var mappingSource = "Source".ToPropertyExpressionTupleElement(childReferenceProperty.Dto.DtoName);
+					var mappingTarget = "Target".ToPropertyExpressionTupleElement(childDomainModelType);
+					getPatchInformationArguments.Add("List".AsGeneric(mappingSource.ToTupleType(mappingTarget)).ToInstance().ToArgument());
+				}
 
 				statements.Add(
 					changeResult
 					.ToVariableStatement(
 						patchDocumentName
 						.Access("GetPatchInformation".AsGeneric(dtoMap.DtoName, childReferenceProperty.Dto.DtoName, childDomainModelType, childDomainModel.IdentifierType))
-						.Call(
-							"p".ToPropertyExpression(childReferenceProperty.Property.Name).ToArgument(),
-							"List".AsGeneric(mappingSource.ToTupleType(mappingTarget)).ToInstance().ToArgument()
-						)
+						.Call(getPatchInformationArguments.ToArray())
 					)
 				);
 
@@ -655,9 +695,9 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 
 				if (topLevelCall || pretendTopLevelCall)
 				{
-					methodDeclarations.AddRange(TemplateMethods.CreateCreateChildsMethods(request, domainModelMap, foreignKeyReferenceContainer, false, false));
+					methodDeclarations.AddRange(TemplateMethods.CreateCreateChildsMethods(request, domainModelMap, foreignKeyReferenceContainer, domainModelWithMappings, false, false));
 				}
-				methodDeclarations.AddRange(CreateUpdateChildMethod(request, foreignKeyReferenceContainer, childDomainModel, childReferenceProperty.Dto, aggregateParameterName, domainModelType, request.DomainProjectNamespace, dtoForeignKeyReferences, false, false));
+				methodDeclarations.AddRange(CreateUpdateChildMethod(request, foreignKeyReferenceContainer, childDomainModel, childReferenceProperty.Dto, aggregateParameterName, domainModelType, request.DomainProjectNamespace, dtoForeignKeyReferences, domainModelWithMappings, false, false));
 
 				if (childReferenceProperty.Property.IsEnumerable)
 				{
@@ -707,6 +747,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			TypeSyntax aggregateDomainModelType,
 			string domainProjectNamespace,
 			List<(ForeignKeyCache ForeignKey, ApplicationUseCaseDtoProperty Property)> foreignKeyHashSets,
+			HashSet<string> domainModelWithMappings,
 			bool skipForeignKeyHashsetParameter,
 			bool pretentTopLevelCall
 		)
@@ -749,15 +790,28 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 				hasAsyncMethodCalls = true;
 			}
 
+			var patchesResult = childDtoVariableName.Access("Value");
+			if (childDomainModel.ForeignKeyReferences.Any(reference => reference.DomainModel.IsValueObject))
+			{
+				statements.Add(
+					"patchesResult"
+					.ToVariableStatement(
+						patchesResult
+						.Access("CheckAndConvertValueObjectPatches")
+						.Call(childVariableName.Access("Data").ToArgument())
+					)
+				);
+				statements.Add("patchesResult".ToFaultyCheck(childDomainModelType));
+				patchesResult = "patchesResult".Access("Data");
+			}
+
 			statements.Add(
 				childVariablePatchName
 				.ToVariableStatement(
 					childVariableName
 					.Access("Data")
 					.Access("Patch")
-					.Call(
-						childDtoVariableName.Access("Value").ToArgument()
-					)
+					.Call(patchesResult.ToArgument())
 				)
 			);
 
@@ -766,7 +820,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			var documentLayerVariableName = $"{childDomainModel.ClassificationKey.ToVariableName()}DocumentLayer";
 			if (subChildDomainModelsWithReferences.Count > 0)
 			{
-				methodDeclarations.AddRange(CreateProcessChildsMethods(request, childDomainModel, foreignKeyReferenceContainer, false, pretentTopLevelCall));
+				methodDeclarations.AddRange(CreateProcessChildsMethods(request, childDomainModel, foreignKeyReferenceContainer, domainModelWithMappings, false, pretentTopLevelCall));
 
 				foreach (var reference in subChildDomainModelsWithReferences)
 				{

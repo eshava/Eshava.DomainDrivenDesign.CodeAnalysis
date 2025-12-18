@@ -3,9 +3,9 @@ using Eshava.DomainDrivenDesign.CodeAnalysis.Extensions;
 
 namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models.Domain
 {
-	public class DomainModelPropery
+	public class DomainModelProperty
 	{
-		public DomainModelPropery()
+		public DomainModelProperty()
 		{
 			ValidationRules = [];
 			Attributes = [];
@@ -31,7 +31,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models.Domain
 		public string ReferenceDomain { get; set; }
 		public bool IsProcessingProperty { get; set; }
 
-		public List<DomainModelProperyValidationRule> ValidationRules { get; set; }
+		public List<DomainModelPropertyValidationRule> ValidationRules { get; set; }
 		public List<AttributeDefinition> Attributes { get; set; }
 
 		internal bool HasValidReference

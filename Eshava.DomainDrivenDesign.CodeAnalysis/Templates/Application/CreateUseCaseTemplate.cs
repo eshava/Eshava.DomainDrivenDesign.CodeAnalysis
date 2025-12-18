@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Net.Http.Headers;
 using Eshava.CodeAnalysis.Extensions;
 using Eshava.DomainDrivenDesign.CodeAnalysis.Constants;
 using Eshava.DomainDrivenDesign.CodeAnalysis.Enums;
@@ -89,6 +90,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			unitInformation.AddConstructorParameter(provider.Name, provider.Type);
 
 			var foreignKeyReferenceContainer = TemplateMethods.CollectForeignKeyReferenceTypes(request.DomainProjectNamespace, domainModelMap);
+			var domainModelWithMappings = TemplateMethods.CheckForPropertyMappings(unitInformation, request.Domain, request.UseCase.Dtos, request.DomainModelReferenceMap);
 
 			unitInformation.AddMethod(
 				TemplateMethods.CreateUseCaseMainMethod(
@@ -98,6 +100,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 					request.DtoReferenceMap,
 					request.DomainProjectNamespace,
 					foreignKeyReferenceContainer,
+					domainModelWithMappings,
 					codeSnippets,
 					CreateCreateMethodActions
 				)
@@ -108,7 +111,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 				unitInformation.AddMethod(TemplateMethods.CreateValidationConfigurationMethod(request.UseCase));
 			}
 
-			var childCreateMethodsResult = TemplateMethods.CreateCreateChildsMethods(request, domainModelMap, foreignKeyReferenceContainer, true, true);
+			var childCreateMethodsResult = TemplateMethods.CreateCreateChildsMethods(request, domainModelMap, foreignKeyReferenceContainer, domainModelWithMappings, true, true);
 			foreach (var childCreateMethods in childCreateMethodsResult)
 			{
 				unitInformation.AddMethod(childCreateMethods);
@@ -122,7 +125,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 
 			if (domainModelMap.DomainModel.HasValidationRules && !domainModelMap.IsChildDomainModel)
 			{
-				unitInformation.AddMethod(TemplateMethods.CreateCheckValidationConstraintsMethod(request.UseCase, request.Domain, domainModelMap, request.UseCase.MainDto.ToType()));
+				var dto = request.UseCase.Dtos.First(dto => dto.Name == request.UseCase.MainDto);
+				unitInformation.AddMethod(TemplateMethods.CreateCheckValidationConstraintsMethod(request.UseCase, request.Domain, domainModelMap, dto));
 			}
 
 			if (request.UseCase.CheckForeignKeyReferencesAutomatically)
@@ -187,6 +191,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			string domainProjectNamespace,
 			bool hasValidationRules,
 			ForeignKeyReferenceContainer foreignKeyReferenceContainer,
+			HashSet<string> domainModelWithMappings,
 			List<UseCaseCodeSnippet> codeSnippets
 		)
 		{
@@ -274,7 +279,18 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 					}
 				}
 
-				StatementHelpers.AddMethodCallAndFaultyCheck(statements, domainModelName, "CreateEntity", createResult, returnDataType, dto, DomainNames.VALIDATION.ENGINE.ToFieldName().ToIdentifierName());
+				var methodArguments = new List<ExpressionSyntax>
+				{
+					dto,
+					DomainNames.VALIDATION.ENGINE.ToFieldName().ToIdentifierName()
+				};
+
+				if (domainModelWithMappings.Contains(domainModelName))
+				{
+					methodArguments.Add($"{domainModelName.ToFieldName()}Mappings".ToIdentifierName());
+				}
+
+				StatementHelpers.AddMethodCallAndFaultyCheck(statements, domainModelName, "CreateEntity", createResult, returnDataType, methodArguments.ToArray());
 			}
 
 			if (domainModelMap.IsAggregate && !domainModelMap.IsChildDomainModel)

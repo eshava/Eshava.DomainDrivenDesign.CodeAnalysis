@@ -13,7 +13,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models
 {
 	public class UnitInformation
 	{
-		private List<(string FieldName, FieldDeclarationSyntax Declaration)> _fields = new List<(string FieldName, FieldDeclarationSyntax Declaration)>();
+		private List<(string FieldName, FieldType Type, FieldDeclarationSyntax Declaration)> _fields = new List<(string FieldName, FieldType Type, FieldDeclarationSyntax Declaration)>();
 		private List<(string FieldName, StatementSyntax Statement)> _constructorBodyStatements = new List<(string FieldName, StatementSyntax Statement)>();
 		private List<(string Name, ArgumentSyntax Argument)> _constructorArguments = new List<(string Name, ArgumentSyntax Argument)>();
 		private List<(string Name, PropertyDeclarationSyntax Property)> _properties = new List<(string Name, PropertyDeclarationSyntax Property)>();
@@ -49,7 +49,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models
 		public bool IsEnumeration { get; }
 		public bool HasConstructor { get; }
 		public HashSet<string> Usings { get; set; }
-		public IEnumerable<FieldDeclarationSyntax> Fields => _fields.OrderBy(@field => @field.FieldName).Select(@field => @field.Declaration).ToList();
+		public IEnumerable<FieldDeclarationSyntax> Fields => _fields.OrderBy(@field => @field.Type).ThenBy(@field => @field.FieldName).Select(@field => @field.Declaration).ToList();
 		public IEnumerable<NameAndType> ConstructorParameters => _constructorParameters;
 		public IEnumerable<ArgumentSyntax> ConstructorArguments => _constructorArguments.Select(argument => argument.Argument).ToList();
 		public IEnumerable<StatementSyntax> ConstructorBodyStatements => _constructorBodyStatements.Select(statement => statement.Statement).ToList();
@@ -71,7 +71,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models
 			var @usings = @using.Split(['|'], System.StringSplitOptions.RemoveEmptyEntries);
 			foreach (var usingPart in @usings)
 			{
-				var usingTrimmed = usingPart.Trim(); 
+				var usingTrimmed = usingPart.Trim();
 				if (!Usings.Contains(usingTrimmed))
 				{
 					Usings.Add(usingTrimmed);
@@ -138,12 +138,12 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models
 			return true;
 		}
 
-		public bool AddField(string fieldName, FieldDeclarationSyntax declaration)
+		public bool AddField(string fieldName, FieldDeclarationSyntax declaration, FieldType type = FieldType.Others)
 		{
-			return AddField((fieldName, declaration));
+			return AddField((fieldName, type, declaration));
 		}
 
-		public bool AddField((string FieldName, FieldDeclarationSyntax Declaration) field)
+		public bool AddField((string FieldName, FieldType Type, FieldDeclarationSyntax Declaration) field)
 		{
 			if (_fields.Any(f => f.FieldName == field.FieldName))
 			{

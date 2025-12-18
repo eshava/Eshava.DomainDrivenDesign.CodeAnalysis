@@ -14,6 +14,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models.Domain
 		}
 
 		public bool IsAggregate { get; set; }
+		public bool IsValueObject { get; set; }
 		public List<string> ChildDomainModels { get; set; }
 		public List<ConstructorParameter> ProviderServiceConstructorParameters { get; set; }
 		public string IdentifierType { get; set; }
@@ -33,7 +34,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models.Domain
 		/// If set, overrides the <see cref="ClassificationKey"/>
 		/// </summary>
 		public string FeatureName { get; set; }
-		public List<DomainModelPropery> Properties { get; set; }
+		public List<DomainModelProperty> Properties { get; set; }
 		public bool AddGeneralPatchMethod { get; set; }
 		public bool AddInfrastructureProviderServiceByPassMethod { get; set; }
 		internal bool HasValidationRules => Properties.Count(p => p.ValidationRules.Count > 0) > 0;

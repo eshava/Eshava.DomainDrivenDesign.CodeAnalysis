@@ -20,7 +20,10 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 
 			foreach (var domainModelMap in referenceMap.GetReferenceDomainModelMaps())
 			{
-				var domainModel = DomainModelTemplate.GetDomainModel(domainModelMap, domainProjectConfig, referenceMap);
+				var domainModel = domainModelMap.IsValueObject
+					? ValueObjectTemplate.GetValueObject(domainModelMap, domainProjectConfig, referenceMap)
+					: DomainModelTemplate.GetDomainModel(domainModelMap, domainProjectConfig, referenceMap);
+
 				var domainModelSourceName = $"{domainProjectConfig.FullQualifiedNamespace}.{domainModelMap.Domain}.{domainModelMap.DomainModel.NamespaceDirectory}.{domainModelMap.DomainModelName}.g.cs";
 
 				factoryResult.AddSource(domainModelSourceName, domainModel);

@@ -89,7 +89,9 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models
 						var infrastructureModel = GetInfrastructureModel(infrastructureDomains,@namespace.Domain,referenceModelName);
 
 						if (useCase.Type == ApplicationUseCaseType.Read
-							|| useCase.Type == ApplicationUseCaseType.Read)
+							|| useCase.Type == ApplicationUseCaseType.Search
+							|| useCase.Type == ApplicationUseCaseType.SearchCount
+						)
 						{
 							dtoMap.DataModelName = referenceModelName;
 							dtoMap.DataModel = infrastructureModel;
