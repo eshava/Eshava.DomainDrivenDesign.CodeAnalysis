@@ -110,6 +110,7 @@
 									"name": "Name",
 									"type": "string",
 									"isSortable": true,
+									"useForDefaultSorting": true,
 									"isSearchable": true,
 									"searchOperations": [
 										"Equal",

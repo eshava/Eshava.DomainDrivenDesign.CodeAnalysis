@@ -71,13 +71,25 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 
 			unitInformation.AddLogger(className);
 
+			string defaultSortingProperty = null;
+			var mainDto = request.UseCase.Dtos.FirstOrDefault(dto => dto.Name == request.UseCase.MainDto);
+			if (mainDto is not null)
+			{
+				defaultSortingProperty = mainDto.Properties.FirstOrDefault(p => (p.IsSortable ?? false) && (p.UseForDefaultSorting ?? false))?.Name;
+				if (!defaultSortingProperty.IsNullOrEmpty())
+				{
+					unitInformation.AddUsing("Eshava.Core.Linq.Models");
+					unitInformation.AddUsing("Eshava.Core.Linq.Enums");
+				}
+			}
+
 			if (asCount)
 			{
-				unitInformation.AddMethod(CreateSearchCountMethod(request.UseCase, request.Domain, codeSnippets));
+				unitInformation.AddMethod(CreateSearchCountMethod(request.UseCase, request.Domain, defaultSortingProperty, codeSnippets));
 			}
 			else
 			{
-				unitInformation.AddMethod(CreateSearchMethod(request.UseCase, request.Domain, codeSnippets));
+				unitInformation.AddMethod(CreateSearchMethod(request.UseCase, request.Domain, defaultSortingProperty, codeSnippets));
 			}
 
 			return unitInformation.CreateCodeString();
@@ -103,7 +115,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			CodeSnippetHelpers.AddConstructorParameters(unitInformation, codeSnippets);
 		}
 
-		private static (string Name, MemberDeclarationSyntax) CreateSearchMethod(ApplicationUseCase useCase, string domain, List<UseCaseCodeSnippet> codeSnippets)
+		private static (string Name, MemberDeclarationSyntax) CreateSearchMethod(ApplicationUseCase useCase, string domain, string defaultSortingProperty, List<UseCaseCodeSnippet> codeSnippets)
 		{
 			var tryBlockStatements = new List<StatementSyntax>();
 			var requestFilter = "request".Access("Filter");
@@ -115,7 +127,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 
 			CodeSnippetHelpers.AddStatements(tryBlockStatements, returnDataType, codeSnippets);
 
-			AddRequestFilterStatements(tryBlockStatements, useCase.UseCaseName, useCase.ClassificationKey, useCase.MainDto, returnDataType, provider, providerResult);
+			AddRequestFilterStatements(tryBlockStatements, useCase.UseCaseName, useCase.ClassificationKey, useCase.MainDto, returnDataType, provider, providerResult, defaultSortingProperty);
 
 			tryBlockStatements.Add(
 				"dtos"
@@ -241,7 +253,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			return (methodDeclarationName, methodDeclaration);
 		}
 
-		private static (string, MemberDeclarationSyntax Method) CreateSearchCountMethod(ApplicationUseCase useCase, string domain, List<UseCaseCodeSnippet> codeSnippets)
+		private static (string, MemberDeclarationSyntax Method) CreateSearchCountMethod(ApplicationUseCase useCase, string domain, string defaultSortingProperty, List<UseCaseCodeSnippet> codeSnippets)
 		{
 			var tryBlockStatements = new List<StatementSyntax>();
 			var requestFilter = "request".Access("Filter");
@@ -252,7 +264,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 
 			CodeSnippetHelpers.AddStatements(tryBlockStatements, returnDataType, codeSnippets);
 
-			AddRequestFilterStatements(tryBlockStatements, useCase.UseCaseName, useCase.ClassificationKey, useCase.MainDto, returnDataType, provider, providerCountResult);
+			AddRequestFilterStatements(tryBlockStatements, useCase.UseCaseName, useCase.ClassificationKey, useCase.MainDto, returnDataType, provider, providerCountResult, defaultSortingProperty);
 
 			tryBlockStatements.Add(
 				"searchResult"
@@ -305,7 +317,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			string searchDtoName,
 			string returnDataType,
 			string provider,
-			string providerResult
+			string providerResult,
+			string defaultSortingProperty
 		)
 		{
 			var requestFilter = "request".Access("Filter");
@@ -324,6 +337,32 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 				)
 			);
 
+			if (!defaultSortingProperty.IsNullOrEmpty())
+			{
+				statements.Add(
+					requestFilter.Access("SortFields")
+					.ToEquals(Eshava.CodeAnalysis.SyntaxConstants.Null)
+					.If(
+						requestFilter.Access("SortFields")
+						.Assign(
+							$"{classificationKey}{useCaseName}SortFieldsDto"
+							.ToIdentifierName()
+							.ToInstanceWithInitializer(
+								defaultSortingProperty
+								.ToIdentifierName()
+								.Assign(
+									"SortField"
+									.ToIdentifierName()
+									.ToInstanceWithInitializer(
+										"SortOrder".ToIdentifierName().Assign("SortOrder".Access("Ascending"))
+									)
+								)
+							)
+						)
+						.ToExpressionStatement()
+					)
+				);
+			}
 
 			StatementHelpers.AddLocalMethodCallAndFaultyCheck(statements, "GetFilterRequest", "filterRequestResult", returnDataType, requestFilter);
 
