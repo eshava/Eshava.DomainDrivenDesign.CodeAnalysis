@@ -11,7 +11,14 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 {
 	public static class UseCaseResponseTemplate
 	{
-		public static string GetResponse(ApplicationUseCase useCase, string domain, string useCaseNamespace, ReferenceMap domainModelReferenceMap, bool addAssemblyCommentToFiles)
+		public static string GetResponse(
+			ApplicationUseCase useCase, 
+			string domain, 
+			string useCaseNamespace, 
+			ReferenceMap domainModelReferenceMap,
+			DtoReferenceMap dtoReferenceMap,
+			bool addAssemblyCommentToFiles
+		)
 		{
 			var responseName = useCase.ResponseType;
 
@@ -58,10 +65,20 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 					break;
 				case ApplicationUseCaseType.Suggestions:
 
-					AddProperty(unitInformation, useCase.ClassificationKey.ToPlural(), "IEnumerable".AsGeneric(useCase.MainDto ?? useCase.Dtos.First().Name));
+					dtoReferenceMap.TryGetDto(domain, useCase.UseCaseName, useCase.ClassificationKey, useCase.MainDto ?? useCase.Dtos.First().Name, out var suggestionDtoMap);
+					var suggestionSearchProperty = suggestionDtoMap.Dto.Properties.FirstOrDefault(p => p.IsSearchable == true);
+
+					if (useCase.ReduceResultDtosToSuggestionProperty && suggestionSearchProperty is not null)
+					{
+						unitInformation.AddUsing(suggestionSearchProperty.UsingForType);
+						AddProperty(unitInformation, "Suggestions", "IEnumerable".AsGeneric(suggestionSearchProperty.Type));
+					}
+					else
+					{
+						AddProperty(unitInformation, useCase.ClassificationKey.ToPlural(), "IEnumerable".AsGeneric(useCase.MainDto ?? useCase.Dtos.First().Name));
+					}
 
 					break;
-
 			}
 
 			return unitInformation.CreateCodeString();

@@ -338,7 +338,16 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 
 		private static void CreateRequest(FactoryResult factoryResult, UseCaseTemplateRequest templateRequest, List<UseCaseCodeSnippet> codeSnippets)
 		{
-			var request = UseCaseRequestTemplate.GetRequest(templateRequest.UseCase, templateRequest.Domain, templateRequest.UseCaseNamespace, templateRequest.DomainModelReferenceMap, templateRequest.DtoReferenceMap, codeSnippets, templateRequest.AddAssemblyCommentToFiles);
+			var request = UseCaseRequestTemplate.GetRequest(
+				templateRequest.UseCase, 
+				templateRequest.Domain, 
+				templateRequest.UseCaseNamespace, 
+				templateRequest.DomainModelReferenceMap, 
+				templateRequest.DtoReferenceMap, 
+				codeSnippets, 
+				templateRequest.AddAssemblyCommentToFiles
+			);
+
 			var requestSourceName = $"{templateRequest.UseCaseNamespace}.{templateRequest.UseCase.RequestType}.g.cs";
 
 			factoryResult.AddSource(requestSourceName, request);
@@ -346,7 +355,15 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 
 		private static void CreateResponse(FactoryResult factoryResult, UseCaseTemplateRequest templateRequest)
 		{
-			var response = UseCaseResponseTemplate.GetResponse(templateRequest.UseCase, templateRequest.Domain, templateRequest.UseCaseNamespace, templateRequest.DomainModelReferenceMap, templateRequest.AddAssemblyCommentToFiles);
+			var response = UseCaseResponseTemplate.GetResponse(
+				templateRequest.UseCase, 
+				templateRequest.Domain, 
+				templateRequest.UseCaseNamespace, 
+				templateRequest.DomainModelReferenceMap, 
+				templateRequest.DtoReferenceMap, 
+				templateRequest.AddAssemblyCommentToFiles
+			);
+
 			var responseSourceName = $"{templateRequest.UseCaseNamespace}.{templateRequest.UseCase.ResponseType}.g.cs";
 
 			factoryResult.AddSource(responseSourceName, response);
