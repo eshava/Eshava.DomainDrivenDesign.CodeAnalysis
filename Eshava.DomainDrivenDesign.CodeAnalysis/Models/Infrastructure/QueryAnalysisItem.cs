@@ -10,8 +10,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models.Infrastructure
 		public string Domain { get; set; }
 		public InfrastructureModel ParentDataModel { get; set; }
 		public InfrastructureModel DataModel { get; set; }
-		public InfrastructureModelPropery ParentProperty { get; set; }
-		public InfrastructureModelPropery Property { get; set; }
+		public InfrastructureModelProperty ParentProperty { get; set; }
+		public InfrastructureModelProperty Property { get; set; }
 		public string ParentDtoName { get; set; }
 		public string ParentDtoPropertyName { get; set; }
 		public string DtoName { get; set; }

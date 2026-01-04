@@ -65,6 +65,14 @@
 							"isReference": true,
 							"referenceType": "AddressVO",
 							"referenceDomain": "Organizations"
+						},
+						{
+							"type": "MetaDataVO",
+							"name": "MetaData",
+							"isReference": true,
+							"referenceType": "MetaDataVO",
+							"referenceDomain": "Organizations",
+							"processAsUnit": true
 						}
 					]
 				},
@@ -351,6 +359,39 @@
 									]
 								}
 							]
+						}
+					]
+				},
+				{
+					"name": "MetaDataVO",
+					"featureName": "CustomerFeature",
+					"classificationKey": "Customer",
+					"isValueObject": true,
+					"properties": [
+						{
+							"type": "int",
+							"name": "Version",
+							"attributes": [
+								{
+									"name": "Range",
+									"usingForType": "System.ComponentModel.DataAnnotations",
+									"parameters": [
+										{
+											"type": "int",
+											"value": "0"
+										},
+										{
+											"type": "constant",
+											"value": "Int32.MaxValue"
+										}
+									]
+								}
+							]
+						},
+						{
+							"type": "IEnumerable<DateTime>",
+							"usingForType": "System.Collections.Generic|System",
+							"name": "Timestamps"
 						}
 					]
 				}

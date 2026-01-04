@@ -87,16 +87,21 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 
 					factoryResult.AddSource(databaseModelSourceName, databaseModel);
 
-					var dbConfigModel = DbConfigurationTemplate.GetDbConfiguration(model, @namespace.DatabaseSchema, domainNamespace, infrastructureProjectConfig.AddAssemblyCommentToFiles);
-					var dbConfigModelSourceName = $"{domainNamespace}.{model.ClassificationKey.ToPlural()}.{model.Name}DbConfiguration.g.cs";
-
-					factoryResult.AddSource(dbConfigModelSourceName, dbConfigModel);
-
-					dependencyInjectionsDbConfigurations.Add(new DependencyInjection
+					if (!model.TableName.IsNullOrEmpty())
 					{
-						Class = $"{model.Name}DbConfiguration",
-						ClassUsing = $"{domainNamespace}.{model.ClassificationKey.ToPlural()}"
-					});
+						var dbConfigModel = DbConfigurationTemplate.GetDbConfiguration(model, @namespace.DatabaseSchema, domainNamespace, infrastructureProjectConfig.AddAssemblyCommentToFiles);
+						var dbConfigModelSourceName = $"{domainNamespace}.{model.ClassificationKey.ToPlural()}.{model.Name}DbConfiguration.g.cs";
+
+						factoryResult.AddSource(dbConfigModelSourceName, dbConfigModel);
+
+						dependencyInjectionsDbConfigurations.Add(new DependencyInjection
+						{
+							Class = $"{model.Name}DbConfiguration",
+							ClassUsing = $"{domainNamespace}.{model.ClassificationKey.ToPlural()}"
+						});
+					}
+
+					var modelsFromNamespace = @namespace.Models.ToDictionary(m => m.Name, m => m);
 
 					AddCreationBag(
 						factoryResult,
@@ -115,7 +120,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 						@namespace.DatabaseSettingsInterface,
 						@namespace.DatabaseSettingsInterfaceUsing,
 						infrastructureProjectConfig,
-						@namespace.Models,
+						modelsFromNamespace,
 						childsForModel,
 						referenceMap,
 						dependencyInjections
@@ -349,7 +354,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 			string databaseSettingsInterface,
 			string databaseSettingsInterfaceUsing,
 			InfrastructureProject infrastructureProject,
-			List<InfrastructureModel> modelsFromNamespace,
+			Dictionary<string, InfrastructureModel> modelsFromNamespace,
 			Dictionary<string, List<InfrastructureModel>> childsForModel,
 			ReferenceMap domainModelReferenceMap,
 			List<DependencyInjection> dependencyInjections
@@ -363,7 +368,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 			InfrastructureModel parent = null;
 			if (model.IsChild)
 			{
-				parent = modelsFromNamespace.FirstOrDefault(m => m.Name == model.ReferencedParent);
+				parent = modelsFromNamespace.Values.FirstOrDefault(m => m.Name == model.ReferencedParent);
 			}
 
 			if (!domainModelReferenceMap.TryGetDomainModelByDataModel(domain, model.Name, out var domainModels))
@@ -421,7 +426,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 			string databaseSettingsInterface,
 			string databaseSettingsInterfaceUsing,
 			InfrastructureProject infrastructureProject,
-			List<InfrastructureModel> modelsFromNamespace,
+			Dictionary<string, InfrastructureModel> modelsFromNamespace,
 			Dictionary<string, List<InfrastructureModel>> childsForModel,
 			ReferenceDomainModelMap domainModel,
 			ReferenceMap domainModelReferenceMap,
@@ -455,6 +460,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 				databaseSettingsInterfaceUsing,
 				parent,
 				childsForModel,
+				modelsFromNamespace,
 				domainModelReferenceMap
 			);
 
@@ -622,7 +628,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 							? foreignKeyProperty.Name.Substring(0, foreignKeyProperty.Name.Length - 2)
 							: foreignKeyProperty.Name + "Reference";
 
-						model.Properties.Add(new InfrastructureModelPropery
+						model.Properties.Add(new InfrastructureModelProperty
 						{
 							Type = foreignKeyProperty.ReferenceType,
 							Name = propertyName,

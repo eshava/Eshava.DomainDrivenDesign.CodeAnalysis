@@ -53,6 +53,10 @@
 						{
 							"type": "string",
 							"name": "Country"
+						},
+						{
+							"type": "MetaDataData",
+							"name": "MetaData"
 						}
 					]
 				},
@@ -258,6 +262,21 @@
 							"referencePropertyName": "CustomerId",
 							"referenceDomain": null,
 							"skipFromDomainModel": true
+						}
+					]
+				},
+				{
+					"name": "MetaDataData",
+					"classificationKey": "Customer",
+					"properties": [
+						{
+							"type": "int",
+							"name": "Version"
+						},
+						{
+							"type": "IEnumerable<DateTime>",
+							"usingForType": "System.Collections.Generic|System",
+							"name": "Timestamps"
 						}
 					]
 				}

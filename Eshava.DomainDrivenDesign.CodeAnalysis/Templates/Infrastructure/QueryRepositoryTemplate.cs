@@ -1280,7 +1280,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 							continue;
 						}
 
-						dataProperty = new InfrastructureModelPropery
+						dataProperty = new InfrastructureModelProperty
 						{
 							Name = "Id",
 							Type = model.IdentifierType
@@ -1315,7 +1315,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 							continue;
 						}
 
-						dataProperty = new InfrastructureModelPropery
+						dataProperty = new InfrastructureModelProperty
 						{
 							Name = "Id",
 							Type = model.IdentifierType
@@ -1403,7 +1403,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 							return false;
 						}
 
-						dataProperty = new InfrastructureModelPropery
+						dataProperty = new InfrastructureModelProperty
 						{
 							Name = referencePropertyName,
 							ReferencePropertyName = dataProperty.Name,
@@ -1441,7 +1441,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 							return false;
 						}
 
-						dataProperty = new InfrastructureModelPropery
+						dataProperty = new InfrastructureModelProperty
 						{
 							Name = "Id",
 							Type = referenceDataModel.IdentifierType
