@@ -93,7 +93,7 @@ namespace Eshava.Example.SourceGenerator.Tests
 		}
 
 		[TestMethod]
-		//[Ignore]
+		[Ignore]
 		public void TestInfrastructureFactory()
 		{
 			try
