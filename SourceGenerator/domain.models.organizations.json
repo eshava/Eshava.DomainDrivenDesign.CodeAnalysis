@@ -12,6 +12,7 @@
 					"classificationKey": "Customer",
 					"addGeneralPatchMethod": true,
 					"addInfrastructureProviderServiceByPassMethod": true,
+					"customCreatedOrChangedChildMethod": true,
 					"childDomainModels": [
 						"OfficeDDD",
 						"BillingOfficeDDD"

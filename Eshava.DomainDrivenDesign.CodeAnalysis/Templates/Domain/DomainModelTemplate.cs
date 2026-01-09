@@ -121,10 +121,13 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Domain
 				unitInformation.AddMethod(CreateClearChildEventsMethod(domainModelMap.ChildDomainModels));
 				unitInformation.AddMethod(CreateGetChildDomainEventsMethod(domainModelMap.ChildDomainModels));
 
-				var childDelegateMethods = CreateChildDelegateAndAggregateInitMethods(domainModelMap, domainModelMap.ChildDomainModels);
-				foreach (var childMethod in childDelegateMethods)
+				if (!domainModelMap.DomainModel.CustomCreatedOrChangedChildMethod)
 				{
-					unitInformation.AddMethod(childMethod);
+					var childDelegateMethods = CreateChildDelegateAndAggregateInitMethods(domainModelMap, domainModelMap.ChildDomainModels);
+					foreach (var childMethod in childDelegateMethods)
+					{
+						unitInformation.AddMethod(childMethod);
+					}
 				}
 			}
 
