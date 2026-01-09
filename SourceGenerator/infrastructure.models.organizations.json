@@ -275,7 +275,7 @@
 						},
 						{
 							"type": "IEnumerable<DateTime>",
-							"usingForType": "System.Collections.Generic|System",
+							"usingForType": "System.Collections.Generic",
 							"name": "Timestamps"
 						}
 					]

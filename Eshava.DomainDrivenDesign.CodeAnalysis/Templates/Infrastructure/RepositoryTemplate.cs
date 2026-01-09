@@ -17,22 +17,6 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 {
 	public static class RepositoryTemplate
 	{
-		private static readonly HashSet<string> _notNullableTypes =
-		[
-			typeof(byte).Name,
-			typeof(short).Name,
-			typeof(int).Name,
-			typeof(uint).Name,
-			typeof(long).Name,
-			typeof(ulong).Name,
-			typeof(decimal).Name,
-			nameof(Single),
-			typeof(double).Name,
-			typeof(float).Name,
-			typeof(DateTime).Name,
-			typeof(bool).Name
-		];
-
 		public static string GetRepository(
 			InfrastructureModel model,
 			ReferenceDomainModelMap domainModelMap,
@@ -1216,7 +1200,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 					continue;
 				}
 
-				var defaultArgument = _notNullableTypes.Contains(dataModelProperty.Type)
+				var defaultArgument = DataTypeConstants.NotNullableTypes.Contains(dataModelProperty.Type)
 					? Eshava.CodeAnalysis.SyntaxConstants.Default.Call(dataModelProperty.Type.ToArgument()).ToArgument()
 					: Eshava.CodeAnalysis.SyntaxConstants.Null.ToArgument();
 
