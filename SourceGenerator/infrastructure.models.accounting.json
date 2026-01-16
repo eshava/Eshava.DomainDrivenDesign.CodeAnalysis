@@ -10,6 +10,7 @@
 					"tableName": "InvoicePositions",
 					"name": "InvoicePositionData",
 					"classificationKey": "InvoicePosition",
+					"createDbConfiguration": true,
 					"properties": [
 						{
 							"type": "string",

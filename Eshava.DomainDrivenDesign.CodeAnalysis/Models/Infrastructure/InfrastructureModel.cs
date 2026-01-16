@@ -22,6 +22,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models.Infrastructure
 		public bool IsChild { get; set; }
 		public bool CreateRepository { get; set; }
 		public bool CreateProviderService { get; set; }
+		public bool CreateDbConfiguration { get; set; }
 		public string ReferencedParent { get; set; }
 		/// <summary>
 		/// Only for value objects

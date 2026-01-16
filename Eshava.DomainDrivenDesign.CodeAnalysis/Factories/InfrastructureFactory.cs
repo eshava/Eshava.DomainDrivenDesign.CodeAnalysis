@@ -87,7 +87,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 
 					factoryResult.AddSource(databaseModelSourceName, databaseModel);
 
-					if (!model.TableName.IsNullOrEmpty())
+					if (!model.TableName.IsNullOrEmpty() && model.CreateDbConfiguration)
 					{
 						var dbConfigModel = DbConfigurationTemplate.GetDbConfiguration(model, @namespace.DatabaseSchema, domainNamespace, infrastructureProjectConfig.AddAssemblyCommentToFiles);
 						var dbConfigModelSourceName = $"{domainNamespace}.{model.ClassificationKey.ToPlural()}.{model.Name}DbConfiguration.g.cs";
