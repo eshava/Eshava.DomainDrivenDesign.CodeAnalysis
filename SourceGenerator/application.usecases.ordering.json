@@ -110,6 +110,7 @@
 									"name": "Name",
 									"type": "string",
 									"isSortable": true,
+									"useForDefaultSorting": true,
 									"isSearchable": true,
 									"searchOperations": [
 										"Equal",
@@ -297,8 +298,50 @@
 				},
 				{
 					"type": 8,
-					"useCaseName": "SuggestProductName",
+					"useCaseName": "SuggestProducts",
 					"classificationKey": "Product",
+					"dtos": [
+						{
+							"name": "ProductSuggestion",
+							"referenceModelName": "ProductData",
+							"properties": [
+								{
+									"name": "Id",
+									"type": "int"
+								},
+								{
+									"name": "Name",
+									"type": "string",
+									"isSearchable": true
+								},
+								{
+									"name": "Category",
+									"type": "ProductCategory?",
+									"usingForType": "Eshava.Example.Domain.Ordering.ProductFeature",
+									"addToRequest": true
+								}
+							]
+						}
+					],
+					"attributes": [
+						{
+							"name": "UseCaseClass",
+							"usingForType": "Eshava.Example.Application.Common.Attributes",
+							"parameters": [
+								{
+									"name": "name",
+									"type": "string",
+									"value": "Product"
+								}
+							]
+						}
+					]
+				},
+				{
+					"type": 8,
+					"useCaseName": "SuggestProductNames",
+					"classificationKey": "Product",
+					"reduceResultDtosToSuggestionProperty": true,
 					"dtos": [
 						{
 							"name": "ProductNameSuggestion",
@@ -312,6 +355,12 @@
 									"name": "Name",
 									"type": "string",
 									"isSearchable": true
+								},
+								{
+									"name": "Category",
+									"type": "ProductCategory?",
+									"usingForType": "Eshava.Example.Domain.Ordering.ProductFeature",
+									"addToRequest": true
 								}
 							]
 						}

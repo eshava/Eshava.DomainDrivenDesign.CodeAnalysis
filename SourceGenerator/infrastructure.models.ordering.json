@@ -12,6 +12,7 @@
 					"classificationKey": "ProductType",
 					"createRepository": true,
 					"createProviderService": true,
+					"createDbConfiguration": true,
 					"properties": [
 						{
 							"type": "string",
@@ -27,6 +28,7 @@
 					"classificationKey": "Product",
 					"createRepository": true,
 					"createProviderService": true,
+					"createDbConfiguration": true,
 					"properties": [
 						{
 							"type": "string",
@@ -58,6 +60,7 @@
 					"classificationKey": "Product",
 					"createRepository": true,
 					"createProviderService": true,
+					"createDbConfiguration": true,
 					"properties": [
 						{
 							"type": "string",
@@ -89,6 +92,7 @@
 					"classificationKey": "ProductPrice",
 					"createRepository": true,
 					"createProviderService": true,
+					"createDbConfiguration": true,
 					"properties": [
 						{
 							"type": "int",
@@ -128,6 +132,7 @@
 					"classificationKey": "Order",
 					"createRepository": true,
 					"createProviderService": true,
+					"createDbConfiguration": true,
 					"createCreationBag": true,
 					"properties": [
 						{
@@ -171,6 +176,7 @@
 					"name": "OrderPositionData",
 					"classificationKey": "OrderPosition",
 					"createRepository": true,
+					"createDbConfiguration": true,
 					"isChild": true,
 					"referencedParent": "OrderData",
 					"properties": [

@@ -223,6 +223,41 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 				);
 			}
 
+			foreach (var property in dto.Properties.Where(p => p.AddToRequest ?? false))
+			{
+				var propertyFilterExpression = filterConditions
+					.Access("Add")
+					.Call(
+						"p".ToParameterExpression(
+							"p"
+							.Access(property.Name)
+							.ToEquals("request".Access(property.Name))
+						)
+						.ToArgument()
+					).ToExpressionStatement();
+
+				if (property.Type == "string")
+				{
+					tryBlockStatements.Add(
+						"request"
+						.Access(property.Name)
+						.Access("IsNullOrEmpty")
+						.Call()
+						.Not()
+						.If(propertyFilterExpression)
+					);
+				}
+				else
+				{
+					tryBlockStatements.Add(
+						"request"
+						.Access(property.Name)
+						.IsNotNull()
+						.If(propertyFilterExpression)
+					);
+				}
+			}
+
 			tryBlockStatements.Add(
 				filterRequest.ToVariableStatement(
 					"FilterRequestDto"
@@ -239,21 +274,31 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			);
 
 			StatementHelpers.AddAsyncMethodCallAndFaultyCheck(tryBlockStatements, provider, $"{useCase.UseCaseName}Async", providerResult, returnDataType, "filterRequest".ToIdentifierName());
+			var returnPropertyName = useCase.ReduceResultDtosToSuggestionProperty && searchProperty is not null
+				? "Suggestions"
+				: useCase.ClassificationKey.ToPlural();
+
+			var returnPropertyItems = providerResult.Access("Data");
+			if (useCase.ReduceResultDtosToSuggestionProperty && searchProperty is not null)
+			{
+				returnPropertyItems = returnPropertyItems
+					.Access("Select")
+					.Call("p".ToParameterExpression("p".Access(searchProperty.Name)).ToArgument())
+					.Access("ToList")
+					.Call();
+			}
+
 			tryBlockStatements.Add(returnDataType
 				.ToIdentifierName()
 				.ToInstanceWithInitializer(
-					useCase.ClassificationKey.ToPlural()
+					returnPropertyName
 						.ToIdentifierName()
-						.Assign(
-							providerResult
-							.Access("Data")
-						)
+						.Assign(returnPropertyItems)
 				)
 				.Access(CommonNames.Extensions.TORESPONSEDATA)
 				.Call()
 				.Return()
 			);
-
 
 			var statements = new List<StatementSyntax>
 			{

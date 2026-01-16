@@ -12,7 +12,15 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 {
 	public static class UseCaseRequestTemplate
 	{
-		public static string GetRequest(ApplicationUseCase useCase, string domain, string useCaseNamespace, ReferenceMap domainModelReferenceMap, DtoReferenceMap dtoReferenceMap, List<UseCaseCodeSnippet> codeSnippets, bool addAssemblyCommentToFiles)
+		public static string GetRequest(
+			ApplicationUseCase useCase, 
+			string domain, 
+			string useCaseNamespace, 
+			ReferenceMap domainModelReferenceMap, 
+			DtoReferenceMap dtoReferenceMap, 
+			List<UseCaseCodeSnippet> codeSnippets, 
+			bool addAssemblyCommentToFiles
+		)
 		{
 			var requestName = useCase.RequestType;
 			domainModelReferenceMap.TryGetDomainModel(domain, useCase.GetDomainModelReferenceName(), out var domainModel);
@@ -107,6 +115,15 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 					AddProperty(unitInformation, "SearchTerm", null, Eshava.CodeAnalysis.SyntaxConstants.String);
 					AddProperty(unitInformation, "SearchOperation", null, "CompareOperator".ToType());
 					AddProperty(unitInformation, "SortOrder", null, "SortOrder".ToType());
+
+					dtoReferenceMap.TryGetDto(domain, useCase.UseCaseName, useCase.ClassificationKey, useCase.MainDto ?? useCase.Dtos.First().Name, out var suggestionDtoMap);
+					foreach (var property in suggestionDtoMap.Dto.Properties.Where(p => p.AddToRequest ?? false))
+					{
+						var propertyType = property.IsNullableType || property.Type == "string"
+							? property.Type
+							: $"{property.Type}?";
+						AddProperty(unitInformation, property.Name, property.UsingForType, propertyType.ToType(), attributes);
+					}
 
 					break;
 			}

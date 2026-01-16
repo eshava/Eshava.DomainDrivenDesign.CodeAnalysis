@@ -25,6 +25,13 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models.Application
 		public bool IsGroupProperty { get; set; }
 
 		public bool? IsSortable { get; set; }
+		public bool? UseForDefaultSorting { get; set; }
+
+		/// <summary>
+		/// Only for suggestion use case
+		/// Hint: The property data type will be converted to a nullable type
+		/// </summary>
+		public bool? AddToRequest { get; set; }
 		public bool? IsSearchable { get; set; }
 		public List<string> SearchOperations { get; set; }
 		public List<AttributeDefinition> Attributes { get; set; }

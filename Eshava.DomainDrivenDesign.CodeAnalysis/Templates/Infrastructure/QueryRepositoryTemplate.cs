@@ -1247,6 +1247,17 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 								continue;
 							}
 
+							// Check if its a value object
+							if (childDataModel.TableName.IsNullOrEmpty())
+							{
+								var tableAlis = model.Name.CreateModelConstantField();
+								relatedModel.TableAliasConstant = tableAlis.FieldName;
+								relatedModel.TableAliasField = tableAlis.Declaration;
+								relatedModel.ParentProperty = property.ReferenceProperty.IsNullOrEmpty()
+									? model.Properties.First(p => p.Name == property.Name)
+									: model.Properties.First(p => p.Name == property.ReferenceProperty);
+							}
+
 							relatedModel.IsEnumerable = property.IsEnumerable;
 							relatedModel.ParentDtoPropertyName = property.Name;
 							relatedModel.DtoName = childReferenceProperty.Dto.DtoName;
@@ -1268,7 +1279,6 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 					continue;
 				}
 
-
 				if (property.ReferenceProperty.IsNullOrEmpty())
 				{
 					// if it empty the dto property name correspond to the data property name
@@ -1280,7 +1290,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 							continue;
 						}
 
-						dataProperty = new InfrastructureModelPropery
+						dataProperty = new InfrastructureModelProperty
 						{
 							Name = "Id",
 							Type = model.IdentifierType
@@ -1315,7 +1325,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 							continue;
 						}
 
-						dataProperty = new InfrastructureModelPropery
+						dataProperty = new InfrastructureModelProperty
 						{
 							Name = "Id",
 							Type = model.IdentifierType
@@ -1341,7 +1351,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				}
 				else
 				{
-					// if it not empty and contains at least one dot, it is an reference type and a left join is needed
+					// if it is not empty and contains at least one dot, it is an reference type and a left join is needed
 					var referencePropertyParts = property.ReferenceProperty.Split('.');
 					var currentRelatedDataModels = new List<QueryAnalysisItem>();
 					var referenceResult = CollectDataModelsForReferenceProperties(property, referencePropertyParts, 0, domain, model, infrastructureModelsConfig, currentRelatedDataModels);
@@ -1381,10 +1391,15 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 					? currentDomain
 					: currentDataProperty.ReferenceDomain;
 
+				// Check if its a value object
+				var referenceType = currentDataProperty.ReferenceType.IsNullOrEmpty()
+					? currentDataProperty.Type
+					: currentDataProperty.ReferenceType;
+
 				var referenceDataModel = infrastructureModelsConfig.Namespaces
 					.FirstOrDefault(ns => ns.Domain == referenceDomain)
 					?.Models
-					.FirstOrDefault(m => m.Name == currentDataProperty.ReferenceType);
+					.FirstOrDefault(m => m.Name == referenceType);
 
 				if (referenceDataModel is null)
 				{
@@ -1403,7 +1418,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 							return false;
 						}
 
-						dataProperty = new InfrastructureModelPropery
+						dataProperty = new InfrastructureModelProperty
 						{
 							Name = referencePropertyName,
 							ReferencePropertyName = dataProperty.Name,
@@ -1414,7 +1429,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 						referenceDataModel.Properties.Add(dataProperty);
 					}
 
-					var tableAlis = String.Concat(referencePropertyParts.Take(i + 1)).CreateModelConstantField();
+					var tableAlias = String.Concat(referencePropertyParts.Take(i + 1)).CreateModelConstantField();
 					relatedDataModels.Add(new QueryAnalysisItem
 					{
 						ParentDomain = currentDomain,
@@ -1424,8 +1439,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 						DataModel = referenceDataModel,
 						Property = dataProperty,
 						DtoProperty = null,
-						TableAliasConstant = tableAlis.FieldName,
-						TableAliasField = tableAlis.Declaration
+						TableAliasConstant = tableAlias.FieldName,
+						TableAliasField = tableAlias.Declaration
 					});
 
 					return CollectDataModelsForReferenceProperties(dtoProperty, referencePropertyParts, i + 1, referenceDomain, referenceDataModel, infrastructureModelsConfig, relatedDataModels);
@@ -1441,14 +1456,17 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 							return false;
 						}
 
-						dataProperty = new InfrastructureModelPropery
+						dataProperty = new InfrastructureModelProperty
 						{
 							Name = "Id",
 							Type = referenceDataModel.IdentifierType
 						};
 					}
 
-					var tableAlis = String.Concat(referencePropertyParts.Take(i + 1)).CreateModelConstantField();
+					// Check if its a value object
+					var tableAlias = referenceDataModel.TableName.IsNullOrEmpty()
+						? currentDataModel.Name.CreateModelConstantField()
+						: String.Concat(referencePropertyParts.Take(i + 1)).CreateModelConstantField();
 					relatedDataModels.Add(new QueryAnalysisItem
 					{
 						ParentDomain = currentDomain,
@@ -1458,8 +1476,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 						DataModel = referenceDataModel,
 						Property = dataProperty,
 						DtoProperty = dtoProperty,
-						TableAliasConstant = tableAlis.FieldName,
-						TableAliasField = tableAlis.Declaration
+						TableAliasConstant = tableAlias.FieldName,
+						TableAliasField = tableAlias.Declaration
 					});
 				}
 			}
@@ -1490,25 +1508,55 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 					continue;
 				}
 
-				var propertyType = item.Property.TypeWithUsing;
-				if (propertyType.EndsWith("?") && !item.DtoProperty.Type.EndsWith("?"))
+				// Check if its a value object
+				if (item.DataModel.TableName.IsNullOrEmpty())
 				{
-					propertyType = propertyType.Substring(0, propertyType.Length - 1);
-				}
-
-				var dataType = item.GetDataType(referenceDomain, referenceType);
-				dtoInitializerExpressions.Add(
-					item.DtoProperty.Name
-					.ToIdentifierName()
-					.Assign(
-						"mapper"
-						.Access("GetValue".AsGeneric(propertyType))
+					var dataType = item.GetDataType(referenceDomain, referenceType, true);
+					ExpressionSyntax valueObject = "mapper"
+						.Access("GetValue".AsGeneric(item.ParentProperty.Type))
 						.Call(
-							Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(dataType.Access(item.Property.Name).ToArgument()).ToArgument(),
+							Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(dataType.Access(item.ParentProperty.Name).ToArgument()).ToArgument(),
 							item.TableAliasConstant.ToArgument()
+						);
+
+					valueObject = valueObject.Access(item.Property.Name, true);
+					if (!item.DtoProperty.IsNullableType && DataTypeConstants.NotNullableTypes.Contains(item.DtoProperty.Type))
+					{
+						valueObject = valueObject.AddNullFallback(Eshava.CodeAnalysis.SyntaxConstants.Default.Call(item.DtoProperty.Type.ToArgument()));
+					}
+					else if (item.DtoProperty.Type.Contains("<") && DataTypeConstants.NotNullableTypes.Any(t => item.DtoProperty.Type.Contains(t)))
+					{
+						valueObject = valueObject.AddNullFallback(item.DtoProperty.Type.ToType().ToCollectionExpression());
+					}
+
+					dtoInitializerExpressions.Add(
+						item.DtoProperty.Name
+							.ToIdentifierName()
+							.Assign(valueObject)
+					);
+				}
+				else
+				{
+					var propertyType = item.Property.TypeWithUsing;
+					if (propertyType.EndsWith("?") && !item.DtoProperty.Type.EndsWith("?"))
+					{
+						propertyType = propertyType.Substring(0, propertyType.Length - 1);
+					}
+
+					var dataType = item.GetDataType(referenceDomain, referenceType);
+					dtoInitializerExpressions.Add(
+						item.DtoProperty.Name
+						.ToIdentifierName()
+						.Assign(
+							"mapper"
+							.Access("GetValue".AsGeneric(propertyType))
+							.Call(
+								Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(dataType.Access(item.Property.Name).ToArgument()).ToArgument(),
+								item.TableAliasConstant.ToArgument()
+							)
 						)
-					)
-				);
+					);
+				}
 
 				var dtoTableAlias = $"{item.DtoName ?? ""}_{item.TableAliasConstant}";
 				if (!processedDtoTableAlias.Contains(dtoTableAlias))

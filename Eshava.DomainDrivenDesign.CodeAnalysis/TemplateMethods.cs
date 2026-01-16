@@ -1139,14 +1139,23 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis
 					}
 					else
 					{
-						var selectPart = $"{item.TableAliasConstant}.{item.Property.Name}";
+						var propertyName = item.Property.Name;
+						// Check if its a value object
+						if (item.DataModel.TableName.IsNullOrEmpty())
+						{
+							propertyName = item.ParentProperty.Name;
+							dataType = item.ParentDataModel.Name;
+						}
+
+						var selectPart = $"{item.TableAliasConstant}.{propertyName}";
+
 						if (!addedSelectParts.Contains(selectPart))
 						{
 							AddSelectColumnSeparator(interpolatedColumnParts, ref isFirstColum);
 
 							interpolatedColumnParts.Add(item.TableAliasConstant.ToIdentifierName().Interpolate());
 							interpolatedColumnParts.Add(".".Interpolate());
-							interpolatedColumnParts.Add(Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(dataType.Access(item.Property.Name).ToArgument()).Interpolate());
+							interpolatedColumnParts.Add(Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(dataType.Access(propertyName).ToArgument()).Interpolate());
 							addedSelectParts.Add(selectPart);
 						}
 					}

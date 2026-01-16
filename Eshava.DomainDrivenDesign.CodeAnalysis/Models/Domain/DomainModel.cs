@@ -37,6 +37,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models.Domain
 		public List<DomainModelProperty> Properties { get; set; }
 		public bool AddGeneralPatchMethod { get; set; }
 		public bool AddInfrastructureProviderServiceByPassMethod { get; set; }
+		public bool CustomCreatedOrChangedChildMethod { get; set; }
 		internal bool HasValidationRules => Properties.Count(p => p.ValidationRules.Count > 0) > 0;
 		internal string NamespaceDirectory => GetNamespaceDirectory(FeatureName, ClassificationKey);
 		internal bool IsNamespaceDirectoryUncountable => CheckIsNamespaceDirectoryUncountable(FeatureName, ClassificationKey);

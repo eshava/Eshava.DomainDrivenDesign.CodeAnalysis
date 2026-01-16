@@ -2,6 +2,7 @@
 using Eshava.DomainDrivenDesign.Infrastructure.Interfaces;
 using Eshava.DomainDrivenDesign.Infrastructure.Settings;
 using Eshava.DomainDrivenDesign.Infrastructure.Storm;
+using Eshava.Example.Infrastructure.Organizations.Customers;
 using Eshava.Storm.Extensions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -44,9 +45,11 @@ namespace Eshava.Example.Infrastructure.Extensions
 
 		private static void AddDatabaseConfigurations()
 		{
+			// TypeHandler
 			new DateTimeHandler().AddTypeHandler();
 			new DateOnlyHandler().AddTypeHandler();
 			new TimeOnlyHandler().AddTypeHandler();
+			new MetaDataDataHandler().AddTypeHandler();
 
 #if DEBUG
 			Eshava.Storm.Settings.RestrictToRegisteredModels = true;

@@ -58,6 +58,10 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models.Application
 		public bool WarpInTransaction { get; set; }
 		public bool ReadAggregateByChildId { get; set; }
 		public bool UseCustomGroupDtoMethod { get; set; }
+		/// <summary>
+		/// Only for suggestion use case
+		/// </summary>
+		public bool ReduceResultDtosToSuggestionProperty { get; set; }
 
 		/// <summary>
 		/// Optional

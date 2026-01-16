@@ -986,6 +986,17 @@
 									"type": "string"
 								},
 								{
+									"name": "Version",
+									"type": "int",
+									"referenceProperty": "MetaData.Version"
+								},
+								{
+									"name": "VersionChangedAtUtc",
+									"type": "IEnumerable<DateTime>",
+									"usingForType": "System.Collections.Generic|System",
+									"referenceProperty": "MetaData.Timestamps"
+								},
+								{
 									"name": "Offices",
 									"type": "OfficeRead",
 									"isEnumerable": true
@@ -1273,6 +1284,26 @@
 										"Equal",
 										"Contains"
 									]
+								},
+								{
+									"name": "MetaData",
+									"type": "MetaDataItem"
+								}
+							]
+						},
+						{
+							"name": "MetaDataItem",
+							"referenceModelName": "MetaDataData",
+							"properties": [
+								{
+									"name": "Version",
+									"type": "int"
+								},
+								{
+									"name": "VersionChangedAtUtc",
+									"type": "IEnumerable<DateTime>",
+									"usingForType": "System.Collections.Generic|System",
+									"referenceProperty": "Timestamps"
 								}
 							]
 						}
@@ -1334,7 +1365,7 @@
 										"Equal",
 										"Contains"
 									]
-								},							
+								},
 								{
 									"name": "CustomerAddress",
 									"type": "CustomerAddressItem",

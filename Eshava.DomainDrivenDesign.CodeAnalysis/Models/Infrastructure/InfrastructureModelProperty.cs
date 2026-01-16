@@ -2,7 +2,7 @@
 
 namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models.Infrastructure
 {
-	public class InfrastructureModelPropery
+	public class InfrastructureModelProperty
 	{
 		public string Name { get; set; }
 		public string Type { get; set; }

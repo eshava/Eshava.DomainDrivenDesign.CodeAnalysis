@@ -31,15 +31,18 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			unitInformation.AddUsing(CommonNames.Namespaces.SYSTEM);
 			unitInformation.AddUsing(alternativeUsing);
 
-			var baseClass = alternativeAbstractDatabaseModel;
-			if (alternativeAbstractDatabaseModel.IsNullOrEmpty())
+			if (!model.TableName.IsNullOrEmpty())
 			{
-				baseClass = InfrastructureNames.ABSTRACTDATABASEMODEL;
-				unitInformation.AddUsing(CommonNames.Namespaces.Eshava.DomainDrivenDesign.Infrastructure.MODELS);
-			}
+				var baseClass = alternativeAbstractDatabaseModel;
+				if (alternativeAbstractDatabaseModel.IsNullOrEmpty())
+				{
+					baseClass = InfrastructureNames.ABSTRACTDATABASEMODEL;
+					unitInformation.AddUsing(CommonNames.Namespaces.Eshava.DomainDrivenDesign.Infrastructure.MODELS);
+				}
 
-			var baseType = baseClass.AsGeneric(model.IdentifierType).ToSimpleBaseType();
-			unitInformation.AddBaseType(baseType);
+				var baseType = baseClass.AsGeneric(model.IdentifierType).ToSimpleBaseType();
+				unitInformation.AddBaseType(baseType);
+			}
 
 			foreach (var property in model.Properties)
 			{

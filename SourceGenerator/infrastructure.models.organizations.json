@@ -13,6 +13,7 @@
 					"createRepository": true,
 					"createProviderService": true,
 					"createCreationBag": true,
+					"createDbConfiguration": true,
 					"properties": [
 						{
 							"type": "string",
@@ -53,6 +54,10 @@
 						{
 							"type": "string",
 							"name": "Country"
+						},
+						{
+							"type": "MetaDataData",
+							"name": "MetaData"
 						}
 					]
 				},
@@ -63,6 +68,7 @@
 					"name": "OfficeData",
 					"classificationKey": "Office",
 					"createRepository": true,
+					"createDbConfiguration": true,
 					"isChild": true,
 					"createCreationBag": true,
 					"referencedParent": "CustomerData",
@@ -131,6 +137,7 @@
 					"name": "LocationData",
 					"classificationKey": "Location",
 					"createRepository": true,
+					"createDbConfiguration": true,
 					"isChild": true,
 					"createCreationBag": true,
 					"referencedParent": "OfficeData",
@@ -164,6 +171,7 @@
 					"name": "BuildingData",
 					"classificationKey": "Building",
 					"createRepository": true,
+					"createDbConfiguration": true,
 					"isChild": true,
 					"referencedParent": "LocationData",
 					"properties": [
@@ -196,6 +204,7 @@
 					"name": "ContactData",
 					"classificationKey": "Contact",
 					"createRepository": true,
+					"createDbConfiguration": true,
 					"isChild": true,
 					"referencedParent": "CustomerData",
 					"properties": [
@@ -232,6 +241,7 @@
 					"name": "CommunicationData",
 					"classificationKey": "Communication",
 					"createRepository": true,
+					"createDbConfiguration": true,
 					"isChild": true,
 					"referencedParent": "CustomerData",
 					"properties": [
@@ -258,6 +268,21 @@
 							"referencePropertyName": "CustomerId",
 							"referenceDomain": null,
 							"skipFromDomainModel": true
+						}
+					]
+				},
+				{
+					"name": "MetaDataData",
+					"classificationKey": "Customer",
+					"properties": [
+						{
+							"type": "int",
+							"name": "Version"
+						},
+						{
+							"type": "IEnumerable<DateTime>",
+							"usingForType": "System.Collections.Generic",
+							"name": "Timestamps"
 						}
 					]
 				}

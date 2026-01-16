@@ -30,6 +30,11 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models.Domain
 		public string ReferenceType { get; set; }
 		public string ReferenceDomain { get; set; }
 		public bool IsProcessingProperty { get; set; }
+		/// <summary>
+		/// Only for value objects
+		/// Value object will be automatically mapped to an data model (if configured) or mapped by custom code
+		/// </summary>
+		public bool ProcessAsUnit { get; set; }
 
 		public List<DomainModelPropertyValidationRule> ValidationRules { get; set; }
 		public List<AttributeDefinition> Attributes { get; set; }
