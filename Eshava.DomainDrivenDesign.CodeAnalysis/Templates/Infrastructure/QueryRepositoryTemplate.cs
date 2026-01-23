@@ -1538,12 +1538,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				}
 				else
 				{
-					var propertyType = item.Property.TypeWithUsing;
-					if (propertyType.EndsWith("?") && !item.DtoProperty.Type.EndsWith("?"))
-					{
-						propertyType = propertyType.Substring(0, propertyType.Length - 1);
-					}
-
+					var propertyType = item.DtoProperty.TypeWithUsing;
+					
 					var dataType = item.GetDataType(referenceDomain, referenceType);
 					dtoInitializerExpressions.Add(
 						item.DtoProperty.Name
