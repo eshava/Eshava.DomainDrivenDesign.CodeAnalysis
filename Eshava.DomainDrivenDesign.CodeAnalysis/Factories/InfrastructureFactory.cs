@@ -275,7 +275,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 			List<DependencyInjection> dependencyInjections
 		)
 		{
-			if (domainModel is null)
+			if (domainModel is null || domainModel.IsChildDomainModel)
 			{
 				return;
 			}
@@ -622,6 +622,11 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 				var foreignKeyProperties = model.Properties.Where(p => p.IsReference).ToList();
 				foreach (var foreignKeyProperty in foreignKeyProperties)
 				{
+					if (foreignKeyProperty.IsParentReference && model.ReferencedParent.IsNullOrEmpty())
+					{
+						model.ReferencedParent = foreignKeyProperty.ReferenceType;
+					}
+
 					if (model.Properties.FirstOrDefault(p => p.ReferencePropertyName == foreignKeyProperty.Name) is null)
 					{
 						var propertyName = foreignKeyProperty.Name.EndsWith("Id")

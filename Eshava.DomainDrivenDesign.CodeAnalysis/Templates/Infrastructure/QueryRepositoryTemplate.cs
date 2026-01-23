@@ -146,19 +146,20 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 						break;
 					case MethodType.ReadAggregateId:
 
-						if (model.ReferencedParent.IsNullOrEmpty())
+						var modelWithParentReference = model;
+						if (modelWithParentReference.ReferencedParent.IsNullOrEmpty())
 						{
 							// Workaround to allow multiple data models for the same classification key (see InfrastructureFactory)
 							// Find the data model which contains the parent reference
 
-							model = allModelsForDomainByClassificationKey[model.ClassificationKey].FirstOrDefault(m => !m.ReferencedParent.IsNullOrEmpty());
-							if (model is null)
+							modelWithParentReference = allModelsForDomainByClassificationKey[modelWithParentReference.ClassificationKey].FirstOrDefault(m => !m.ReferencedParent.IsNullOrEmpty());
+							if (modelWithParentReference is null)
 							{
 								break;
 							}
 						}
 
-						methodCreationResult = CreateReadAggregateIdMethod(model, methodMap, allModelsForDomainDic, project.ImplementSoftDelete);
+						methodCreationResult = CreateReadAggregateIdMethod(modelWithParentReference, methodMap, allModelsForDomainDic, project.ImplementSoftDelete);
 
 						break;
 				}
