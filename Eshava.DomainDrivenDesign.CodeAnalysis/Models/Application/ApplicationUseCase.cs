@@ -54,6 +54,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models.Application
 		public bool AddValidationConfigurationMethod { get; set; }
 		public bool ValidationConfigurationAsTreeStructure { get; set; }
 		public bool SkipUseCaseClass { get; set; }
+		public bool SkipCountUseCase { get; set; }
 		public bool SkipInfrastructureProviderServiceMethod { get; set; }
 		public bool WarpInTransaction { get; set; }
 		public bool ReadAggregateByChildId { get; set; }
@@ -102,6 +103,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models.Application
 				ClassificationKey = ClassificationKey,
 				FeatureName = FeatureName,
 				NamespaceClassificationKey = NamespaceClassificationKey,
+				SkipCountUseCase = SkipCountUseCase,
 				SkipUseCaseClass = SkipUseCaseClass,
 				SkipInfrastructureProviderServiceMethod = SkipInfrastructureProviderServiceMethod,
 				AdditionalContructorParameter = AdditionalContructorParameter

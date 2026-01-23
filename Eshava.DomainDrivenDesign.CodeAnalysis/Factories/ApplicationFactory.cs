@@ -143,10 +143,13 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 				templateRequest.UseCaseNamespace = useCaseNamespace;
 
 				CreateDtos(factoryResult, templateRequest);
-				CreateRequest(factoryResult, templateRequest, codeSnippets);
-				CreateResponse(factoryResult, templateRequest);
-				CreateInterface(factoryResult, templateRequest.UseCase, useCaseNamespace, templateRequest.AddAssemblyCommentToFiles);
-				CreateUseCase(factoryResult, templateRequest, codeSnippets, dependencyInjections);
+				if (!templateRequest.UseCase.SkipCountUseCase)
+				{
+					CreateRequest(factoryResult, templateRequest, codeSnippets);
+					CreateResponse(factoryResult, templateRequest);
+					CreateInterface(factoryResult, templateRequest.UseCase, useCaseNamespace, templateRequest.AddAssemblyCommentToFiles);
+					CreateUseCase(factoryResult, templateRequest, codeSnippets, dependencyInjections);
+				}
 			}
 		}
 
@@ -228,6 +231,18 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 			List<DependencyInjection> dependencyInjections
 		)
 		{
+			var useCaseClassName = templateRequest.UseCase.ClassName;
+			var useCaseInterfaceName = $"I{useCaseClassName}";
+			var useCaseTemplateName = $"{templateRequest.UseCaseNamespace}.{useCaseClassName}.g.cs";
+
+			dependencyInjections.Add(new DependencyInjection
+			{
+				Interface = useCaseInterfaceName,
+				InterfaceUsing = templateRequest.UseCaseNamespace,
+				Class = useCaseClassName,
+				ClassUsing = templateRequest.UseCaseNamespace
+			});
+
 			if (templateRequest.UseCase.SkipUseCaseClass)
 			{
 				return;
@@ -271,21 +286,9 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 					break;
 			}
 
-			var useCaseClassName = templateRequest.UseCase.ClassName;
-			var useCaseInterfaceName = $"I{useCaseClassName}";
-			var useCaseTemplateName = $"{templateRequest.UseCaseNamespace}.{useCaseClassName}.g.cs";
-
 			if (!useCaseTemplate.IsNullOrEmpty())
 			{
 				factoryResult.AddSource(useCaseTemplateName, useCaseTemplate);
-
-				dependencyInjections.Add(new DependencyInjection
-				{
-					Interface = useCaseInterfaceName,
-					InterfaceUsing = templateRequest.UseCaseNamespace,
-					Class = useCaseClassName,
-					ClassUsing = templateRequest.UseCaseNamespace
-				});
 			}
 		}
 
@@ -339,12 +342,12 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 		private static void CreateRequest(FactoryResult factoryResult, UseCaseTemplateRequest templateRequest, List<UseCaseCodeSnippet> codeSnippets)
 		{
 			var request = UseCaseRequestTemplate.GetRequest(
-				templateRequest.UseCase, 
-				templateRequest.Domain, 
-				templateRequest.UseCaseNamespace, 
-				templateRequest.DomainModelReferenceMap, 
-				templateRequest.DtoReferenceMap, 
-				codeSnippets, 
+				templateRequest.UseCase,
+				templateRequest.Domain,
+				templateRequest.UseCaseNamespace,
+				templateRequest.DomainModelReferenceMap,
+				templateRequest.DtoReferenceMap,
+				codeSnippets,
 				templateRequest.AddAssemblyCommentToFiles
 			);
 
@@ -356,11 +359,11 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 		private static void CreateResponse(FactoryResult factoryResult, UseCaseTemplateRequest templateRequest)
 		{
 			var response = UseCaseResponseTemplate.GetResponse(
-				templateRequest.UseCase, 
-				templateRequest.Domain, 
-				templateRequest.UseCaseNamespace, 
-				templateRequest.DomainModelReferenceMap, 
-				templateRequest.DtoReferenceMap, 
+				templateRequest.UseCase,
+				templateRequest.Domain,
+				templateRequest.UseCaseNamespace,
+				templateRequest.DomainModelReferenceMap,
+				templateRequest.DtoReferenceMap,
 				templateRequest.AddAssemblyCommentToFiles
 			);
 
