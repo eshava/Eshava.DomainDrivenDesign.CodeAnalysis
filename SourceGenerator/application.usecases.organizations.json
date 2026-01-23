@@ -1327,6 +1327,7 @@
 					"type": 2,
 					"useCaseName": "Search",
 					"classificationKey": "Office",
+					"skipCountUseCase": true,
 					"featureName": "CustomerFeature",
 					"dtos": [
 						{

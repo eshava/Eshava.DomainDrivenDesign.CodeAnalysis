@@ -28,9 +28,14 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			InfrastructureModel parentModel,
 			Dictionary<string, List<InfrastructureModel>> childsForModel,
 			Dictionary<string, InfrastructureModel> modelsForDomain,
-			ReferenceMap domainModelReferenceMap
+			ReferenceMap domainModelReferenceMap,
+			IEnumerable<InfrastructureCodeSnippet> codeSnippets
 		)
 		{
+			var repositoryCodeSnippet = codeSnippets
+				.FirstOrDefault(cs => cs.ApplyOnRepository)
+				?? new InfrastructureCodeSnippet();
+
 			var scopedSettings = new NameAndType(CommonNames.SCOPEDSETTINGS, project.ScopedSettingsClass.ToType());
 			NameAndType databaseSettings;
 			if (databaseSettingsInterface.IsNullOrEmpty())
@@ -136,7 +141,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			unitInformation.AddBaseType(baseType, repositoryInterface);
 			unitInformation.AddUsing(alternativeClass?.Using);
 
-			CheckAndAddProviderReferences(unitInformation, alternativeClass);
+			CheckAndAddProviderReferences(unitInformation, alternativeClass, repositoryCodeSnippet);
 
 			foreach (var property in model.Properties)
 			{
@@ -163,7 +168,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 
 			unitInformation.AddLogger(className, true);
 
-			unitInformation.AddMethod(CreateFromDomainModelMethod(model, fullDomainModelName, parentModel, domainModelMap, domain, modelsForDomain, domainModelReferenceMap));
+			unitInformation.AddMethod(CreateFromDomainModelMethod(model, fullDomainModelName, parentModel, domainModelMap, domain, modelsForDomain, domainModelReferenceMap, repositoryCodeSnippet.PropertyStatements));
 			unitInformation.AddMethod(CreateGetPropertyNameMethod(domainModelMap, model, modelsForDomain));
 
 			var valueObjectPatchMethod = CreateMapPatchesForValueObjectsMethod(model, domainModelMap, modelsForDomain);
@@ -175,8 +180,14 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			return unitInformation.CreateCodeString();
 		}
 
-		private static void CheckAndAddProviderReferences(UnitInformation unitInformation, InfrastructureProjectAlternativeClass alternativeClass)
+		private static void CheckAndAddProviderReferences(UnitInformation unitInformation, InfrastructureProjectAlternativeClass alternativeClass, InfrastructureCodeSnippet codeSnippet)
 		{
+			foreach (var constructorParameter in codeSnippet.ConstructorParameters)
+			{
+				unitInformation.AddUsing(constructorParameter.Using);
+				unitInformation.AddConstructorParameter(constructorParameter.Name, constructorParameter.Type.ToIdentifierName(), Enums.ParameterTargetTypes.Field);
+			}
+
 			if (!(alternativeClass?.ConstructorParameters?.Any() ?? false))
 			{
 				return;
@@ -522,7 +533,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			ReferenceDomainModelMap domainModelMap,
 			string domain,
 			Dictionary<string, InfrastructureModel> modelsForDomain,
-			ReferenceMap domainModelReferenceMap
+			ReferenceMap domainModelReferenceMap,
+			IEnumerable<InfrastructureModelPropertyCodeSnippet> codeSnippets
 		)
 		{
 			var statements = new List<StatementSyntax>
@@ -560,6 +572,36 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			{
 				if (dataModelProperty.SkipFromDomainModel)
 				{
+					if (dataModel.IsChild)
+					{
+						if (parentDataModel.Properties.Any(p => p.AddToCreationBag && p.Name == dataModelProperty.Name))
+						{
+							statements.Add(
+								instanceVar
+								.Access(dataModelProperty.Name)
+								.Assign("creationBag".Access(dataModelProperty.Name))
+								.ToExpressionStatement()
+							);
+						}
+
+						continue;
+					}
+
+					var propertySnipped = codeSnippets.FirstOrDefault(cs => cs.CodeSnippeKey == $"{dataModel.Name}.{dataModelProperty.Name}")
+							?? codeSnippets.FirstOrDefault(cs => cs.CodeSnippeKey == dataModelProperty.Name);
+
+					if (propertySnipped is null)
+					{
+						continue;
+					}
+
+					statements.Add(
+						instanceVar
+						.Access(dataModelProperty.Name)
+						.Assign(propertySnipped.Expression)
+						.ToExpressionStatement()
+					);
+
 					continue;
 				}
 

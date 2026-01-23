@@ -18,9 +18,12 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 			DomainProject domainProjectConfig,
 			IEnumerable<DomainModels> domainModelsConfigs,
 			InfrastructureProject infrastructureProjectConfig,
-			IEnumerable<InfrastructureModels> infrastructureModelsConfigs
+			IEnumerable<InfrastructureModels> infrastructureModelsConfigs,
+			IEnumerable<InfrastructureCodeSnippet> codeSnippets
 		)
 		{
+			codeSnippets ??= [];
+
 			var domainModelsConfig = domainModelsConfigs.Merge();
 			var infrastructureModelsConfig = infrastructureModelsConfigs.Merge();
 			var applicationUseCasesConfig = applicationUseCasesConfigs.Merge();
@@ -123,7 +126,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 						modelsFromNamespace,
 						childsForModel,
 						referenceMap,
-						dependencyInjections
+						dependencyInjections,
+						codeSnippets
 					);
 
 					if (model.CreateProviderService)
@@ -140,7 +144,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 							childsForModel,
 							referenceMap,
 							useCasesMap,
-							dependencyInjections
+							dependencyInjections,
+							codeSnippets
 						);
 					}
 
@@ -208,7 +213,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 			Dictionary<string, List<InfrastructureModel>> childsForModel,
 			ReferenceMap domainModelReferenceMap,
 			UseCasesMap useCasesMap,
-			List<DependencyInjection> dependencyInjections
+			List<DependencyInjection> dependencyInjections,
+			IEnumerable<InfrastructureCodeSnippet> codeSnippets
 		)
 		{
 			if (!model.CreateProviderService)
@@ -237,7 +243,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 						childsForModel,
 						domainModel,
 						useCasesMap,
-						dependencyInjections
+						dependencyInjections,
+						codeSnippets
 					);
 				}
 			}
@@ -255,7 +262,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 					childsForModel,
 					(ReferenceDomainModelMap)null,
 					useCasesMap,
-					dependencyInjections
+					dependencyInjections,
+					codeSnippets
 				);
 			}
 		}
@@ -272,7 +280,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 			Dictionary<string, List<InfrastructureModel>> childsForModel,
 			ReferenceDomainModelMap domainModel,
 			UseCasesMap useCasesMap,
-			List<DependencyInjection> dependencyInjections
+			List<DependencyInjection> dependencyInjections,
+			IEnumerable<InfrastructureCodeSnippet> codeSnippets
 		)
 		{
 			if (domainModel is null || domainModel.IsChildDomainModel)
@@ -296,7 +305,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 				infrastructureProject,
 				databaseSettingsInterface,
 				databaseSettingsInterfaceUsing,
-				childsForModel
+				childsForModel,
+				codeSnippets
 			);
 
 			var providerServiceSourceName = $"{domainNamespace}.{model.ClassificationKey.ToPlural()}.{domainModel.DomainModelName}InfrastructureProviderService.g.cs";
@@ -357,7 +367,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 			Dictionary<string, InfrastructureModel> modelsFromNamespace,
 			Dictionary<string, List<InfrastructureModel>> childsForModel,
 			ReferenceMap domainModelReferenceMap,
-			List<DependencyInjection> dependencyInjections
+			List<DependencyInjection> dependencyInjections,
+			IEnumerable<InfrastructureCodeSnippet> codeSnippets
 		)
 		{
 			if (!model.CreateRepository)
@@ -393,7 +404,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 					childsForModel,
 					domainModel,
 					domainModelReferenceMap,
-					dependencyInjections
+					dependencyInjections,
+					codeSnippets
 				);
 				}
 			}
@@ -412,7 +424,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 					childsForModel,
 					null,
 					domainModelReferenceMap,
-					dependencyInjections
+					dependencyInjections,
+					codeSnippets
 				);
 			}
 		}
@@ -430,7 +443,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 			Dictionary<string, List<InfrastructureModel>> childsForModel,
 			ReferenceDomainModelMap domainModel,
 			ReferenceMap domainModelReferenceMap,
-			List<DependencyInjection> dependencyInjections
+			List<DependencyInjection> dependencyInjections,
+			IEnumerable<InfrastructureCodeSnippet> codeSnippets
 		)
 		{
 			if (domainModel is null)
@@ -461,7 +475,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 				parent,
 				childsForModel,
 				modelsFromNamespace,
-				domainModelReferenceMap
+				domainModelReferenceMap,
+				codeSnippets
 			);
 
 			var repositorySourceName = $"{domainNamespace}.{model.ClassificationKey.ToPlural()}.{domainModel.DomainModelName}Repository.g.cs";

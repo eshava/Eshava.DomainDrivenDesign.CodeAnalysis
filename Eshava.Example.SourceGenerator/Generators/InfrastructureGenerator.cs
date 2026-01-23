@@ -5,6 +5,8 @@ using Eshava.DomainDrivenDesign.CodeAnalysis.Models.Application;
 using Eshava.DomainDrivenDesign.CodeAnalysis.Models.Domain;
 using Eshava.DomainDrivenDesign.CodeAnalysis.Models.Infrastructure;
 using Microsoft.CodeAnalysis;
+using System.Collections.Generic;
+using Eshava.CodeAnalysis.Extensions;
 
 namespace Eshava.Example.SourceGenerator.Generators
 {
@@ -40,14 +42,15 @@ namespace Eshava.Example.SourceGenerator.Generators
 				}
 
 				infrastructureProjectConfig.AddAssemblyCommentToFiles = true;
-
+				
 				var factoryResult = InfrastructureFactory.GenerateSourceCode(
 					applicationProjectConfig,
 					applicationUseCasesConfigs,
 					domainProjectConfig,
 					domainModelsConfigs,
 					infrastructureProjectConfig,
-					infrastructureModelsConfigs
+					infrastructureModelsConfigs,
+					GetCodeSnippets()
 				);
 
 				foreach (var item in factoryResult.SourceCode)
@@ -55,6 +58,54 @@ namespace Eshava.Example.SourceGenerator.Generators
 					context.AddSource(item.SourceName, item.SourceCode);
 				}
 			});
+		}
+
+		private List<InfrastructureCodeSnippet> GetCodeSnippets()
+		{
+			return [
+				GetUserIdPropertyCodeSnippet(),
+				GetUserIdInfrastructureProviderServiceCodeSnippet()
+			];
+		}
+
+		private InfrastructureCodeSnippet GetUserIdPropertyCodeSnippet()
+		{
+			return new InfrastructureCodeSnippet
+			{
+				ApplyOnRepository = true,
+				PropertyStatements =
+				[
+					new InfrastructureModelPropertyCodeSnippet
+					{
+						PropertyName = "UserId",
+						Expression = "ScopedSettings".ToIdentifierName().Access("UserId")
+					}
+				]
+			};
+		}
+
+		private InfrastructureCodeSnippet GetUserIdInfrastructureProviderServiceCodeSnippet()
+		{
+			return new InfrastructureCodeSnippet
+			{
+				ApplyOnInstrastructureProviderService = true,
+				ConstructorParameters = [
+					new InfrastructureCodeSnippetParameter
+					{
+						Name = "scopedSettings",
+						Type = "ExampleScopedSettings",
+						Using = "Eshava.Example.Application.Settings"
+					}
+				],
+				PropertyStatements =
+				[
+					new InfrastructureModelPropertyCodeSnippet
+					{
+						PropertyName = "UserId",
+						Expression = "_scopedSettings".ToIdentifierName().Access("UserId")
+					}
+				]
+			};
 		}
 	}
 }

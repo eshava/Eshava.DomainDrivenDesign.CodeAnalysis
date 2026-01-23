@@ -24,9 +24,14 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			InfrastructureProject project,
 			string databaseSettingsInterface,
 			string databaseSettingsInterfaceUsing,
-			Dictionary<string, List<InfrastructureModel>> childsForModel
+			Dictionary<string, List<InfrastructureModel>> childsForModel,
+			IEnumerable<InfrastructureCodeSnippet> codeSnippets
 		)
 		{
+			var providerCodeSnippet = codeSnippets
+				.FirstOrDefault(cs => cs.ApplyOnInstrastructureProviderService)
+				?? new InfrastructureCodeSnippet();
+
 			NameAndType databaseSettings;
 			if (databaseSettingsInterface.IsNullOrEmpty())
 			{
@@ -67,7 +72,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				unitInformation.AddUsing(CommonNames.Namespaces.Eshava.Core.MODELS);
 				unitInformation.AddUsing(CommonNames.Namespaces.Eshava.DomainDrivenDesign.Domain.EXTENSIONS);
 
-				var childMethods = GetProcessChildsMethods(model, childsForModel, domainModelMap, domain, true).ToList();
+				var childMethods = GetProcessChildsMethods(model, childsForModel, domainModelMap, domain, true, providerCodeSnippet.PropertyStatements).ToList();
 				childMethods.ForEach(m => unitInformation.AddMethod(m));
 
 				alternativeClass = project.AlternativeClasses.FirstOrDefault(ac => ac.Type == InfrastructureAlternativeClassType.AggregateProviderService);
@@ -111,11 +116,11 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 					unitInformation.AddMethod(CreateReadForMethod(domainModelMap, foreignKeyReference, fullDomainModelName));
 				}
 
-				CheckAndAddProviderReferences(unitInformation, domainModelMap, alternativeClass);
+				CheckAndAddProviderReferences(unitInformation, domainModelMap, alternativeClass, providerCodeSnippet);
 			}
 			else
 			{
-				CheckAndAddProviderReferences(unitInformation, null, alternativeClass);
+				CheckAndAddProviderReferences(unitInformation, null, alternativeClass, providerCodeSnippet);
 			}
 
 			unitInformation.AddConstructorParameter(DomainNames.VALIDATION.Parameter);
@@ -124,7 +129,12 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			return unitInformation.CreateCodeString();
 		}
 
-		private static void CheckAndAddProviderReferences(UnitInformation unitInformation, ReferenceDomainModelMap domainModelMap, InfrastructureProjectAlternativeClass alternativeClass)
+		private static void CheckAndAddProviderReferences(
+			UnitInformation unitInformation,
+			ReferenceDomainModelMap domainModelMap,
+			InfrastructureProjectAlternativeClass alternativeClass,
+			InfrastructureCodeSnippet codeSnippet
+		)
 		{
 			if (alternativeClass?.ConstructorParameters?.Any() ?? false)
 			{
@@ -132,6 +142,15 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				{
 					unitInformation.AddUsing(constructorParameter.UsingForType);
 					unitInformation.AddConstructorParameter(constructorParameter.Name, constructorParameter.Type.ToIdentifierName(), Enums.ParameterTargetTypes.Argument);
+				}
+			}
+
+			if (codeSnippet is not null)
+			{
+				foreach (var constructorParameter in codeSnippet.ConstructorParameters)
+				{
+					unitInformation.AddUsing(constructorParameter.Using);
+					unitInformation.AddConstructorParameter(constructorParameter.Name, constructorParameter.Type.ToIdentifierName(), Enums.ParameterTargetTypes.Field);
 				}
 			}
 
@@ -148,11 +167,11 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 
 			foreach (var child in domainModelMap.ChildDomainModels)
 			{
-				CheckAndAddProviderReferences(unitInformation, child, null);
+				CheckAndAddProviderReferences(unitInformation, child, null, null);
 			}
 		}
 
-		private static IEnumerable<(string Name, MethodDeclarationSyntax Method)> GetProcessChildsMethods(InfrastructureModel model, Dictionary<string, List<InfrastructureModel>> childsForModel, ReferenceDomainModelMap domainModelMap, string domain, bool isTopLevelMethod)
+		private static IEnumerable<(string Name, MethodDeclarationSyntax Method)> GetProcessChildsMethods(InfrastructureModel model, Dictionary<string, List<InfrastructureModel>> childsForModel, ReferenceDomainModelMap domainModelMap, string domain, bool isTopLevelMethod, IEnumerable<InfrastructureModelPropertyCodeSnippet> codeSnippets)
 		{
 			var methods = new List<(string Name, MethodDeclarationSyntax Method)>();
 
@@ -163,9 +182,9 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 
 			if (domainModelMap.ChildDomainModels.Count > 0)
 			{
-				methods.Add(CreateExcecuteCompletionActionsForCreateMethod(model, childModels, domainModelMap, domain, isTopLevelMethod));
-				methods.Add(CreateExcecuteCompletionActionsForUpdateMethod(model, childModels, domainModelMap, domain, isTopLevelMethod));
-				methods.Add(CreateExcecutePrerequisitesActionsForDeleteMethod(model, childModels, domainModelMap, domain, isTopLevelMethod));
+				methods.Add(CreateExcecuteCompletionActionsForCreateMethod(model, childModels, domainModelMap, domain, isTopLevelMethod, codeSnippets));
+				methods.Add(CreateExcecuteCompletionActionsForUpdateMethod(model, childModels, domainModelMap, domain, isTopLevelMethod, codeSnippets));
+				methods.Add(CreateExcecutePrerequisitesActionsForDeleteMethod(model, childModels, domainModelMap, domain, isTopLevelMethod, codeSnippets));
 
 				foreach (var childDomainModelMap in domainModelMap.ChildDomainModels)
 				{
@@ -175,26 +194,26 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 						continue;
 					}
 
-					methods.AddRange(GetProcessChildsMethods(childModel, childsForModel, childDomainModelMap, domain, false));
+					methods.AddRange(GetProcessChildsMethods(childModel, childsForModel, childDomainModelMap, domain, false, codeSnippets));
 				}
 			}
 
 			return methods;
 		}
 
-		private static (string Name, MethodDeclarationSyntax Method) CreateExcecuteCompletionActionsForCreateMethod(InfrastructureModel model, IEnumerable<InfrastructureModel> childsForModel, ReferenceDomainModelMap domainModelMap, string domain, bool isTopLevelMethod)
+		private static (string Name, MethodDeclarationSyntax Method) CreateExcecuteCompletionActionsForCreateMethod(InfrastructureModel model, IEnumerable<InfrastructureModel> childsForModel, ReferenceDomainModelMap domainModelMap, string domain, bool isTopLevelMethod, IEnumerable<InfrastructureModelPropertyCodeSnippet> codeSnippets)
 		{
-			return CreateChildActionMethod(MethodAction.Create, true, model, childsForModel, domainModelMap, domain, isTopLevelMethod);
+			return CreateChildActionMethod(MethodAction.Create, true, model, childsForModel, domainModelMap, domain, isTopLevelMethod, codeSnippets);
 		}
 
-		private static (string Name, MethodDeclarationSyntax Method) CreateExcecuteCompletionActionsForUpdateMethod(InfrastructureModel model, IEnumerable<InfrastructureModel> childsForModel, ReferenceDomainModelMap domainModelMap, string domain, bool isTopLevelMethod)
+		private static (string Name, MethodDeclarationSyntax Method) CreateExcecuteCompletionActionsForUpdateMethod(InfrastructureModel model, IEnumerable<InfrastructureModel> childsForModel, ReferenceDomainModelMap domainModelMap, string domain, bool isTopLevelMethod, IEnumerable<InfrastructureModelPropertyCodeSnippet> codeSnippets)
 		{
-			return CreateChildActionMethod(MethodAction.Update, true, model, childsForModel, domainModelMap, domain, isTopLevelMethod);
+			return CreateChildActionMethod(MethodAction.Update, true, model, childsForModel, domainModelMap, domain, isTopLevelMethod, codeSnippets);
 		}
 
-		private static (string Name, MethodDeclarationSyntax Method) CreateExcecutePrerequisitesActionsForDeleteMethod(InfrastructureModel model, IEnumerable<InfrastructureModel> childsForModel, ReferenceDomainModelMap domainModelMap, string domain, bool isTopLevelMethod)
+		private static (string Name, MethodDeclarationSyntax Method) CreateExcecutePrerequisitesActionsForDeleteMethod(InfrastructureModel model, IEnumerable<InfrastructureModel> childsForModel, ReferenceDomainModelMap domainModelMap, string domain, bool isTopLevelMethod, IEnumerable<InfrastructureModelPropertyCodeSnippet> codeSnippets)
 		{
-			return CreateChildActionMethod(MethodAction.Delete, false, model, childsForModel, domainModelMap, domain, isTopLevelMethod);
+			return CreateChildActionMethod(MethodAction.Delete, false, model, childsForModel, domainModelMap, domain, isTopLevelMethod, codeSnippets);
 		}
 
 
@@ -222,7 +241,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			IEnumerable<InfrastructureModel> childsForModel,
 			ReferenceDomainModelMap domainModelMap,
 			string domain,
-			bool isTopLevelMethod
+			bool isTopLevelMethod,
+			IEnumerable<InfrastructureModelPropertyCodeSnippet> codeSnippets
 		)
 		{
 			var methodName = "";
@@ -274,6 +294,23 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 
 				foreach (var property in model.Properties.Where(p => p.AddToCreationBag))
 				{
+					if (property.SkipFromDomainModel)
+					{
+						var propertySnipped = codeSnippets.FirstOrDefault(cs => cs.CodeSnippeKey == $"{model.Name}.{property.Name}")
+							?? codeSnippets.FirstOrDefault(cs => cs.CodeSnippeKey == property.Name);
+
+						if (propertySnipped is not null)
+						{
+							creationBagArguments.Add(propertySnipped.Expression.ToArgument());
+						}
+						else
+						{
+							creationBagArguments.Add(SyntaxHelper.CreateDefaultOf(property.Type.ToType()).ToArgument());
+						}
+
+						continue;
+					}
+
 					creationBagArguments.Add(model.ClassificationKey.ToVariableName().Access(property.Name).ToArgument());
 				}
 
