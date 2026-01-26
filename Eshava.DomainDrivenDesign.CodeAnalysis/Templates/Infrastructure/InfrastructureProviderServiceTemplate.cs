@@ -296,12 +296,12 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				{
 					if (property.SkipFromDomainModel)
 					{
-						var propertySnipped = codeSnippets.FirstOrDefault(cs => cs.CodeSnippeKey == $"{model.Name}.{property.Name}")
-							?? codeSnippets.FirstOrDefault(cs => cs.CodeSnippeKey == property.Name);
+						var propertySnippet = codeSnippets.FirstOrDefault(cs => cs.CodeSnippeKey == $"{model.Name}.{property.Name}" && cs.IsMapping)
+							?? codeSnippets.FirstOrDefault(cs => cs.CodeSnippeKey == property.Name && cs.IsMapping);
 
-						if (propertySnipped is not null)
+						if (propertySnippet is not null)
 						{
-							creationBagArguments.Add(propertySnipped.Expression.ToArgument());
+							creationBagArguments.Add(propertySnippet.Expression.ToArgument());
 						}
 						else
 						{

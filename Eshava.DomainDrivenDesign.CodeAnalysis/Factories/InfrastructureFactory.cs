@@ -176,7 +176,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 							@namespace.DatabaseSettingsInterface,
 							@namespace.DatabaseSettingsInterfaceUsing,
 							queryProviderMap,
-							dependencyInjections
+							dependencyInjections,
+							codeSnippets
 						);
 					}
 				}
@@ -504,7 +505,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 			string databaseSettingsInterface,
 			string databaseSettingsInterfaceUsing,
 			QueryProviderMap queryProviderMap,
-			List<DependencyInjection> dependencyInjections
+			List<DependencyInjection> dependencyInjections,
+			IEnumerable<InfrastructureCodeSnippet> codeSnippets
 		)
 		{
 			var @interface = QueryRepositoryInterfaceTemplate.GetInterface(
@@ -528,7 +530,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 				domainNamespace,
 				applicationNamespace,
 				databaseSettingsInterface,
-				databaseSettingsInterfaceUsing
+				databaseSettingsInterfaceUsing,
+				codeSnippets
 			);
 
 			var repositorySourceName = $"{domainNamespace}.{model.ClassificationKey.ToPlural()}.{model.ClassificationKey}QueryRepository.g.cs";

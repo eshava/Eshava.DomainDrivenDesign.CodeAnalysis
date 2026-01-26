@@ -16,7 +16,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models.Application
 		public List<UseCaseCodeSnippetStatement> Statements { get; set; }
 
 		/// <summary>
-		/// If empty, the code snipped will be applies on all use case types
+		/// If empty, the code snippet will be applies on all use case types
 		/// </summary>
 		public List<ApplicationUseCaseType> ApplyOnUseCaseTypes { get; set; }
 

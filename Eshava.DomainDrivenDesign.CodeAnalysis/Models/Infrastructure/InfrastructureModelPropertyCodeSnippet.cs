@@ -20,5 +20,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models.Infrastructure
 		public string ModelName { get; set; }
 		public string PropertyName { get; set; }
 		public ExpressionSyntax Expression { get; set; }
+
+		public bool IsMapping { get; set; }
+		public bool IsFilter { get; set; }
 	}
 }

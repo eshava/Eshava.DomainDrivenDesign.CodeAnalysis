@@ -1098,7 +1098,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis
 			var interpolatedStringParts = new List<InterpolatedStringContentSyntax>
 			{
 				@"
-				SELECT".Interpolate(),
+					SELECT".Interpolate(),
 			};
 
 			var isFirstColum = true;
@@ -1107,7 +1107,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis
 			if (asCount)
 			{
 				interpolatedColumnParts.Add(@"
-					 COUNT(".Interpolate());
+						COUNT(".Interpolate());
 				interpolatedColumnParts.Add(modelItem.TableAliasConstant.ToIdentifierName().Interpolate());
 				interpolatedColumnParts.Add(".".Interpolate());
 				interpolatedColumnParts.Add(Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(modelItem.DataModel.Name.Access("Id").ToArgument()).Interpolate());
@@ -1172,8 +1172,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis
 
 			interpolatedStringParts.AddRange(interpolatedColumnParts);
 			interpolatedStringParts.Add(@"
-				FROM
-					 ".Interpolate());
+					FROM
+						".Interpolate());
 			interpolatedStringParts.Add("TypeAnalyzer".Access("GetTableName".AsGeneric(modelItem.GetDataType(domain, model.Name))).Call().Interpolate());
 			interpolatedStringParts.Add(" ".Interpolate());
 			interpolatedStringParts.Add(modelItem.TableAliasConstant.ToIdentifierName().Interpolate());
@@ -1288,13 +1288,13 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis
 			if (isFirstColum)
 			{
 				interpolatedColumnParts.Add(@"
-					 ".Interpolate());
+						 ".Interpolate());
 				isFirstColum = false;
 			}
 			else
 			{
 				interpolatedColumnParts.Add(@"
-					,".Interpolate());
+						,".Interpolate());
 			}
 		}
 
@@ -1441,13 +1441,13 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis
 			var interpolatedTableParts = new List<InterpolatedStringContentSyntax>
 			{
 				@"
-				LEFT JOIN
-					 ".Interpolate(),
+					LEFT JOIN
+						".Interpolate(),
 				"TypeAnalyzer".Access("GetTableName".AsGeneric(dataTypeJoin)).Call().Interpolate(),
 				" ".Interpolate(),
 				tableAliasJoin.ToIdentifierName().Interpolate(),
 				@"
-						ON ".Interpolate(),
+							ON ".Interpolate(),
 				tableAliasJoin.ToIdentifierName().Interpolate(),
 				".".Interpolate(),
 				Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(dataTypeJoin.Access(propertyJoin).ToArgument()).Interpolate(),
@@ -1460,7 +1460,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis
 			if (implementSoftDelete)
 			{
 				interpolatedTableParts.Add(@"
-						AND ".Interpolate());
+							AND ".Interpolate());
 				interpolatedTableParts.Add(tableAliasJoin.ToIdentifierName().Interpolate());
 				interpolatedTableParts.Add(".".Interpolate());
 				interpolatedTableParts.Add(Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(dataTypeJoin.Access("Status").ToArgument()).Interpolate());

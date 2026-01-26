@@ -42,7 +42,7 @@ namespace Eshava.Example.SourceGenerator.Generators
 				}
 
 				infrastructureProjectConfig.AddAssemblyCommentToFiles = true;
-				
+
 				var factoryResult = InfrastructureFactory.GenerateSourceCode(
 					applicationProjectConfig,
 					applicationUseCasesConfigs,
@@ -63,12 +63,13 @@ namespace Eshava.Example.SourceGenerator.Generators
 		private List<InfrastructureCodeSnippet> GetCodeSnippets()
 		{
 			return [
-				GetUserIdPropertyCodeSnippet(),
+				GetUserIdRepositoryCodeSnippet(),
+				GetUserIdQueryRepositoryCodeSnippet(),
 				GetUserIdInfrastructureProviderServiceCodeSnippet()
 			];
 		}
 
-		private InfrastructureCodeSnippet GetUserIdPropertyCodeSnippet()
+		private InfrastructureCodeSnippet GetUserIdRepositoryCodeSnippet()
 		{
 			return new InfrastructureCodeSnippet
 			{
@@ -77,6 +78,8 @@ namespace Eshava.Example.SourceGenerator.Generators
 				[
 					new InfrastructureModelPropertyCodeSnippet
 					{
+						IsMapping = true,
+						IsFilter = true,
 						PropertyName = "UserId",
 						Expression = "ScopedSettings".ToIdentifierName().Access("UserId")
 					}
@@ -101,6 +104,24 @@ namespace Eshava.Example.SourceGenerator.Generators
 				[
 					new InfrastructureModelPropertyCodeSnippet
 					{
+						IsMapping = true,
+						PropertyName = "UserId",
+						Expression = "_scopedSettings".ToIdentifierName().Access("UserId")
+					}
+				]
+			};
+		}
+
+		private InfrastructureCodeSnippet GetUserIdQueryRepositoryCodeSnippet()
+		{
+			return new InfrastructureCodeSnippet
+			{
+				ApplyOnQueryRepository = true,
+				PropertyStatements =
+				[
+					new InfrastructureModelPropertyCodeSnippet
+					{
+						IsFilter = true,
 						PropertyName = "UserId",
 						Expression = "_scopedSettings".ToIdentifierName().Access("UserId")
 					}
