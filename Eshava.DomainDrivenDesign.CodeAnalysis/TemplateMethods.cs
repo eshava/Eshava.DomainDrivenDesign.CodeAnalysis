@@ -1283,6 +1283,46 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis
 			return domainModelWithMappings;
 		}
 
+		public static void CollectPropertyUsings(UnitInformation unitInformation, ApplicationUseCaseDtoProperty property, Dictionary<string, List<AttributeDefinition>> propertyAttributes, ReferenceDomainModelMap domainModel, bool isValidation)
+		{
+			if (!property.UsingForType.IsNullOrEmpty())
+			{
+				unitInformation.AddUsing(property.UsingForType);
+			}
+
+			var attributes = property.Attributes ?? [];
+			if (!isValidation)
+			{
+				var domainAttributes = domainModel
+					?.DomainModel
+					?.Properties
+					.FirstOrDefault(p => p.Name == property.Name)?.Attributes
+					?? [];
+
+				foreach (var domainAttribute in domainAttributes)
+				{
+					var attribute = attributes.FirstOrDefault(a => a.Name == domainAttribute.Name);
+					if (attribute is null)
+					{
+						attributes.Add(domainAttribute);
+					}
+				}
+			}
+
+			propertyAttributes.Add(property.Name, attributes);
+
+			if (attributes.Count > 0)
+			{
+				foreach (var attribute in attributes)
+				{
+					if (!attribute.UsingForType.IsNullOrEmpty())
+					{
+						unitInformation.AddUsing(attribute.UsingForType);
+					}
+				}
+			}
+		}
+
 		private static void AddSelectColumnSeparator(List<InterpolatedStringContentSyntax> interpolatedColumnParts, ref bool isFirstColum)
 		{
 			if (isFirstColum)

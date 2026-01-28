@@ -22,5 +22,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models.Application
 		/// </summary>
 		public List<ApplicationUseCaseDtoProperty> Properties { get; set; }
 		public List<ApplicationUseCaseDtoProperty> ValidationRuleProperties { get; set; }
+
+		public ApplicationCustomUseCaseDtoSettings CustomUseCaseSettings { get; set; }
 	}
 }

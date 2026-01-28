@@ -15,6 +15,12 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models.Application
 		}
 
 		public ApplicationUseCaseType Type { get; set; }
+		/// <summary>
+		/// Only for custom use cases
+		/// If true, namespace -> Commands
+		/// If false, namespace -> Queries
+		/// </summary>
+		public bool IsCommandUseCase { get; set; }
 		public string UseCaseName { get; set; }
 		public string AbstractUseCaseClass { get; set; }
 		public string ClassificationKey { get; set; }

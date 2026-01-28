@@ -1,0 +1,54 @@
+{
+	"Routes": [
+		{
+			"namespace": "Organisations",
+			"Name": "Reports",
+			"endpoints": [
+				{
+					"httpMethod": "POST",
+					"route": "/reports/offices/overview",
+					"useCase": {
+						"domain": "Organizations",
+						"classificationKey": "Office",
+						"useCaseName": "GenerateOverview"
+					},
+					"authorizationPolicies": [
+						{
+							"isString": false,
+							"name": "CustomAuthorizationPolicy.Product",
+							"using": "Eshava.Example.Api.Policies"
+						}
+					],
+					"apiRouteEndpointFilters": [
+						{
+							"name": "CustomEndpointFilter",
+							"using": "Eshava.Example.Api.Filters"
+						}
+					]
+				},
+				{
+					"httpMethod": "POST",
+					"route": "/reports/offices/calculate/statistics",
+					"useCase": {
+						"domain": "Organizations",
+						"classificationKey": "Office",
+						"useCaseName": "WriteStatistics"
+					},
+					"authorizationPolicies": [
+						{
+							"isString": false,
+							"name": "CustomAuthorizationPolicy.Product",
+							"using": "Eshava.Example.Api.Policies"
+						}
+					],
+					"apiRouteEndpointFilters": [
+						{
+							"name": "CustomEndpointFilter",
+							"using": "Eshava.Example.Api.Filters"
+						}
+					]
+				}
+			]
+		}
+	]
+}

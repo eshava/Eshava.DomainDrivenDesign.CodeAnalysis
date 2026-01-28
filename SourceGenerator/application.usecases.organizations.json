@@ -1584,6 +1584,173 @@
 							]
 						}
 					]
+				},
+				{
+					"type": 9,
+					"useCaseName": "GenerateOverview",
+					"classificationKey": "Office",
+					"featureName": "CustomerFeature",
+					"isCommandUseCase": false,
+					"dtos": [
+						{
+							"name": "SettingsForOverview",
+							"customUseCaseSettings": {
+								"addToRequest": true,
+								"requestPropertyName": "Settings"
+							},
+							"properties": [
+								{
+									"name": "Aggregate",
+									"type": "bool"
+								},
+								{
+									"name": "FromUtc",
+									"type": "DateTime?"
+								},
+								{
+									"name": "ToUtc",
+									"type": "DateTime?"
+								}
+							]
+						},
+						{
+							"name": "Customer",
+							"customUseCaseSettings": {
+								"addToRequest": true,
+								"requestPropertyName": "Customers",
+								"isEnumerable": true
+							},
+							"properties": [
+								{
+									"name": "CustomerId",
+									"type": "int",
+									"attributes": [
+										{
+											"name": "Required",
+											"usingForType": "System.ComponentModel.DataAnnotations"
+										}
+									]
+								},
+								{
+									"name": "SkipFromOverview",
+									"type": "bool"
+								}
+							]
+						},
+						{
+							"name": "DummyForRequest",
+							"customUseCaseSettings": {
+								"addToRequest": true,
+								"addOnlyPropertiesToRequest": true
+							},
+							"properties": [
+								{
+									"name": "Tags",
+									"type": "string",
+									"isEnumerable": true,
+									"attributes": [
+										{
+											"name": "Required",
+											"usingForType": "System.ComponentModel.DataAnnotations"
+										}
+									]
+								}
+							]
+						},
+						{
+							"name": "OverviewSummary",
+							"customUseCaseSettings": {
+								"addToResponse": true,
+								"responsePropertyName": "Summary"
+							},
+							"properties": [
+								{
+									"name": "Total",
+									"type": "int"
+								}
+							]
+						},
+						{
+							"name": "OverviewItem",
+							"customUseCaseSettings": {
+								"addToResponse": true,
+								"responsePropertyName": "Items",
+								"isEnumerable": true
+							},
+							"properties": [
+								{
+									"name": "CustomerId",
+									"type": "int",
+									"attributes": [
+										{
+											"name": "Required",
+											"usingForType": "System.ComponentModel.DataAnnotations"
+										}
+									]
+								},
+								{
+									"name": "Count",
+									"type": "int"
+								}
+							]
+						},
+						{
+							"name": "DummyForResponse",
+							"customUseCaseSettings": {
+								"addToResponse": true,
+								"addOnlyPropertiesToResponse": true
+							},
+							"properties": [
+								{
+									"name": "Occurrences",
+									"type": "DateTime",
+									"isEnumerable": true,
+									"attributes": [
+										{
+											"name": "Required",
+											"usingForType": "System.ComponentModel.DataAnnotations"
+										}
+									]
+								}
+							]
+						}
+					]
+				},
+				{
+					"type": 9,
+					"useCaseName": "WriteStatistics",
+					"classificationKey": "Office",
+					"featureName": "CustomerFeature",
+					"isCommandUseCase": true,
+					"dtos": [
+						{
+							"name": "DummyForRequest",
+							"customUseCaseSettings": {
+								"addToRequest": true,
+								"addOnlyPropertiesToRequest": true
+							},
+							"properties": [
+								{
+									"name": "OfficeIds",
+									"type": "int",
+									"isEnumerable": true
+								}
+							]
+						},
+						{
+							"name": "DummyForResponse",
+							"customUseCaseSettings": {
+								"addToResponse": true,
+								"addOnlyPropertiesToResponse": true
+							},
+							"properties": [
+								{
+									"name": "StatisticItems",
+									"type": "int"
+								}
+							]
+						}
+					]
 				}
 			]
 		}

@@ -14,6 +14,7 @@ namespace Eshava.Example.SourceGenerator.Tests
 			var apiRoutesOrderingOrderJson = System.IO.File.ReadAllText(@"..\..\..\..\SourceGenerator\api.routes.ordering.orders.json", System.Text.Encoding.UTF8);
 			var apiRoutesOrderingOrderPositionJson = System.IO.File.ReadAllText(@"..\..\..\..\SourceGenerator\api.routes.ordering.orderpositions.json", System.Text.Encoding.UTF8);
 			var apiRoutesOrderingProductJson = System.IO.File.ReadAllText(@"..\..\..\..\SourceGenerator\api.routes.ordering.products.json", System.Text.Encoding.UTF8);
+			var apiRoutesOrganizationsJson = System.IO.File.ReadAllText(@"..\..\..\..\SourceGenerator\api.routes.organizations.json", System.Text.Encoding.UTF8);
 			
 			var applicationProjectJson = System.IO.File.ReadAllText(@"..\..\..\..\SourceGenerator\application.project.json", System.Text.Encoding.UTF8);
 			var applicationUseCasesOrderingJson = System.IO.File.ReadAllText(@"..\..\..\..\SourceGenerator\application.usecases.ordering.json", System.Text.Encoding.UTF8);
@@ -34,7 +35,8 @@ namespace Eshava.Example.SourceGenerator.Tests
 			{
 				Newtonsoft.Json.JsonConvert.DeserializeObject<ApiRoutes>(apiRoutesOrderingOrderJson),
 				Newtonsoft.Json.JsonConvert.DeserializeObject<ApiRoutes>(apiRoutesOrderingOrderPositionJson),
-				Newtonsoft.Json.JsonConvert.DeserializeObject<ApiRoutes>(apiRoutesOrderingProductJson)
+				Newtonsoft.Json.JsonConvert.DeserializeObject<ApiRoutes>(apiRoutesOrderingProductJson),
+				Newtonsoft.Json.JsonConvert.DeserializeObject<ApiRoutes>(apiRoutesOrganizationsJson)
 			};
 
 			var applicationProjectConfig = Newtonsoft.Json.JsonConvert.DeserializeObject<ApplicationProject>(applicationProjectJson);

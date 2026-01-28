@@ -10,6 +10,7 @@
 		Update = 5,
 		Delete = 6,
 		Unique = 7,
-		Suggestions = 8
+		Suggestions = 8,
+		Custom = 9,
 	}
 }

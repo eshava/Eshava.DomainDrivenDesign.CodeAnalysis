@@ -6,7 +6,7 @@
 
 	<ItemGroup>
 		<PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.2" />
-		<PackageReference Include="Scalar.AspNetCore" Version="2.12.8" />
+		<PackageReference Include="Scalar.AspNetCore" Version="2.12.20" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -21,6 +21,7 @@
 		<AdditionalFiles Include="..\SourceGenerator\api.routes.ordering.products.json" />
 		<AdditionalFiles Include="..\SourceGenerator\api.routes.ordering.orders.json" />
 		<AdditionalFiles Include="..\SourceGenerator\api.routes.ordering.orderpositions.json" />
+		<AdditionalFiles Include="..\SourceGenerator\api.routes.organizations.json" />
 		<AdditionalFiles Include="..\SourceGenerator\application.project.json" />
 		<AdditionalFiles Include="..\SourceGenerator\application.usecases.ordering.json" />
 		<AdditionalFiles Include="..\SourceGenerator\application.usecases.organizations.json" />

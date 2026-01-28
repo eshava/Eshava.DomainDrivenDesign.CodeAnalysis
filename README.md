@@ -46,11 +46,11 @@ This is used to control the generator classes. Basically, all generator classes 
 		<!-- Without this setting, the Eshava.DomainDrivenDesign.CodeAnalysis.dll cannot be found when executing Microsoft.CodeAnalysis.Generator -->
 		<GeneratePathProperty>True</GeneratePathProperty>
 	</PackageReference>
-	<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" PrivateAssets="all" />
+	<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.0.0" PrivateAssets="all" />
 	<PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="4.14.0" PrivateAssets="all" />
-	<PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="9.0.10" GeneratePathProperty="true" PrivateAssets="all" />
-	<PackageReference Include="System.Text.Encodings.Web" Version="9.0.10" GeneratePathProperty="true" PrivateAssets="all" />
-	<PackageReference Include="System.Text.Json" Version="9.0.10" GeneratePathProperty="true" PrivateAssets="all" />
+	<PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="10.0.2" GeneratePathProperty="true" PrivateAssets="all" />
+	<PackageReference Include="System.Text.Encodings.Web" Version="10.0.2" GeneratePathProperty="true" PrivateAssets="all" />
+	<PackageReference Include="System.Text.Json" Version="10.0.2" GeneratePathProperty="true" PrivateAssets="all" />
 </ItemGroup>
 
 <PropertyGroup>

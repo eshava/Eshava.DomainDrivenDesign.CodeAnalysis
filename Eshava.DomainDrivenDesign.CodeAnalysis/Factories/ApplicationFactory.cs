@@ -110,6 +110,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 				case ApplicationUseCaseType.Create:
 				case ApplicationUseCaseType.Update:
 				case ApplicationUseCaseType.Delete:
+				case ApplicationUseCaseType.Custom when templateRequest.UseCase.IsCommandUseCase:
 					useCaseNamespace += "Commands";
 
 					break;
@@ -120,6 +121,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 				case ApplicationUseCaseType.SearchCount:
 				case ApplicationUseCaseType.Unique:
 				case ApplicationUseCaseType.Suggestions:
+				case ApplicationUseCaseType.Custom when !templateRequest.UseCase.IsCommandUseCase:
 				default:
 					useCaseNamespace += "Queries";
 
@@ -262,7 +264,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 				ClassUsing = templateRequest.UseCaseNamespace
 			});
 
-			if (templateRequest.UseCase.SkipUseCaseClass)
+			if (templateRequest.UseCase.SkipUseCaseClass
+				|| templateRequest.UseCase.Type == ApplicationUseCaseType.Custom)
 			{
 				return;
 			}

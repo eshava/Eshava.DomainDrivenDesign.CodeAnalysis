@@ -2,9 +2,7 @@
 using System.Linq;
 using Eshava.CodeAnalysis.Extensions;
 using Eshava.DomainDrivenDesign.CodeAnalysis.Constants;
-using Eshava.DomainDrivenDesign.CodeAnalysis.Extensions;
 using Eshava.DomainDrivenDesign.CodeAnalysis.Models;
-using Eshava.DomainDrivenDesign.CodeAnalysis.Models.Application;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 
@@ -25,11 +23,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 
 			foreach (var property in dtoMap.Dto.Properties)
 			{
-				CollectPropertyUsings(unitInformation, property, propertyAttributes, domainModel, false);
-			}
+				TemplateMethods.CollectPropertyUsings(unitInformation, property, propertyAttributes, domainModel, false);
 
-			foreach (var property in dtoMap.Dto.Properties)
-			{
 				var attributes = AttributeTemplate.CreateAttributes(propertyAttributes[property.Name]);
 				var propertyType = property.IsEnumerable
 					? "IEnumerable".AsGeneric(property.Type)
@@ -56,7 +51,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			{
 				foreach (var property in dtoMap.Dto.ValidationRuleProperties)
 				{
-					CollectPropertyUsings(unitInformation, property, propertyAttributes, domainModel, true);
+					TemplateMethods.CollectPropertyUsings(unitInformation, property, propertyAttributes, domainModel, true);
 				}
 
 				foreach (var property in dtoMap.Dto.ValidationRuleProperties)
@@ -68,7 +63,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 
 			foreach (var property in dtoMap.Dto.Properties)
 			{
-				CollectPropertyUsings(unitInformation, property, propertyAttributes, domainModel, false);
+				TemplateMethods.CollectPropertyUsings(unitInformation, property, propertyAttributes, domainModel, false);
 			}
 
 			foreach (var property in dtoMap.Dto.Properties)
@@ -84,46 +79,6 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			}
 
 			return unitInformation.CreateCodeString();
-		}
-
-		private static void CollectPropertyUsings(UnitInformation unitInformation, ApplicationUseCaseDtoProperty property, Dictionary<string, List<AttributeDefinition>> propertyAttributes, ReferenceDomainModelMap domainModel, bool isValidation)
-		{
-			if (!property.UsingForType.IsNullOrEmpty())
-			{
-				unitInformation.AddUsing(property.UsingForType);
-			}
-
-			var attributes = property.Attributes ?? [];
-			if (!isValidation)
-			{
-				var domainAttributes = domainModel
-					?.DomainModel
-					?.Properties
-					.FirstOrDefault(p => p.Name == property.Name)?.Attributes
-					?? [];
-
-				foreach (var domainAttribute in domainAttributes)
-				{
-					var attribute = attributes.FirstOrDefault(a => a.Name == domainAttribute.Name);
-					if (attribute is null)
-					{
-						attributes.Add(domainAttribute);
-					}
-				}
-			}
-
-			propertyAttributes.Add(property.Name, attributes);
-
-			if (attributes.Count > 0)
-			{
-				foreach (var attribute in attributes)
-				{
-					if (!attribute.UsingForType.IsNullOrEmpty())
-					{
-						unitInformation.AddUsing(attribute.UsingForType);
-					}
-				}
-			}
 		}
 	}
 }

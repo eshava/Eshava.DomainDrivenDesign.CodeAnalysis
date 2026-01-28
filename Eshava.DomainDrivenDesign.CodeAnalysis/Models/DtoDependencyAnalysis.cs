@@ -76,6 +76,17 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models
 
 					foreach (var dtoDefinition in useCase.Dtos)
 					{
+						if (useCase.Type == ApplicationUseCaseType.Custom
+							&& (
+								((dtoDefinition.CustomUseCaseSettings?.AddToRequest ?? false) && (dtoDefinition.CustomUseCaseSettings?.AddOnlyPropertiesToRequest ?? false))
+								||
+								((dtoDefinition.CustomUseCaseSettings?.AddToResponse ?? false) && (dtoDefinition.CustomUseCaseSettings?.AddOnlyPropertiesToResponse ?? false))
+							)
+						)
+						{
+							continue;
+						}
+
 						var dtoMap = new ReferenceDtoMap
 						{
 							Domain = @namespace.Domain,
@@ -86,7 +97,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models
 						};
 
 						var referenceModelName = GetModelName(useCase, dtoDefinition);
-						var infrastructureModel = GetInfrastructureModel(infrastructureDomains,@namespace.Domain,referenceModelName);
+						var infrastructureModel = GetInfrastructureModel(infrastructureDomains, @namespace.Domain, referenceModelName);
 
 						if (useCase.Type == ApplicationUseCaseType.Read
 							|| useCase.Type == ApplicationUseCaseType.Search
@@ -137,7 +148,10 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models
 
 					foreach (var dtoDefinition in useCase.Dtos)
 					{
-						var dtoMap = dtoCache[dtoDefinition.Name];
+						if (!dtoCache.TryGetValue(dtoDefinition.Name, out var dtoMap))
+						{
+							continue;
+						}
 
 						foreach (var property in dtoDefinition.Properties)
 						{
