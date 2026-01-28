@@ -20,7 +20,7 @@ namespace Eshava.Example.SourceGenerator.Generators
 		public void Initialize(IncrementalGeneratorInitializationContext initContext)
 		{
 			var configurationFiles = initContext.ReadConfigurationFiles(false, true, true, true, ConfigurationFileTypes.ApplicationProject);
-			var codeSnippeds = GetCodeSnippets();
+			var codeSnippets = GetCodeSnippets();
 
 			initContext.RegisterSourceOutput(configurationFiles, (context, configurationFile) =>
 			{
@@ -52,7 +52,7 @@ namespace Eshava.Example.SourceGenerator.Generators
 					domainModelsConfigs,
 					infrastructureProjectConfig,
 					infrastructureModelsConfigs,
-					codeSnippeds
+					codeSnippets
 				);
 
 				foreach (var item in factoryResult.SourceCode)

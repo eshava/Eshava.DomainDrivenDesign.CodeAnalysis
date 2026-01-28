@@ -26,9 +26,14 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			string fullQualifiedDomainNamespace,
 			string fullQualifiedApplicationNamespace,
 			string databaseSettingsInterface,
-			string databaseSettingsInterfaceUsing
+			string databaseSettingsInterfaceUsing,
+			IEnumerable<InfrastructureCodeSnippet> codeSnippets
 		)
 		{
+			var repositoryCodeSnippet = codeSnippets
+				.FirstOrDefault(cs => cs.ApplyOnQueryRepository)
+				?? new InfrastructureCodeSnippet();
+
 			NameAndType databaseSettings;
 			if (databaseSettingsInterface.IsNullOrEmpty())
 			{
@@ -107,7 +112,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			unitInformation.AddScopedSettings(project.ScopedSettingsUsing, project.ScopedSettingsClass, scopedSettingsTargetType);
 			unitInformation.AddConstructorParameter(databaseSettings, ParameterTargetTypes.Argument);
 			unitInformation.AddConstructorParameter(InfrastructureNames.Transform.Parameter, ParameterTargetTypes.Argument);
-			CheckAndAddProviderReferences(unitInformation, alternativeClass);
+			CheckAndAddProviderReferences(unitInformation, alternativeClass, repositoryCodeSnippet);
 
 			var fieldsForPropertyTypeMapping = new List<(string DataType, string FieldName, FieldDeclarationSyntax Declaration)>();
 
@@ -119,29 +124,29 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				switch (methodMap.Type)
 				{
 					case MethodType.Read:
-						methodCreationResult = CreateReadMethod(model, methodMap, infrastructureModelsConfig, project.ImplementSoftDelete);
+						methodCreationResult = CreateReadMethod(model, methodMap, infrastructureModelsConfig, repositoryCodeSnippet.PropertyStatements, project.ImplementSoftDelete);
 
 						break;
 					case MethodType.Search:
-						methodCreationResult = CreateSearchMethod(model, methodMap, infrastructureModelsConfig, project.ImplementSoftDelete);
+						methodCreationResult = CreateSearchMethod(model, methodMap, infrastructureModelsConfig, repositoryCodeSnippet.PropertyStatements, project.ImplementSoftDelete);
 						addFieldsToMapping = true;
 
 						break;
 					case MethodType.SearchCount:
-						methodCreationResult = CreateSearchCountMethod(model, methodMap, infrastructureModelsConfig, project.ImplementSoftDelete);
+						methodCreationResult = CreateSearchCountMethod(model, methodMap, infrastructureModelsConfig, repositoryCodeSnippet.PropertyStatements, project.ImplementSoftDelete);
 						addFieldsToMapping = true;
 
 						break;
 					case MethodType.Exists:
-						methodCreationResult = CreateExistsMethod(model, methodMap, project.ImplementSoftDelete);
+						methodCreationResult = CreateExistsMethod(model, methodMap, repositoryCodeSnippet.PropertyStatements, project.ImplementSoftDelete);
 
 						break;
 					case MethodType.IsUnique:
-						methodCreationResult = CreateIsUniqueMethod(model, methodMap, project.ImplementSoftDelete);
+						methodCreationResult = CreateIsUniqueMethod(model, methodMap, repositoryCodeSnippet.PropertyStatements, project.ImplementSoftDelete);
 
 						break;
 					case MethodType.IsUsedForeignKey:
-						methodCreationResult = CreateIsUsedForeignKeyMethod(model, methodMap, project.ImplementSoftDelete);
+						methodCreationResult = CreateIsUsedForeignKeyMethod(model, methodMap, repositoryCodeSnippet.PropertyStatements, project.ImplementSoftDelete);
 
 						break;
 					case MethodType.ReadAggregateId:
@@ -159,7 +164,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 							}
 						}
 
-						methodCreationResult = CreateReadAggregateIdMethod(modelWithParentReference, methodMap, allModelsForDomainDic, project.ImplementSoftDelete);
+						methodCreationResult = CreateReadAggregateIdMethod(modelWithParentReference, methodMap, allModelsForDomainDic, repositoryCodeSnippet.PropertyStatements, project.ImplementSoftDelete);
 
 						break;
 				}
@@ -193,8 +198,14 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			return unitInformation.CreateCodeString();
 		}
 
-		private static void CheckAndAddProviderReferences(UnitInformation unitInformation, InfrastructureProjectAlternativeClass alternativeClass)
+		private static void CheckAndAddProviderReferences(UnitInformation unitInformation, InfrastructureProjectAlternativeClass alternativeClass, InfrastructureCodeSnippet codeSnippet)
 		{
+			foreach (var constructorParameter in codeSnippet.ConstructorParameters)
+			{
+				unitInformation.AddUsing(constructorParameter.Using);
+				unitInformation.AddConstructorParameter(constructorParameter.Name, constructorParameter.Type.ToIdentifierName(), Enums.ParameterTargetTypes.Field);
+			}
+
 			if (!(alternativeClass?.ConstructorParameters?.Any() ?? false))
 			{
 				return;
@@ -207,10 +218,15 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			}
 		}
 
-		private static MethodCreationResult CreateExistsMethod(InfrastructureModel model, UseCaseQueryProviderMethodMap methodMap, bool implementSoftDelete)
+		private static MethodCreationResult CreateExistsMethod(
+			InfrastructureModel dataModel,
+			UseCaseQueryProviderMethodMap methodMap,
+			IEnumerable<InfrastructureModelPropertyCodeSnippet> codeSnippets,
+			bool implementSoftDelete
+		)
 		{
 			var idParameter = methodMap.ParameterTypes.First();
-			var modelConstant = model.Name.ToUpper();
+			var modelConstant = dataModel.Name.ToUpper();
 
 			var interpolatedStringParts = new List<InterpolatedStringContentSyntax>
 			{
@@ -219,11 +235,11 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 						 COUNT(".Interpolate(),
 				modelConstant.ToIdentifierName().Interpolate(),
 				".".Interpolate(),
-				Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(model.Name.Access("Id").ToArgument()).Interpolate(),
+				Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(dataModel.Name.Access("Id").ToArgument()).Interpolate(),
 				@")
 					FROM
 						".Interpolate(),
-				"TypeAnalyzer".Access("GetTableName".AsGeneric(model.Name)).Call().Interpolate(),
+				"TypeAnalyzer".Access("GetTableName".AsGeneric(dataModel.Name)).Call().Interpolate(),
 				" ".Interpolate(),
 				modelConstant.ToIdentifierName().Interpolate(),
 				@"
@@ -231,7 +247,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 						".Interpolate(),
 				modelConstant.ToIdentifierName().Interpolate(),
 				".".Interpolate(),
-				Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(model.Name.Access("Id").ToArgument()).Interpolate(),
+				Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(dataModel.Name.Access("Id").ToArgument()).Interpolate(),
 				$@" = @{idParameter.Name.ToPropertyName()}".Interpolate()
 			};
 
@@ -242,9 +258,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 						".Interpolate());
 				interpolatedStringParts.Add(modelConstant.ToIdentifierName().Interpolate());
 				interpolatedStringParts.Add(".".Interpolate());
-				interpolatedStringParts.Add(Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(model.Name.Access("Status").ToArgument()).Interpolate());
-				interpolatedStringParts.Add(@" = @Status
-						".Interpolate());
+				interpolatedStringParts.Add(Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(dataModel.Name.Access("Status").ToArgument()).Interpolate());
+				interpolatedStringParts.Add(@" = @Status".Interpolate());
 			}
 
 			var parameterItems = new List<(ExpressionSyntax Property, string Name)>
@@ -252,6 +267,10 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				(idParameter.Name.ToIdentifierName(), idParameter.Name.ToPropertyName())
 			};
 
+			AddCodeSnippetReadConditions(interpolatedStringParts, parameterItems, dataModel, modelConstant.ToIdentifierName(), codeSnippets);
+
+			interpolatedStringParts.Add($@"
+					".Interpolate());
 			if (implementSoftDelete)
 			{
 				parameterItems.Add(("Status".Access("Active"), "Status"));
@@ -287,8 +306,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			{
 				tryBlockStatements.TryCatch(
 					GetCatchBlock(
-						model,
-						$"Entity {model.Name} could not be checked",
+						dataModel,
+						$"Entity {dataModel.Name} could not be checked",
 						"bool",
 						false,
 						parameterItems.ToArray()
@@ -296,7 +315,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				)
 			};
 
-			(var methodUsings, var method) = CreateMethod(model, methodMap, statements);
+			(var methodUsings, var method) = CreateMethod(dataModel, methodMap, statements);
 
 			return new MethodCreationResult
 			{
@@ -305,7 +324,12 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			};
 		}
 
-		private static MethodCreationResult CreateIsUniqueMethod(InfrastructureModel model, UseCaseQueryProviderMethodMap methodMap, bool implementSoftDelete)
+		private static MethodCreationResult CreateIsUniqueMethod(
+			InfrastructureModel dataModel,
+			UseCaseQueryProviderMethodMap methodMap,
+			IEnumerable<InfrastructureModelPropertyCodeSnippet> codeSnippets,
+			bool implementSoftDelete
+		)
 		{
 			var idParameter = methodMap.ParameterTypes.First();
 			var checkParameter = methodMap.ParameterTypes.Skip(1).First();
@@ -313,7 +337,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				? methodMap.ParameterTypes.Skip(2).ToList()
 				: new List<UseCaseQueryProviderMethodParameterTypeMap>();
 
-			var modelConstant = model.Name.ToUpper();
+			var modelConstant = dataModel.Name.ToUpper();
 
 			var interpolatedStringParts = new List<InterpolatedStringContentSyntax>
 			{
@@ -322,11 +346,11 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 						 COUNT(".Interpolate(),
 				modelConstant.ToIdentifierName().Interpolate(),
 				".".Interpolate(),
-				Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(model.Name.Access("Id").ToArgument()).Interpolate(),
+				Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(dataModel.Name.Access("Id").ToArgument()).Interpolate(),
 				@")
 					FROM
 						".Interpolate(),
-				"TypeAnalyzer".Access("GetTableName".AsGeneric(model.Name)).Call().Interpolate(),
+				"TypeAnalyzer".Access("GetTableName".AsGeneric(dataModel.Name)).Call().Interpolate(),
 				" ".Interpolate(),
 				modelConstant.ToIdentifierName().Interpolate(),
 				@"
@@ -334,7 +358,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 						".Interpolate(),
 				modelConstant.ToIdentifierName().Interpolate(),
 				".".Interpolate(),
-				Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(model.Name.Access(checkParameter.PropertyName).ToArgument()).Interpolate(),
+				Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(dataModel.Name.Access(checkParameter.PropertyName).ToArgument()).Interpolate(),
 				$@" = @{checkParameter.PropertyName}".Interpolate()
 			};
 
@@ -345,7 +369,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 						".Interpolate());
 				interpolatedStringParts.Add(modelConstant.ToIdentifierName().Interpolate());
 				interpolatedStringParts.Add(".".Interpolate());
-				interpolatedStringParts.Add(Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(model.Name.Access(parameter.PropertyName).ToArgument()).Interpolate());
+				interpolatedStringParts.Add(Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(dataModel.Name.Access(parameter.PropertyName).ToArgument()).Interpolate());
 				interpolatedStringParts.Add($@" = @{parameter.PropertyName}
 						".Interpolate());
 			}
@@ -357,9 +381,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 						".Interpolate());
 				interpolatedStringParts.Add(modelConstant.ToIdentifierName().Interpolate());
 				interpolatedStringParts.Add(".".Interpolate());
-				interpolatedStringParts.Add(Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(model.Name.Access("Status").ToArgument()).Interpolate());
-				interpolatedStringParts.Add(@" = @Status
-						".Interpolate());
+				interpolatedStringParts.Add(Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(dataModel.Name.Access("Status").ToArgument()).Interpolate());
+				interpolatedStringParts.Add(@" = @Status".Interpolate());
 			}
 
 			var interpolatedStringIdParts = new List<InterpolatedStringContentSyntax>
@@ -369,7 +392,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 						".Interpolate(),
 				modelConstant.ToIdentifierName().Interpolate(),
 				".".Interpolate(),
-				Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(model.Name.Access("Id").ToArgument()).Interpolate(),
+				Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(dataModel.Name.Access("Id").ToArgument()).Interpolate(),
 				$@" != @{idParameter.PropertyName}".Interpolate()
 			};
 
@@ -382,6 +405,11 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			{
 				parameterItems.Add(("Status".Access("Active"), "Status"));
 			}
+
+			AddCodeSnippetReadConditions(interpolatedStringParts, parameterItems, dataModel, modelConstant.ToIdentifierName(), codeSnippets);
+
+			interpolatedStringParts.Add($@"
+					".Interpolate());
 
 			var parameterVariableDeclaration = SyntaxHelper.CreateAnonymousObject(parameterItems.ToArray());
 
@@ -417,8 +445,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			{
 				tryBlockStatements.TryCatch(
 					GetCatchBlock(
-						model,
-						$"Entity {model.Name} could not be checked",
+						dataModel,
+						$"Entity {dataModel.Name} could not be checked",
 						"bool",
 						false,
 						parameterItems.ToArray()
@@ -426,7 +454,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				)
 			};
 
-			(var methodUsings, var method) = CreateMethod(model, methodMap, statements);
+			(var methodUsings, var method) = CreateMethod(dataModel, methodMap, statements);
 
 			return new MethodCreationResult
 			{
@@ -435,10 +463,16 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			};
 		}
 
-		private static MethodCreationResult CreateReadAggregateIdMethod(InfrastructureModel childModel, UseCaseQueryProviderMethodMap methodMap, Dictionary<string, InfrastructureModel> allModelsForDomain, bool implementSoftDelete)
+		private static MethodCreationResult CreateReadAggregateIdMethod(
+			InfrastructureModel childDataModel,
+			UseCaseQueryProviderMethodMap methodMap,
+			Dictionary<string, InfrastructureModel> allModelsForDomain,
+			IEnumerable<InfrastructureModelPropertyCodeSnippet> codeSnippets,
+			bool implementSoftDelete
+		)
 		{
 			var parentQuery = new Queue<InfrastructureModel>();
-			var loopModel = childModel;
+			var loopModel = childDataModel;
 			do
 			{
 				if (!allModelsForDomain.TryGetValue(loopModel.ReferencedParent, out var parentModel))
@@ -457,7 +491,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			} while (!loopModel.ReferencedParent.IsNullOrEmpty());
 
 			var idParameter = methodMap.ParameterTypes.First();
-			var childModelConstant = childModel.Name.ToUpper();
+			var childModelConstant = childDataModel.Name.ToUpper();
 			var interpolatedQueryParts = new List<InterpolatedStringContentSyntax>
 			{
 				@"
@@ -466,8 +500,12 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			};
 
 			var interpolatedFromParts = new List<InterpolatedStringContentSyntax>();
+			var parameterItems = new List<(ExpressionSyntax Property, string Name)>
+			{
+				(idParameter.Name.ToIdentifierName(), idParameter.Name.ToPropertyName())
+			};
 
-			loopModel = childModel;
+			loopModel = childDataModel;
 			do
 			{
 				var loopModelConstant = loopModel.Name.ToUpper();
@@ -483,12 +521,12 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 					interpolatedQueryParts.Add(Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(loopModel.Name.Access(parentProperty.Name).ToArgument()).Interpolate());
 				}
 
-				if (loopModel.Name == childModel.Name)
+				if (loopModel.Name == childDataModel.Name)
 				{
 					interpolatedFromParts.Add(@"
 					FROM
 						".Interpolate());
-					interpolatedFromParts.Add("TypeAnalyzer".Access("GetTableName".AsGeneric(childModel.Name)).Call().Interpolate());
+					interpolatedFromParts.Add("TypeAnalyzer".Access("GetTableName".AsGeneric(childDataModel.Name)).Call().Interpolate());
 					interpolatedFromParts.Add(" ".Interpolate());
 					interpolatedFromParts.Add(loopModelConstant.ToIdentifierName().Interpolate());
 				}
@@ -520,6 +558,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 						interpolatedFromParts.Add(Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(parentModel.Name.Access("Status").ToArgument()).Interpolate());
 						interpolatedFromParts.Add(@" = @Status".Interpolate());
 					}
+
+					AddCodeSnippetReadConditions(interpolatedFromParts, parameterItems, parentModel, parentModelConstant.ToIdentifierName(), codeSnippets);
 				}
 
 				loopModel = parentModel;
@@ -532,7 +572,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 						".Interpolate());
 			interpolatedQueryParts.Add(childModelConstant.ToIdentifierName().Interpolate());
 			interpolatedQueryParts.Add(".".Interpolate());
-			interpolatedQueryParts.Add(Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(childModel.Name.Access("Id").ToArgument()).Interpolate());
+			interpolatedQueryParts.Add(Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(childDataModel.Name.Access("Id").ToArgument()).Interpolate());
 			interpolatedQueryParts.Add($@" = @{idParameter.Name.ToPropertyName()}".Interpolate());
 
 			if (implementSoftDelete)
@@ -542,25 +582,20 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 						".Interpolate());
 				interpolatedQueryParts.Add(childModelConstant.ToIdentifierName().Interpolate());
 				interpolatedQueryParts.Add(".".Interpolate());
-				interpolatedQueryParts.Add(Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(childModel.Name.Access("Status").ToArgument()).Interpolate());
-				interpolatedQueryParts.Add(@" = @Status
-						".Interpolate());
-			}
-			else
-			{
-				interpolatedQueryParts.Add(@"
-						".Interpolate());
+				interpolatedQueryParts.Add(Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(childDataModel.Name.Access("Status").ToArgument()).Interpolate());
+				interpolatedQueryParts.Add(@" = @Status".Interpolate());
 			}
 
-			var parameterItems = new List<(ExpressionSyntax Property, string Name)>
-			{
-				(idParameter.Name.ToIdentifierName(), idParameter.Name.ToPropertyName())
-			};
 
 			if (implementSoftDelete)
 			{
 				parameterItems.Add(("Status".Access("Active"), "Status"));
 			}
+
+			AddCodeSnippetReadConditions(interpolatedQueryParts, parameterItems, childDataModel, childModelConstant.ToIdentifierName(), codeSnippets);
+
+			interpolatedQueryParts.Add($@"
+						".Interpolate());
 
 			var parameterVariableDeclaration = SyntaxHelper.CreateAnonymousObject(parameterItems.ToArray());
 
@@ -590,8 +625,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			{
 				tryBlockStatements.TryCatch(
 					GetCatchBlock(
-						childModel,
-						$"Entity {childModel.Name} could not be read",
+						childDataModel,
+						$"Entity {childDataModel.Name} could not be read",
 						loopModel.IdentifierType,
 						false,
 						parameterItems.ToArray()
@@ -599,7 +634,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				)
 			};
 
-			(var methodUsings, var method) = CreateMethod(childModel, methodMap, statements);
+			(var methodUsings, var method) = CreateMethod(childDataModel, methodMap, statements);
 
 			return new MethodCreationResult
 			{
@@ -608,11 +643,16 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			};
 		}
 
-		private static MethodCreationResult CreateIsUsedForeignKeyMethod(InfrastructureModel model, UseCaseQueryProviderMethodMap methodMap, bool implementSoftDelete)
+		private static MethodCreationResult CreateIsUsedForeignKeyMethod(
+			InfrastructureModel dataModel,
+			UseCaseQueryProviderMethodMap methodMap,
+			IEnumerable<InfrastructureModelPropertyCodeSnippet> codeSnippets,
+			bool implementSoftDelete
+		)
 		{
 			var idParameter = methodMap.ParameterTypes.First();
-			var modelConstant = model.Name.ToUpper();
-			var foreignKeyProperty = model.Properties.First(p => p.ReferenceType == idParameter.ReferenceType && TemplateMethods.GetDomain(p.ReferenceDomain, methodMap.Domain) == idParameter.ReferenceDomain);
+			var modelConstant = dataModel.Name.ToUpper();
+			var foreignKeyProperty = dataModel.Properties.First(p => p.ReferenceType == idParameter.ReferenceType && TemplateMethods.GetDomain(p.ReferenceDomain, methodMap.Domain) == idParameter.ReferenceDomain);
 
 			var interpolatedStringParts = new List<InterpolatedStringContentSyntax>
 			{
@@ -621,11 +661,11 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 						 COUNT(".Interpolate(),
 				modelConstant.ToIdentifierName().Interpolate(),
 				".".Interpolate(),
-				Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(model.Name.Access(foreignKeyProperty.Name).ToArgument()).Interpolate(),
+				Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(dataModel.Name.Access(foreignKeyProperty.Name).ToArgument()).Interpolate(),
 				@")
 					FROM
 						".Interpolate(),
-				"TypeAnalyzer".Access("GetTableName".AsGeneric(model.Name)).Call().Interpolate(),
+				"TypeAnalyzer".Access("GetTableName".AsGeneric(dataModel.Name)).Call().Interpolate(),
 				" ".Interpolate(),
 				modelConstant.ToIdentifierName().Interpolate(),
 				@"
@@ -633,7 +673,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 						".Interpolate(),
 				modelConstant.ToIdentifierName().Interpolate(),
 				".".Interpolate(),
-				Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(model.Name.Access(foreignKeyProperty.Name).ToArgument()).Interpolate(),
+				Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(dataModel.Name.Access(foreignKeyProperty.Name).ToArgument()).Interpolate(),
 				$@" = @{idParameter.Name.ToPropertyName()}".Interpolate()
 			};
 
@@ -644,9 +684,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 						".Interpolate());
 				interpolatedStringParts.Add(modelConstant.ToIdentifierName().Interpolate());
 				interpolatedStringParts.Add(".".Interpolate());
-				interpolatedStringParts.Add(Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(model.Name.Access("Status").ToArgument()).Interpolate());
-				interpolatedStringParts.Add(@" = @Status
-						".Interpolate());
+				interpolatedStringParts.Add(Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(dataModel.Name.Access("Status").ToArgument()).Interpolate());
+				interpolatedStringParts.Add(@" = @Status".Interpolate());
 			}
 
 			var parameterItems = new List<(ExpressionSyntax Property, string Name)>
@@ -658,6 +697,11 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			{
 				parameterItems.Add(("Status".Access("Active"), "Status"));
 			}
+
+			AddCodeSnippetReadConditions(interpolatedStringParts, parameterItems, dataModel, modelConstant.ToIdentifierName(), codeSnippets);
+
+			interpolatedStringParts.Add($@"
+					".Interpolate());
 
 			var parameterVariableDeclaration = SyntaxHelper.CreateAnonymousObject(parameterItems.ToArray());
 
@@ -689,8 +733,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			{
 				tryBlockStatements.TryCatch(
 					GetCatchBlock(
-						model,
-						$"Entity {model.Name} could not be checked",
+						dataModel,
+						$"Entity {dataModel.Name} could not be checked",
 						"bool",
 						false,
 						parameterItems.ToArray()
@@ -698,7 +742,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				)
 			};
 
-			(var methodUsings, var method) = CreateMethod(model, methodMap, statements);
+			(var methodUsings, var method) = CreateMethod(dataModel, methodMap, statements);
 
 			return new MethodCreationResult
 			{
@@ -708,52 +752,51 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 		}
 
 		private static MethodCreationResult CreateReadMethod(
-			InfrastructureModel model,
+			InfrastructureModel dataModel,
 			UseCaseQueryProviderMethodMap methodMap,
 			InfrastructureModels infrastructureModelsConfig,
+			IEnumerable<InfrastructureModelPropertyCodeSnippet> codeSnippets,
 			bool implementSoftDelete
 		)
 		{
 			var returnDto = methodMap.ReturnType.DtoMap;
-			var relatedDataModels = CollectDataModelsForReferenceProperties(methodMap.Domain, returnDto, model, infrastructureModelsConfig, true);
+			var relatedDataModels = CollectDataModelsForReferenceProperties(methodMap.Domain, returnDto, dataModel, infrastructureModelsConfig, true);
 
-			var modelItem = relatedDataModels.First(m => m.DataModel.Name == model.Name && m.Domain == methodMap.Domain && m.IsRootModel);
+			var modelItem = relatedDataModels.First(m => m.DataModel.Name == dataModel.Name && m.Domain == methodMap.Domain && m.IsRootModel);
 			var idParameter = methodMap.ParameterTypes.First();
 
-			var interpolatedStringParts = TemplateMethods.CreateSqlQueryWithoutWhereCondition(model, methodMap.Domain, relatedDataModels, implementSoftDelete, false);
+			var interpolatedStringParts = TemplateMethods.CreateSqlQueryWithoutWhereCondition(dataModel, methodMap.Domain, relatedDataModels, implementSoftDelete, false);
 			var dtoInitializerExpressions = new List<ExpressionSyntax>();
-			GetDtoInitializerExpressions(methodMap.Domain, model.Name, null, null, relatedDataModels, dtoInitializerExpressions, new HashSet<string>());
+			GetDtoInitializerExpressions(methodMap.Domain, dataModel.Name, null, null, relatedDataModels, dtoInitializerExpressions, new HashSet<string>());
 
 			interpolatedStringParts.Add(@"
-				WHERE
-					".Interpolate());
+					WHERE
+						".Interpolate());
 			interpolatedStringParts.Add(modelItem.TableAliasConstant.ToIdentifierName().Interpolate());
 			interpolatedStringParts.Add(".".Interpolate());
-			interpolatedStringParts.Add(Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(model.Name.Access("Id").ToArgument()).Interpolate());
+			interpolatedStringParts.Add(Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(dataModel.Name.Access("Id").ToArgument()).Interpolate());
 			interpolatedStringParts.Add($@" = @{idParameter.Name.ToPropertyName()}".Interpolate());
 
 			if (!methodMap.DataModelTypeProperty.IsNullOrEmpty() && !methodMap.DataModelTypePropertyValue.IsNullOrEmpty())
 			{
 				interpolatedStringParts.Add($@"
-				AND
-					".Interpolate());
+					AND
+						".Interpolate());
 				interpolatedStringParts.Add(modelItem.TableAliasConstant.ToIdentifierName().Interpolate());
 				interpolatedStringParts.Add(".".Interpolate());
-				interpolatedStringParts.Add(Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(model.Name.Access(methodMap.DataModelTypeProperty).ToArgument()).Interpolate());
-				interpolatedStringParts.Add($@" = @{methodMap.DataModelTypeProperty}
-					".Interpolate());
+				interpolatedStringParts.Add(Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(dataModel.Name.Access(methodMap.DataModelTypeProperty).ToArgument()).Interpolate());
+				interpolatedStringParts.Add($@" = @{methodMap.DataModelTypeProperty}".Interpolate());
 			}
 
 			if (implementSoftDelete)
 			{
 				interpolatedStringParts.Add($@"
-				AND
-					".Interpolate());
+					AND
+						".Interpolate());
 				interpolatedStringParts.Add(modelItem.TableAliasConstant.ToIdentifierName().Interpolate());
 				interpolatedStringParts.Add(".".Interpolate());
-				interpolatedStringParts.Add(Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(model.Name.Access("Status").ToArgument()).Interpolate());
-				interpolatedStringParts.Add(@" = @Status
-					".Interpolate());
+				interpolatedStringParts.Add(Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(dataModel.Name.Access("Status").ToArgument()).Interpolate());
+				interpolatedStringParts.Add(@" = @Status".Interpolate());
 			}
 
 			var parameterItems = new List<(ExpressionSyntax Property, string Name)>
@@ -761,9 +804,14 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				(idParameter.Name.ToIdentifierName(), idParameter.Name.ToPropertyName())
 			};
 
+			AddCodeSnippetReadConditions(interpolatedStringParts, parameterItems, dataModel, modelItem.TableAliasConstant.ToIdentifierName(), codeSnippets);
+
+			interpolatedStringParts.Add($@"
+					".Interpolate());
+
 			if (!methodMap.DataModelTypeProperty.IsNullOrEmpty() && !methodMap.DataModelTypePropertyValue.IsNullOrEmpty())
 			{
-				var typeProperty = model.Properties.FirstOrDefault(p => p.Name == methodMap.DataModelTypeProperty);
+				var typeProperty = dataModel.Properties.FirstOrDefault(p => p.Name == methodMap.DataModelTypeProperty);
 				if (typeProperty is not null)
 				{
 					if (typeProperty.Type == "int")
@@ -842,8 +890,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			{
 				tryBlockStatements.TryCatch(
 					GetCatchBlock(
-						model,
-						$"Entity {model.Name} could not be read",
+						dataModel,
+						$"Entity {dataModel.Name} could not be read",
 						returnDto.DtoName,
 						false,
 						parameterItems.ToArray()
@@ -851,50 +899,47 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				)
 			};
 
-			(var methodUsings, var method) = CreateMethod(model, methodMap, statements);
+			(var methodUsings, var method) = CreateMethod(dataModel, methodMap, statements);
 
 			return new MethodCreationResult
 			{
 				Usings = methodUsings,
 				Method = method,
-				Fields = GetConstantFields(methodMap.Domain, model.Name, relatedDataModels)
+				Fields = GetConstantFields(methodMap.Domain, dataModel.Name, relatedDataModels)
 			};
 		}
 
-		private static MethodCreationResult CreateSearchMethod(InfrastructureModel model, UseCaseQueryProviderMethodMap methodMap, InfrastructureModels infrastructureModelsConfig, bool implementSoftDelete)
+		private static MethodCreationResult CreateSearchMethod(
+			InfrastructureModel dataModel,
+			UseCaseQueryProviderMethodMap methodMap,
+			InfrastructureModels infrastructureModelsConfig,
+			IEnumerable<InfrastructureModelPropertyCodeSnippet> codeSnippets,
+			bool implementSoftDelete
+		)
 		{
 			var returnDto = methodMap.ParameterTypes.First().Generic.First().DtoMap;
-			var relatedDataModels = CollectDataModelsForReferenceProperties(methodMap.Domain, returnDto, model, infrastructureModelsConfig, true);
+			var relatedDataModels = CollectDataModelsForReferenceProperties(methodMap.Domain, returnDto, dataModel, infrastructureModelsConfig, true);
 
-			var modelItem = relatedDataModels.First(m => m.DataModel.Name == model.Name && m.Domain == methodMap.Domain && m.IsRootModel);
+			var modelItem = relatedDataModels.First(m => m.DataModel.Name == dataModel.Name && m.Domain == methodMap.Domain && m.IsRootModel);
 			var filterRequestParameter = methodMap.ParameterTypes.First();
 
-			var interpolatedStringParts = TemplateMethods.CreateSqlQueryWithoutWhereCondition(model, methodMap.Domain, relatedDataModels, implementSoftDelete, false);
+			var interpolatedStringParts = TemplateMethods.CreateSqlQueryWithoutWhereCondition(dataModel, methodMap.Domain, relatedDataModels, implementSoftDelete, false);
 			var dtoInitializerExpressions = new List<ExpressionSyntax>();
-			GetDtoInitializerExpressions(methodMap.Domain, model.Name, null, null, relatedDataModels, dtoInitializerExpressions, new HashSet<string>());
+			GetDtoInitializerExpressions(methodMap.Domain, dataModel.Name, null, null, relatedDataModels, dtoInitializerExpressions, new HashSet<string>());
 
 			var mapperExpression = GetMapperExpression(returnDto.DtoName, dtoInitializerExpressions);
 
 			var tryBlockStatements = new List<StatementSyntax>
 			{
-				"dbFilterRequest"
-				.ToVariableStatement("TransformFilterRequest".AsGeneric(returnDto.DtoName, model.Name)
-				.Call(filterRequestParameter.Name.ToArgument()))
+				GetFilterTransformStatement(dataModel.Name,returnDto.DtoName,filterRequestParameter.Name)
 			};
 
 			if (implementSoftDelete)
 			{
-				tryBlockStatements.Add(
-					"dbFilterRequest"
-					.ToIdentifierName()
-					.Assign(
-						"AddStatusQueryConditions"
-						.AsGeneric(model.Name, model.IdentifierType)
-						.Call("dbFilterRequest".ToIdentifierName().ToArgument())
-					)
-					.ToExpressionStatement()
-				);
+				AddStatusFilterCondition(tryBlockStatements, dataModel.Name, dataModel.IdentifierType);
 			}
+
+			AddCodeSnippetFilterConditions(tryBlockStatements, dataModel, codeSnippets);
 
 			tryBlockStatements.Add(
 				"query"
@@ -970,8 +1015,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				"query".ToVariableStatement("QueryWrapper".ToIdentifierName().ToInstance()),
 				tryBlockStatements.TryCatch(
 					GetCatchBlock(
-						model,
-						$"Entity {model.Name} could not be read",
+						dataModel,
+						$"Entity {dataModel.Name} could not be read",
 						returnDto.DtoName,
 						true,
 						additionalLogParameter.ToArray()
@@ -979,48 +1024,45 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				)
 			};
 
-			(var methodUsings, var method) = CreateMethod(model, methodMap, statements);
+			(var methodUsings, var method) = CreateMethod(dataModel, methodMap, statements);
 
 			return new MethodCreationResult
 			{
 				Usings = methodUsings,
 				Method = method,
-				Fields = GetConstantFields(methodMap.Domain, model.Name, relatedDataModels)
+				Fields = GetConstantFields(methodMap.Domain, dataModel.Name, relatedDataModels)
 			};
 		}
 
-		private static MethodCreationResult CreateSearchCountMethod(InfrastructureModel model, UseCaseQueryProviderMethodMap methodMap, InfrastructureModels infrastructureModelsConfig, bool implementSoftDelete)
+
+
+		private static MethodCreationResult CreateSearchCountMethod(
+			InfrastructureModel dataModel,
+			UseCaseQueryProviderMethodMap methodMap,
+			InfrastructureModels infrastructureModelsConfig,
+			IEnumerable<InfrastructureModelPropertyCodeSnippet> codeSnippets,
+			bool implementSoftDelete
+		)
 		{
 			var returnDto = methodMap.ParameterTypes.First().Generic.First().DtoMap;
-			var relatedDataModels = CollectDataModelsForReferenceProperties(methodMap.Domain, returnDto, model, infrastructureModelsConfig, true);
+			var relatedDataModels = CollectDataModelsForReferenceProperties(methodMap.Domain, returnDto, dataModel, infrastructureModelsConfig, true);
 
-			var modelItem = relatedDataModels.First(m => m.DataModel.Name == model.Name && m.Domain == methodMap.Domain && m.IsRootModel);
+			var modelItem = relatedDataModels.First(m => m.DataModel.Name == dataModel.Name && m.Domain == methodMap.Domain && m.IsRootModel);
 			var filterRequestParameter = methodMap.ParameterTypes.First();
 
-			var interpolatedStringParts = TemplateMethods.CreateSqlQueryWithoutWhereCondition(model, methodMap.Domain, relatedDataModels, implementSoftDelete, true);
+			var interpolatedStringParts = TemplateMethods.CreateSqlQueryWithoutWhereCondition(dataModel, methodMap.Domain, relatedDataModels, implementSoftDelete, true);
 
 			var tryBlockStatements = new List<StatementSyntax>
 			{
-				"dbFilterRequest"
-				.ToVariableStatement(
-					"TransformFilterRequest"
-					.AsGeneric(returnDto.DtoName, model.Name)
-					.Call(filterRequestParameter.Name.ToArgument())
-				)
+				GetFilterTransformStatement(dataModel.Name,returnDto.DtoName,filterRequestParameter.Name)
 			};
 
 			if (implementSoftDelete)
 			{
-				tryBlockStatements.Add(
-					"dbFilterRequest"
-					.ToIdentifierName()
-					.Assign(
-						"AddStatusQueryConditions"
-						.AsGeneric(model.Name, model.IdentifierType)
-						.Call("dbFilterRequest".ToIdentifierName().ToArgument())
-					)
-					.ToExpressionStatement());
+				AddStatusFilterCondition(tryBlockStatements, dataModel.Name, dataModel.IdentifierType);
 			}
+
+			AddCodeSnippetFilterConditions(tryBlockStatements, dataModel, codeSnippets);
 
 			tryBlockStatements.Add(
 				"query"
@@ -1082,8 +1124,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				"query".ToVariableStatement("QueryWrapper".ToIdentifierName().ToInstance()),
 				tryBlockStatements.TryCatch(
 					GetCatchBlock(
-						model,
-						$"Entity {model.Name} could not be read",
+						dataModel,
+						$"Entity {dataModel.Name} could not be read",
 						"int",
 						false,
 						additionalLogParameter.ToArray()
@@ -1091,13 +1133,13 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				)
 			};
 
-			(var methodUsings, var method) = CreateMethod(model, methodMap, statements);
+			(var methodUsings, var method) = CreateMethod(dataModel, methodMap, statements);
 
 			return new MethodCreationResult
 			{
 				Usings = methodUsings,
 				Method = method,
-				Fields = GetConstantFields(methodMap.Domain, model.Name, relatedDataModels)
+				Fields = GetConstantFields(methodMap.Domain, dataModel.Name, relatedDataModels)
 			};
 		}
 
@@ -1539,7 +1581,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				else
 				{
 					var propertyType = item.DtoProperty.TypeWithUsing;
-					
+
 					var dataType = item.GetDataType(referenceDomain, referenceType);
 					dtoInitializerExpressions.Add(
 						item.DtoProperty.Name
@@ -1782,6 +1824,100 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			}
 
 			return currentListName;
+		}
+
+		private static StatementSyntax GetFilterTransformStatement(string dataModelName, string returnDtoName, string filterRequestParameterName)
+		{
+			return "dbFilterRequest"
+				.ToVariableStatement(
+					"TransformFilterRequest"
+					.AsGeneric(returnDtoName, dataModelName)
+					.Call(filterRequestParameterName.ToArgument())
+				);
+		}
+
+		private static void AddStatusFilterCondition(List<StatementSyntax> statements, string dataModelName, string identifierType)
+		{
+			statements.Add(
+					"dbFilterRequest"
+					.ToIdentifierName()
+					.Assign(
+						"AddStatusQueryConditions"
+						.AsGeneric(dataModelName, identifierType)
+						.Call("dbFilterRequest".ToIdentifierName().ToArgument())
+					)
+					.ToExpressionStatement());
+		}
+
+		private static void AddCodeSnippetFilterConditions(List<StatementSyntax> statements, InfrastructureModel dataModel, IEnumerable<InfrastructureModelPropertyCodeSnippet> codeSnippets)
+		{
+			foreach (var codeSnippet in codeSnippets)
+			{
+				foreach (var dataModelProperty in dataModel.Properties)
+				{
+					var propertySnippet = codeSnippets.FirstOrDefault(cs => cs.CodeSnippeKey == $"{dataModel.Name}.{dataModelProperty.Name}" && cs.IsFilter)
+							?? codeSnippets.FirstOrDefault(cs => cs.CodeSnippeKey == dataModelProperty.Name && cs.IsFilter);
+
+					if (propertySnippet is null)
+					{
+						continue;
+					}
+
+					statements.Add(
+						$"filterValueFor{propertySnippet.PropertyName}"
+							.ToVariableStatement(propertySnippet.Expression)
+					);
+
+					statements.Add(
+						"dbFilterRequest"
+						.ToIdentifierName()
+						.Access("Where")
+						.Access("Add")
+						.Call("p"
+							.ToPropertyExpression(propertySnippet.PropertyName)
+							.ToEquals($"filterValueFor{propertySnippet.PropertyName}".ToIdentifierName())
+							.ToArgument()
+						)
+						.ToExpressionStatement()
+					);
+				}
+			}
+		}
+
+		private static void AddCodeSnippetReadConditions(
+			List<InterpolatedStringContentSyntax> interpolatedStringParts,
+			List<(ExpressionSyntax Property, string Name)> queryParameters,
+			InfrastructureModel dataModel,
+			IdentifierNameSyntax tableAliasConstant,
+			IEnumerable<InfrastructureModelPropertyCodeSnippet> codeSnippets)
+		{
+
+			foreach (var codeSnippet in codeSnippets)
+			{
+				foreach (var dataModelProperty in dataModel.Properties)
+				{
+					var propertySnippet = codeSnippets.FirstOrDefault(cs => cs.CodeSnippeKey == $"{dataModel.Name}.{dataModelProperty.Name}" && cs.IsFilter)
+							?? codeSnippets.FirstOrDefault(cs => cs.CodeSnippeKey == dataModelProperty.Name && cs.IsFilter);
+
+					if (propertySnippet is null)
+					{
+						continue;
+					}
+
+					interpolatedStringParts.Add($@"
+					AND
+						".Interpolate());
+					interpolatedStringParts.Add(tableAliasConstant.Interpolate());
+					interpolatedStringParts.Add(".".Interpolate());
+					interpolatedStringParts.Add(Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(dataModel.Name.Access(propertySnippet.PropertyName).ToArgument()).Interpolate());
+					interpolatedStringParts.Add($@" = @{propertySnippet.PropertyName}".Interpolate());
+
+					if (queryParameters.All(qp => qp.Name != propertySnippet.PropertyName))
+					{
+						queryParameters.Add((propertySnippet.Expression, propertySnippet.PropertyName));
+					}
+				}
+			}
 		}
 
 		private class MethodCreationResult

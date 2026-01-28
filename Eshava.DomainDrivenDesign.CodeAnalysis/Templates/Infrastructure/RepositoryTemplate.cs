@@ -28,9 +28,14 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			InfrastructureModel parentModel,
 			Dictionary<string, List<InfrastructureModel>> childsForModel,
 			Dictionary<string, InfrastructureModel> modelsForDomain,
-			ReferenceMap domainModelReferenceMap
+			ReferenceMap domainModelReferenceMap,
+			IEnumerable<InfrastructureCodeSnippet> codeSnippets
 		)
 		{
+			var repositoryCodeSnippet = codeSnippets
+				.FirstOrDefault(cs => cs.ApplyOnRepository)
+				?? new InfrastructureCodeSnippet();
+
 			var scopedSettings = new NameAndType(CommonNames.SCOPEDSETTINGS, project.ScopedSettingsClass.ToType());
 			NameAndType databaseSettings;
 			if (databaseSettingsInterface.IsNullOrEmpty())
@@ -121,7 +126,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 					baseClass = alternativeClass.ClassName;
 				}
 
-				unitInformation.AddMethod(CreateReadMethod(model, domainModelMap, fullDomainModelName, childsForModel, relatedDataModels, project.ImplementSoftDelete));
+				unitInformation.AddMethod(CreateReadMethod(model, domainModelMap, fullDomainModelName, childsForModel, relatedDataModels, repositoryCodeSnippet.PropertyStatements, project.ImplementSoftDelete));
 				var valueObjectCreateMethods = CreateValueObjectCreateMethods(model, domainModelMap, domainModelReferenceMap, childsForModel, modelsForDomain, true);
 				foreach (var valueObjectCreateMethod in valueObjectCreateMethods)
 				{
@@ -136,7 +141,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			unitInformation.AddBaseType(baseType, repositoryInterface);
 			unitInformation.AddUsing(alternativeClass?.Using);
 
-			CheckAndAddProviderReferences(unitInformation, alternativeClass);
+			CheckAndAddProviderReferences(unitInformation, alternativeClass, repositoryCodeSnippet);
 
 			foreach (var property in model.Properties)
 			{
@@ -157,13 +162,13 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 
 					unitInformation.AddUsing(CommonNames.Namespaces.GENERIC);
 					unitInformation.AddUsing(CommonNames.Namespaces.TASKS);
-					unitInformation.AddMethod(CreateReadForMethod(model, childsForModel, domainModelMap, foreignKeyReference, relatedDataModels, fullDomainModelName, project.ImplementSoftDelete));
+					unitInformation.AddMethod(CreateReadForMethod(model, childsForModel, domainModelMap, foreignKeyReference, relatedDataModels, fullDomainModelName, repositoryCodeSnippet.PropertyStatements, project.ImplementSoftDelete));
 				}
 			}
 
 			unitInformation.AddLogger(className, true);
 
-			unitInformation.AddMethod(CreateFromDomainModelMethod(model, fullDomainModelName, parentModel, domainModelMap, domain, modelsForDomain, domainModelReferenceMap));
+			unitInformation.AddMethod(CreateFromDomainModelMethod(model, fullDomainModelName, parentModel, domainModelMap, domain, modelsForDomain, domainModelReferenceMap, repositoryCodeSnippet.PropertyStatements));
 			unitInformation.AddMethod(CreateGetPropertyNameMethod(domainModelMap, model, modelsForDomain));
 
 			var valueObjectPatchMethod = CreateMapPatchesForValueObjectsMethod(model, domainModelMap, modelsForDomain);
@@ -175,8 +180,14 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			return unitInformation.CreateCodeString();
 		}
 
-		private static void CheckAndAddProviderReferences(UnitInformation unitInformation, InfrastructureProjectAlternativeClass alternativeClass)
+		private static void CheckAndAddProviderReferences(UnitInformation unitInformation, InfrastructureProjectAlternativeClass alternativeClass, InfrastructureCodeSnippet codeSnippet)
 		{
+			foreach (var constructorParameter in codeSnippet.ConstructorParameters)
+			{
+				unitInformation.AddUsing(constructorParameter.Using);
+				unitInformation.AddConstructorParameter(constructorParameter.Name, constructorParameter.Type.ToIdentifierName(), Enums.ParameterTargetTypes.Field);
+			}
+
 			if (!(alternativeClass?.ConstructorParameters?.Any() ?? false))
 			{
 				return;
@@ -195,19 +206,23 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			string fullDomainModelName,
 			Dictionary<string, List<InfrastructureModel>> childsForModel,
 			List<QueryAnalysisItem> relatedDataModels,
+			IEnumerable<InfrastructureModelPropertyCodeSnippet> codeSnippets,
 			bool implementSoftDelete
 		)
 		{
 			var readByPropertyName = "Id";
 			var readByVariableName = $"{model.ClassificationKey}Id";
+			(var query, var queryParameters) = GetReadByQuery(model, readByPropertyName, readByVariableName, domainModelMap, relatedDataModels, codeSnippets, implementSoftDelete);
+
+
 			var tryBlockStatements = new List<StatementSyntax>
 			{
-				GetReadByQuery(model, readByPropertyName, readByVariableName, domainModelMap, relatedDataModels, implementSoftDelete)
+				query
 			};
 
 			var usingInnerStatments = new List<StatementSyntax>
 			{
-				GetReadByQueryResult(domainModelMap, model, childsForModel, readByVariableName, implementSoftDelete)
+				GetReadByQueryResult(domainModelMap, model, childsForModel, readByVariableName, queryParameters, implementSoftDelete)
 			};
 
 			usingInnerStatments.AddRange(GetCreateDomainModelCode(model, childsForModel, domainModelMap, "result", fullDomainModelName, true));
@@ -522,7 +537,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			ReferenceDomainModelMap domainModelMap,
 			string domain,
 			Dictionary<string, InfrastructureModel> modelsForDomain,
-			ReferenceMap domainModelReferenceMap
+			ReferenceMap domainModelReferenceMap,
+			IEnumerable<InfrastructureModelPropertyCodeSnippet> codeSnippets
 		)
 		{
 			var statements = new List<StatementSyntax>
@@ -560,6 +576,36 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			{
 				if (dataModelProperty.SkipFromDomainModel)
 				{
+					if (dataModel.IsChild)
+					{
+						if (parentDataModel.Properties.Any(p => p.AddToCreationBag && p.Name == dataModelProperty.Name))
+						{
+							statements.Add(
+								instanceVar
+								.Access(dataModelProperty.Name)
+								.Assign("creationBag".Access(dataModelProperty.Name))
+								.ToExpressionStatement()
+							);
+						}
+
+						continue;
+					}
+
+					var propertySnippet = codeSnippets.FirstOrDefault(cs => cs.CodeSnippeKey == $"{dataModel.Name}.{dataModelProperty.Name}" && cs.IsMapping)
+							?? codeSnippets.FirstOrDefault(cs => cs.CodeSnippeKey == dataModelProperty.Name && cs.IsMapping);
+
+					if (propertySnippet is null)
+					{
+						continue;
+					}
+
+					statements.Add(
+						instanceVar
+						.Access(dataModelProperty.Name)
+						.Assign(propertySnippet.Expression)
+						.ToExpressionStatement()
+					);
+
 					continue;
 				}
 
@@ -914,6 +960,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			ReferenceDomainModel foreignKeyReference,
 			List<QueryAnalysisItem> relatedDataModels,
 			string fullDomainModelName,
+			IEnumerable<InfrastructureModelPropertyCodeSnippet> codeSnippets,
 			bool implementSoftDelete
 		)
 		{
@@ -921,14 +968,16 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			var readByVariableName = foreignKeyReference.PropertyName;
 			var returnListName = $"{domainModelMap.DomainModelName.ToVariableName()}Models";
 
+			(var query, var queryParameters) = GetReadByQuery(model, readByPropertyName, readByVariableName, domainModelMap, relatedDataModels, codeSnippets, implementSoftDelete);
+
 			var tryBlockStatements = new List<StatementSyntax>
 			{
-				GetReadByQuery(model, readByPropertyName, readByVariableName, domainModelMap, relatedDataModels, implementSoftDelete),
+				query
 			};
 
 			var usingInnerStatments = new List<StatementSyntax>
 			{
-				GetReadByQueryResult(domainModelMap, model, childsForModel, readByVariableName, implementSoftDelete),
+				GetReadByQueryResult(domainModelMap, model, childsForModel, readByVariableName, queryParameters, implementSoftDelete),
 			};
 
 			usingInnerStatments.AddRange(GetCreateDomainModelCode(model, childsForModel, domainModelMap, "result", fullDomainModelName, false));
@@ -1372,25 +1421,26 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			return (methodDeclarationName, methodDeclaration);
 		}
 
-		private static LocalDeclarationStatementSyntax GetReadByQuery(
-			InfrastructureModel model,
+		private static (LocalDeclarationStatementSyntax Query, List<InfrastructureModelPropertyCodeSnippet> QueryParameter) GetReadByQuery(
+			InfrastructureModel dataModel,
 			string readByPropertyName,
 			string readByVariableName,
 			ReferenceDomainModelMap domainModelMap,
 			List<QueryAnalysisItem> relatedDataModels,
+			IEnumerable<InfrastructureModelPropertyCodeSnippet> codeSnippets,
 			bool implementSoftDelete
 		)
 		{
 
-			var interpolatedStringParts = TemplateMethods.CreateSqlQueryWithoutWhereCondition(model, domainModelMap.Domain, relatedDataModels, implementSoftDelete, false);
-			var modelItem = relatedDataModels.First(m => m.DataModel.Name == model.Name && m.IsRootModel);
+			var interpolatedStringParts = TemplateMethods.CreateSqlQueryWithoutWhereCondition(dataModel, domainModelMap.Domain, relatedDataModels, implementSoftDelete, false);
+			var modelItem = relatedDataModels.First(m => m.DataModel.Name == dataModel.Name && m.IsRootModel);
 
 			interpolatedStringParts.Add(@"
 				WHERE
 					".Interpolate());
 			interpolatedStringParts.Add(modelItem.TableAliasConstant.ToIdentifierName().Interpolate());
 			interpolatedStringParts.Add(".".Interpolate());
-			interpolatedStringParts.Add(Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(model.Name.Access(readByPropertyName).ToArgument()).Interpolate());
+			interpolatedStringParts.Add(Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(dataModel.Name.Access(readByPropertyName).ToArgument()).Interpolate());
 			interpolatedStringParts.Add($@" = @{readByVariableName}".Interpolate());
 
 			if (implementSoftDelete)
@@ -1400,15 +1450,49 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 					".Interpolate());
 				interpolatedStringParts.Add(modelItem.TableAliasConstant.ToIdentifierName().Interpolate());
 				interpolatedStringParts.Add(".".Interpolate());
-				interpolatedStringParts.Add(Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(model.Name.Access("Status").ToArgument()).Interpolate());
-				interpolatedStringParts.Add(@" = @Status
-					".Interpolate());
+				interpolatedStringParts.Add(Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(dataModel.Name.Access("Status").ToArgument()).Interpolate());
+				interpolatedStringParts.Add(@" = @Status".Interpolate());
 			}
 
-			return "query".ToVariableStatement(interpolatedStringParts.ToRawStringExpression());
+			var appliedSnippets = new List<InfrastructureModelPropertyCodeSnippet>();
+			foreach (var codeSnippet in codeSnippets)
+			{
+				foreach (var dataModelProperty in dataModel.Properties)
+				{
+					var propertySnippet = codeSnippets.FirstOrDefault(cs => cs.CodeSnippeKey == $"{dataModel.Name}.{dataModelProperty.Name}" && cs.IsFilter)
+							?? codeSnippets.FirstOrDefault(cs => cs.CodeSnippeKey == dataModelProperty.Name && cs.IsFilter);
+
+					if (propertySnippet is null)
+					{
+						continue;
+					}
+
+					interpolatedStringParts.Add($@"
+				AND
+					".Interpolate());
+					interpolatedStringParts.Add(modelItem.TableAliasConstant.ToIdentifierName().Interpolate());
+					interpolatedStringParts.Add(".".Interpolate());
+					interpolatedStringParts.Add(Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(dataModel.Name.Access(propertySnippet.PropertyName).ToArgument()).Interpolate());
+					interpolatedStringParts.Add($@" = @{propertySnippet.PropertyName}".Interpolate());
+
+					appliedSnippets.Add(propertySnippet);
+				}
+			}
+
+			interpolatedStringParts.Add($@"
+					".Interpolate());
+
+			return ("query".ToVariableStatement(interpolatedStringParts.ToRawStringExpression()), appliedSnippets);
 		}
 
-		private static StatementSyntax GetReadByQueryResult(ReferenceDomainModelMap domainModelMap, InfrastructureModel model, Dictionary<string, List<InfrastructureModel>> childsForModel, string readByVariableName, bool implementSoftDelete)
+		private static StatementSyntax GetReadByQueryResult(
+			ReferenceDomainModelMap domainModelMap,
+			InfrastructureModel model,
+			Dictionary<string, List<InfrastructureModel>> childsForModel,
+			string readByVariableName,
+			List<InfrastructureModelPropertyCodeSnippet> addtionalQueryParameters,
+			bool implementSoftDelete
+		)
 		{
 			var parameterItems = new List<(ExpressionSyntax Property, string Name)>
 			{
@@ -1418,6 +1502,11 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			if (implementSoftDelete)
 			{
 				parameterItems.Add(("Status".Access("Active"), "Status"));
+			}
+
+			foreach (var addtionalQueryParameter in addtionalQueryParameters)
+			{
+				parameterItems.Add((addtionalQueryParameter.Expression, addtionalQueryParameter.PropertyName));
 			}
 
 			var mapperExpression = GetMapperExpression(domainModelMap, model, childsForModel);

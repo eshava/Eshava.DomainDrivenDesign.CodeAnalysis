@@ -15,7 +15,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models.Api
 		public List<ApiRouteCodeSnippetParameter> Parameters { get; set; }
 
 		/// <summary>
-		/// If empty, the code snipped will be applies on all use case types
+		/// If empty, the code snippet will be applies on all use case types
 		/// </summary>
 		public List<ApplicationUseCaseType> ApplyOnUseCaseTypes { get; set; }
 

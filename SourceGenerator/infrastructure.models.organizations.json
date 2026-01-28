@@ -58,6 +58,12 @@
 						{
 							"type": "MetaDataData",
 							"name": "MetaData"
+						},
+						{
+							"type": "int",
+							"name": "UserId",
+							"addToCreationBag": true,
+							"skipFromDomainModel": true
 						}
 					]
 				},
@@ -127,6 +133,12 @@
 						{
 							"type": "string",
 							"name": "Country"
+						},
+						{
+							"type": "int",
+							"name": "UserId",
+							"addToCreationBag": true,
+							"skipFromDomainModel": true
 						}
 					]
 				},
@@ -161,6 +173,12 @@
 							"referencePropertyName": "OfficeId",
 							"referenceDomain": null,
 							"skipFromDomainModel": true
+						},
+						{
+							"type": "int",
+							"name": "UserId",
+							"addToCreationBag": true,
+							"skipFromDomainModel": true
 						}
 					]
 				},
@@ -193,6 +211,12 @@
 							"referenceType": "LocationData",
 							"referencePropertyName": "LocationId",
 							"referenceDomain": null,
+							"skipFromDomainModel": true
+						},
+						{
+							"type": "int",
+							"name": "UserId",
+							"addToCreationBag": false,
 							"skipFromDomainModel": true
 						}
 					]
@@ -231,6 +255,12 @@
 							"referencePropertyName": "CustomerId",
 							"referenceDomain": null,
 							"skipFromDomainModel": true
+						},
+						{
+							"type": "int",
+							"name": "UserId",
+							"addToCreationBag": false,
+							"skipFromDomainModel": true
 						}
 					]
 				},
@@ -267,6 +297,12 @@
 							"referenceType": "CustomerData",
 							"referencePropertyName": "CustomerId",
 							"referenceDomain": null,
+							"skipFromDomainModel": true
+						},
+						{
+							"type": "int",
+							"name": "UserId",
+							"addToCreationBag": false,
 							"skipFromDomainModel": true
 						}
 					]
