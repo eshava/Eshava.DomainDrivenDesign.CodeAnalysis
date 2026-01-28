@@ -1510,6 +1510,80 @@
 							]
 						}
 					]
+				},
+				{
+					"type": 1,
+					"useCaseName": "ReadBillingOfficeOnlyInfrastructure",
+					"classificationKey": "Office",
+					"featureName": "CustomerFeature",
+					"dataModelTypeProperty": "TypeId",
+					"dataModelTypePropertyValue": "1",
+					"skipUseCase": true,
+					"mainDto": "OfficeRead",
+					"dtos": [
+						{
+							"name": "OfficeRead",
+							"referenceModelName": "OfficeData",
+							"properties": [
+								{
+									"name": "Id",
+									"type": "int"
+								},
+								{
+									"name": "Name",
+									"type": "string"
+								}
+							]
+						}
+					]
+				},
+				{
+					"type": 2,
+					"useCaseName": "SearchOnlyInfrastructure",
+					"classificationKey": "Office",
+					"skipUseCase": true,
+					"featureName": "CustomerFeature",
+					"dtos": [
+						{
+							"name": "OfficeItem",
+							"referenceModelName": "OfficeData",
+							"properties": [
+								{
+									"name": "Id",
+									"type": "int",
+									"isSortable": false,
+									"isSearchable": false
+								},
+								{
+									"name": "Name",
+									"type": "string",
+									"isSortable": true,
+									"isSearchable": true,
+									"searchOperations": [
+										"Equal",
+										"Contains"
+									]
+								},
+								{
+									"name": "CustomerId",
+									"type": "int",
+									"isSortable": false,
+									"isSearchable": false
+								},
+								{
+									"name": "CustomerName",
+									"type": "string",
+									"referenceProperty": "Customer.CompanyName",
+									"isSortable": true,
+									"isSearchable": true,
+									"searchOperations": [
+										"Equal",
+										"Contains"
+									]
+								}
+							]
+						}
+					]
 				}
 			]
 		}

@@ -30,7 +30,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models
 
 					CreateUseCaseMap(useCasesMap, project.FullQualifiedNamespace, @namespace.Domain, useCase, domainModelMap, dtoMap, referenceMap);
 
-					if (useCase.Type == ApplicationUseCaseType.Search)
+					if (useCase.Type == ApplicationUseCaseType.Search && !useCase.SkipUseCase)
 					{
 						var countUseCase = useCase.ConvertToCountUseCase();
 						CreateUseCaseMap(useCasesMap, project.FullQualifiedNamespace, @namespace.Domain, countUseCase, domainModelMap, dtoMap, referenceMap);

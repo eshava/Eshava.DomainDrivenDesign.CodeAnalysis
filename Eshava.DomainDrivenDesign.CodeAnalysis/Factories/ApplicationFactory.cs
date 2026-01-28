@@ -135,7 +135,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 			CreateInterface(factoryResult, templateRequest.UseCase, useCaseNamespace, templateRequest.AddAssemblyCommentToFiles);
 			CreateUseCase(factoryResult, templateRequest, codeSnippets, dependencyInjections);
 
-			if (templateRequest.UseCase.Type == ApplicationUseCaseType.Search)
+			if (templateRequest.UseCase.Type == ApplicationUseCaseType.Search && !templateRequest.UseCase.SkipUseCase)
 			{
 				templateRequest.UseCase.Type = ApplicationUseCaseType.SearchCount;
 				templateRequest.UseCase.UseCaseName += "Count";
@@ -190,8 +190,9 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 
 			var returnDto = templateRequest.UseCase.Dtos.FirstOrDefault(dto => dto.Name == templateRequest.UseCase.MainDto);
 
-			if (templateRequest.UseCase.Type == ApplicationUseCaseType.Search
-				|| templateRequest.UseCase.Type == ApplicationUseCaseType.SearchCount
+			if ((templateRequest.UseCase.Type == ApplicationUseCaseType.Search
+				|| templateRequest.UseCase.Type == ApplicationUseCaseType.SearchCount)
+				&& !templateRequest.UseCase.SkipUseCase
 			)
 			{
 				var sortFieldsDtos = FilterSortFieldsDtoTemplate.GetSortFieldsDto(templateRequest.UseCase, returnDto, templateRequest.UseCaseNamespace, templateRequest.AddAssemblyCommentToFiles);
@@ -217,6 +218,15 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 
 		private static void CreateInterface(FactoryResult factoryResult, ApplicationUseCase useCase, string useCaseNamespace, bool addAssemblyCommentToFiles)
 		{
+			if ((useCase.Type == ApplicationUseCaseType.Search
+				|| useCase.Type == ApplicationUseCaseType.SearchCount
+				|| useCase.Type == ApplicationUseCaseType.Read)
+				&& useCase.SkipUseCase
+			)
+			{
+				return;
+			}
+
 			var @interface = UseCaseInterfaceTemplate.GetInterface(useCase, useCaseNamespace, addAssemblyCommentToFiles);
 			var interfaceName = $"I{useCase.ClassName}";
 			var interfaceSourceName = $"{useCaseNamespace}.{interfaceName}.g.cs";
@@ -231,6 +241,15 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 			List<DependencyInjection> dependencyInjections
 		)
 		{
+			if ((templateRequest.UseCase.Type == ApplicationUseCaseType.Search
+				|| templateRequest.UseCase.Type == ApplicationUseCaseType.SearchCount
+				|| templateRequest.UseCase.Type == ApplicationUseCaseType.Read)
+				&& templateRequest.UseCase.SkipUseCase
+			)
+			{
+				return;
+			}
+
 			var useCaseClassName = templateRequest.UseCase.ClassName;
 			var useCaseInterfaceName = $"I{useCaseClassName}";
 			var useCaseTemplateName = $"{templateRequest.UseCaseNamespace}.{useCaseClassName}.g.cs";
@@ -341,6 +360,15 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 
 		private static void CreateRequest(FactoryResult factoryResult, UseCaseTemplateRequest templateRequest, List<UseCaseCodeSnippet> codeSnippets)
 		{
+			if ((templateRequest.UseCase.Type == ApplicationUseCaseType.Search
+				|| templateRequest.UseCase.Type == ApplicationUseCaseType.SearchCount
+				|| templateRequest.UseCase.Type == ApplicationUseCaseType.Read)
+				&& templateRequest.UseCase.SkipUseCase
+			)
+			{
+				return;
+			}
+
 			var request = UseCaseRequestTemplate.GetRequest(
 				templateRequest.UseCase,
 				templateRequest.Domain,
@@ -358,6 +386,15 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 
 		private static void CreateResponse(FactoryResult factoryResult, UseCaseTemplateRequest templateRequest)
 		{
+			if ((templateRequest.UseCase.Type == ApplicationUseCaseType.Search
+				|| templateRequest.UseCase.Type == ApplicationUseCaseType.SearchCount
+				|| templateRequest.UseCase.Type == ApplicationUseCaseType.Read)
+				&& templateRequest.UseCase.SkipUseCase
+			)
+			{
+				return;
+			}
+
 			var response = UseCaseResponseTemplate.GetResponse(
 				templateRequest.UseCase,
 				templateRequest.Domain,
