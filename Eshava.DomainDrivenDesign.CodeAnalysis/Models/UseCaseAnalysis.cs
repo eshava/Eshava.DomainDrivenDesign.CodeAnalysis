@@ -30,7 +30,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models
 
 					CreateUseCaseMap(useCasesMap, project.FullQualifiedNamespace, @namespace.Domain, useCase, domainModelMap, dtoMap, referenceMap);
 
-					if (useCase.Type == ApplicationUseCaseType.Search)
+					if (useCase.Type == ApplicationUseCaseType.Search && !useCase.SkipUseCase)
 					{
 						var countUseCase = useCase.ConvertToCountUseCase();
 						CreateUseCaseMap(useCasesMap, project.FullQualifiedNamespace, @namespace.Domain, countUseCase, domainModelMap, dtoMap, referenceMap);
@@ -55,7 +55,10 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models
 				UseCase = useCase
 			};
 
-			AddQueryProviderMethod(useCasesMap, useCaseMap, referenceMap);
+			if (useCase.Type != ApplicationUseCaseType.Custom)
+			{
+				AddQueryProviderMethod(useCasesMap, useCaseMap, referenceMap);
+			}
 
 			useCasesMap.AddUseCase(useCaseMap);
 		}
@@ -70,6 +73,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models
 				case ApplicationUseCaseType.Create:
 				case ApplicationUseCaseType.Update:
 				case ApplicationUseCaseType.Delete:
+				case ApplicationUseCaseType.Custom when useCase.IsCommandUseCase:
 					useCaseNamespace += "Commands";
 
 					break;
@@ -80,6 +84,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models
 				case ApplicationUseCaseType.SearchCount:
 				case ApplicationUseCaseType.Unique:
 				case ApplicationUseCaseType.Suggestions:
+				case ApplicationUseCaseType.Custom when !useCase.IsCommandUseCase:
 				default:
 					useCaseNamespace += "Queries";
 

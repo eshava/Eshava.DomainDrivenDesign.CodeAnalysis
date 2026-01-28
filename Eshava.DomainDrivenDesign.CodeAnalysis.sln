@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.14.36603.0
+# Visual Studio Version 18
+VisualStudioVersion = 18.2.11408.102 d18.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Eshava.DomainDrivenDesign.CodeAnalysis", "Eshava.DomainDrivenDesign.CodeAnalysis\Eshava.DomainDrivenDesign.CodeAnalysis.csproj", "{5B3F178A-E296-4394-B063-C056250C16DD}"
 EndProject
@@ -31,6 +31,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SourceGenerator", "SourceGe
 		SourceGenerator\api.routes.ordering.orderpositions.json = SourceGenerator\api.routes.ordering.orderpositions.json
 		SourceGenerator\api.routes.ordering.orders.json = SourceGenerator\api.routes.ordering.orders.json
 		SourceGenerator\api.routes.ordering.products.json = SourceGenerator\api.routes.ordering.products.json
+		SourceGenerator\api.routes.organizations.json = SourceGenerator\api.routes.organizations.json
 		SourceGenerator\application.project.json = SourceGenerator\application.project.json
 		SourceGenerator\application.usecases.ordering.json = SourceGenerator\application.usecases.ordering.json
 		SourceGenerator\application.usecases.organizations.json = SourceGenerator\application.usecases.organizations.json

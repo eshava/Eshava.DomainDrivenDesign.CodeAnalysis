@@ -15,6 +15,12 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models.Application
 		}
 
 		public ApplicationUseCaseType Type { get; set; }
+		/// <summary>
+		/// Only for custom use cases
+		/// If true, namespace -> Commands
+		/// If false, namespace -> Queries
+		/// </summary>
+		public bool IsCommandUseCase { get; set; }
 		public string UseCaseName { get; set; }
 		public string AbstractUseCaseClass { get; set; }
 		public string ClassificationKey { get; set; }
@@ -53,6 +59,11 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models.Application
 		public List<AttributeDefinition> Attributes { get; set; }
 		public bool AddValidationConfigurationMethod { get; set; }
 		public bool ValidationConfigurationAsTreeStructure { get; set; }
+		/// <summary>
+		/// Only for read and search use cases
+		/// If true, generates only the dto and the infrastructure components
+		/// </summary>
+		public bool SkipUseCase { get; set; }
 		public bool SkipUseCaseClass { get; set; }
 		public bool SkipCountUseCase { get; set; }
 		public bool SkipInfrastructureProviderServiceMethod { get; set; }

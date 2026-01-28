@@ -26,6 +26,7 @@ namespace Eshava.Example.SourceGenerator.Extensions
 				acceptedFiles.Add((ConfigurationFileTypes.ApiRoutes, System.IO.Path.Combine("SourceGenerator", "api.routes.ordering.products.json")));
 				acceptedFiles.Add((ConfigurationFileTypes.ApiRoutes, System.IO.Path.Combine("SourceGenerator", "api.routes.ordering.orders.json")));
 				acceptedFiles.Add((ConfigurationFileTypes.ApiRoutes, System.IO.Path.Combine("SourceGenerator", "api.routes.ordering.orderpositions.json")));
+				acceptedFiles.Add((ConfigurationFileTypes.ApiRoutes, System.IO.Path.Combine("SourceGenerator", "api.routes.organizations.json")));
 			}
 
 			if (loadApplication)

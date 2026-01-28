@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System.Collections.Generic;
+using System.Linq;
 using Eshava.CodeAnalysis.Extensions;
 using Eshava.DomainDrivenDesign.CodeAnalysis.Constants;
 using Eshava.DomainDrivenDesign.CodeAnalysis.Extensions;
@@ -12,9 +13,9 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 	public static class UseCaseResponseTemplate
 	{
 		public static string GetResponse(
-			ApplicationUseCase useCase, 
-			string domain, 
-			string useCaseNamespace, 
+			ApplicationUseCase useCase,
+			string domain,
+			string useCaseNamespace,
 			ReferenceMap domainModelReferenceMap,
 			DtoReferenceMap dtoReferenceMap,
 			bool addAssemblyCommentToFiles
@@ -79,14 +80,53 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 					}
 
 					break;
+				case ApplicationUseCaseType.Custom:
+
+					foreach (var dto in useCase.Dtos)
+					{
+						dto.CustomUseCaseSettings ??= new();
+						if (!dto.CustomUseCaseSettings.AddToResponse)
+						{
+							continue;
+						}
+
+						if (dto.CustomUseCaseSettings.AddOnlyPropertiesToResponse)
+						{
+							var propertyAttributes = new Dictionary<string, List<AttributeDefinition>>();
+
+							foreach (var property in dto.Properties)
+							{
+								TemplateMethods.CollectPropertyUsings(unitInformation, property, propertyAttributes, null, false);
+								var attributesForProperty = AttributeTemplate.CreateAttributes(propertyAttributes[property.Name]);
+								var propertyType = property.IsEnumerable
+									? "IEnumerable".AsGeneric(property.Type)
+									: property.Type.ToType();
+
+								AddProperty(unitInformation, property.Name, propertyType, attributesForProperty);
+							}
+						}
+						else
+						{
+							var propertyName = dto.CustomUseCaseSettings.ResponsePropertyName.IsNullOrEmpty()
+								? dto.Name
+								: dto.CustomUseCaseSettings.ResponsePropertyName;
+							var propertyType = dto.CustomUseCaseSettings.IsEnumerable
+								? "IEnumerable".AsGeneric(dto.Name)
+								: dto.Name.ToType();
+
+							AddProperty(unitInformation, propertyName, propertyType);
+						}
+					}
+
+					break;
 			}
 
 			return unitInformation.CreateCodeString();
 		}
 
-		private static void AddProperty(UnitInformation unitInformation, string propertyName, TypeSyntax type)
+		private static void AddProperty(UnitInformation unitInformation, string propertyName, TypeSyntax type, IEnumerable<AttributeSyntax> attributes = null)
 		{
-			unitInformation.AddProperty(propertyName.ToProperty(type, SyntaxKind.PublicKeyword, true, true), propertyName);
+			unitInformation.AddProperty(propertyName.ToProperty(type, SyntaxKind.PublicKeyword, true, true, attributes: attributes), propertyName);
 		}
 	}
 }

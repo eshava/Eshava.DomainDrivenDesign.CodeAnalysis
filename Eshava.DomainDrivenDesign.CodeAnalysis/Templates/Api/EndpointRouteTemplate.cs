@@ -44,6 +44,14 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Api
 					continue;
 				}
 
+				if ((useCaseMap.UseCase.Type == Models.Application.ApplicationUseCaseType.Search
+					|| useCaseMap.UseCase.Type == Models.Application.ApplicationUseCaseType.SearchCount
+					|| useCaseMap.UseCase.Type == Models.Application.ApplicationUseCaseType.Read)
+					&& useCaseMap.UseCase.SkipUseCase)
+				{
+					continue;
+				}
+
 				var filteredCodeSnippets = codeSnippets
 					.Where(cs => cs.IsApplicable(useCaseMap.UseCase.Type))
 					.ToList();

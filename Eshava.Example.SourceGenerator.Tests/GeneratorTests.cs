@@ -106,7 +106,8 @@ namespace Eshava.Example.SourceGenerator.Tests
 					data.DomainProject,
 					data.DomainModels,
 					data.InfrastructureProject,
-					data.InfrastructureModels
+					data.InfrastructureModels,
+					[]
 				);
 
 				if (true)

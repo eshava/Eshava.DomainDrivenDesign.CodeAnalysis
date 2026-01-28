@@ -13,12 +13,12 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 	public static class UseCaseRequestTemplate
 	{
 		public static string GetRequest(
-			ApplicationUseCase useCase, 
-			string domain, 
-			string useCaseNamespace, 
-			ReferenceMap domainModelReferenceMap, 
-			DtoReferenceMap dtoReferenceMap, 
-			List<UseCaseCodeSnippet> codeSnippets, 
+			ApplicationUseCase useCase,
+			string domain,
+			string useCaseNamespace,
+			ReferenceMap domainModelReferenceMap,
+			DtoReferenceMap dtoReferenceMap,
+			List<UseCaseCodeSnippet> codeSnippets,
 			bool addAssemblyCommentToFiles
 		)
 		{
@@ -123,6 +123,46 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 							? property.Type
 							: $"{property.Type}?";
 						AddProperty(unitInformation, property.Name, property.UsingForType, propertyType.ToType(), attributes);
+					}
+
+					break;
+				case ApplicationUseCaseType.Custom:
+
+					foreach (var dto in useCase.Dtos)
+					{
+						dto.CustomUseCaseSettings ??= new();
+
+						if (!dto.CustomUseCaseSettings.AddToRequest)
+						{
+							continue;
+						}
+
+						if (dto.CustomUseCaseSettings.AddOnlyPropertiesToRequest)
+						{
+							var propertyAttributes = new Dictionary<string, List<AttributeDefinition>>();
+
+							foreach (var property in dto.Properties)
+							{
+								TemplateMethods.CollectPropertyUsings(unitInformation, property, propertyAttributes, null, false);
+								var attributesForProperty = AttributeTemplate.CreateAttributes(propertyAttributes[property.Name]);
+								var propertyType = property.IsEnumerable
+									? "IEnumerable".AsGeneric(property.Type)
+									: property.Type.ToType();
+
+								AddProperty(unitInformation, property.Name, null, propertyType, attributesForProperty);
+							}
+						}
+						else
+						{
+							var propertyName = dto.CustomUseCaseSettings.RequestPropertyName.IsNullOrEmpty()
+								? dto.Name
+								: dto.CustomUseCaseSettings.RequestPropertyName;
+							var propertyType = dto.CustomUseCaseSettings.IsEnumerable
+								? "IEnumerable".AsGeneric(dto.Name)
+								: dto.Name.ToType();
+
+							AddProperty(unitInformation, propertyName, null, propertyType);
+						}
 					}
 
 					break;
