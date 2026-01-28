@@ -1,6 +1,9 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 using Eshava.CodeAnalysis.Extensions;
 using Eshava.DomainDrivenDesign.CodeAnalysis.Constants;
 using Eshava.DomainDrivenDesign.CodeAnalysis.Enums;
@@ -11,7 +14,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Extensions
 {
 	public static class StringExtensions
 	{
-
+		private static ConcurrentDictionary<string, string> _namespaceHashCache = [];
 		private static readonly string[] _uncountable =
 		[
 			"information",
@@ -305,6 +308,48 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Extensions
 		public static string GetModelConstantName(this string modelName)
 		{
 			return modelName.ToUpper();
+		}
+
+		public static string HashNamespace(this string fullQualifiedClassName, int hashLength = 20)
+		{
+			if (hashLength < 20)
+			{
+				hashLength = 20;
+			}
+
+			// Ends allways with ".g.cs"
+			var extension = ".g.cs";
+			var nameWithoutExtension = fullQualifiedClassName.AsSpan(0, fullQualifiedClassName.Length - extension.Length);
+
+			var namespaceSeparatorIndex = nameWithoutExtension.LastIndexOf('.');
+			if (namespaceSeparatorIndex == -1)
+			{
+				return fullQualifiedClassName;
+			}
+
+			var @namespace = nameWithoutExtension.Slice(0, namespaceSeparatorIndex).ToString();
+			var className = nameWithoutExtension.Slice(namespaceSeparatorIndex + 1).ToString();
+
+			if (!_namespaceHashCache.TryGetValue(@namespace, out var namespaceHash))
+			{
+				using (var sha256 = SHA256.Create())
+				{
+					var bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(@namespace));
+
+					var base64 = Convert.ToBase64String(bytes)
+						.Replace("+", "0")
+						.Replace("/", "1")
+						.Replace("=", "");
+
+					namespaceHash = base64.Length > hashLength
+						? base64.Substring(0, hashLength)
+						: base64;
+				}
+
+				_namespaceHashCache.TryAdd(@namespace, namespaceHash);
+			}
+
+			return $"{namespaceHash}.{className}{extension}";
 		}
 	}
 }

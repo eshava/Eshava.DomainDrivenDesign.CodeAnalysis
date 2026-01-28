@@ -3,6 +3,7 @@ using Eshava.Example.SourceGenerator.Extensions;
 using Eshava.DomainDrivenDesign.CodeAnalysis.Factories;
 using Eshava.DomainDrivenDesign.CodeAnalysis.Models.Domain;
 using Microsoft.CodeAnalysis;
+using Eshava.DomainDrivenDesign.CodeAnalysis.Extensions;
 
 namespace Eshava.Example.SourceGenerator
 {
@@ -40,7 +41,7 @@ namespace Eshava.Example.SourceGenerator
 
 				foreach (var item in factoryResult.SourceCode)
 				{
-					context.AddSource(item.SourceName, item.SourceCode);
+					context.AddSource(item.SourceName.HashNamespace(), item.SourceCode);
 				}
 			});
 		}

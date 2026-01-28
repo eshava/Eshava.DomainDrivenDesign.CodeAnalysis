@@ -8,6 +8,7 @@ using Eshava.DomainDrivenDesign.CodeAnalysis.Models.Application;
 using Eshava.DomainDrivenDesign.CodeAnalysis.Models.Domain;
 using Eshava.DomainDrivenDesign.CodeAnalysis.Models.Infrastructure;
 using Microsoft.CodeAnalysis;
+using Eshava.DomainDrivenDesign.CodeAnalysis.Extensions;
 
 namespace Eshava.Example.SourceGenerator.Generators
 {
@@ -62,7 +63,7 @@ namespace Eshava.Example.SourceGenerator.Generators
 
 				foreach (var item in factoryResult.SourceCode)
 				{
-					context.AddSource(item.SourceName, item.SourceCode);
+					context.AddSource(item.SourceName.HashNamespace(), item.SourceCode);
 				}
 			});
 		}

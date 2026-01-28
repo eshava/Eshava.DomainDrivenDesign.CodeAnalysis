@@ -1,4 +1,6 @@
-﻿using Eshava.DomainDrivenDesign.CodeAnalysis.Factories;
+﻿using System.Linq;
+using Eshava.DomainDrivenDesign.CodeAnalysis.Factories;
+using Eshava.DomainDrivenDesign.CodeAnalysis.Extensions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Eshava.Example.SourceGenerator.Tests
@@ -25,6 +27,10 @@ namespace Eshava.Example.SourceGenerator.Tests
 					data.InfrastructureModels,
 					[]
 				);
+
+				result.SourceCode = result.SourceCode
+					.Select(sc => (sc.SourceName.HashNamespace(), sc.SourceCode))
+					.ToList();
 
 				if (true)
 				{
@@ -56,6 +62,10 @@ namespace Eshava.Example.SourceGenerator.Tests
 					[]
 				);
 
+				result.SourceCode = result.SourceCode
+					.Select(sc => (sc.SourceName.HashNamespace(), sc.SourceCode))
+					.ToList();
+
 				if (true)
 				{
 
@@ -80,6 +90,10 @@ namespace Eshava.Example.SourceGenerator.Tests
 					data.DomainProject,
 					data.DomainModels
 				);
+
+				result.SourceCode = result.SourceCode
+					.Select(sc => (sc.SourceName.HashNamespace(), sc.SourceCode))
+					.ToList();
 
 				if (true)
 				{
@@ -109,6 +123,10 @@ namespace Eshava.Example.SourceGenerator.Tests
 					data.InfrastructureModels,
 					[]
 				);
+
+				result.SourceCode = result.SourceCode
+					.Select(sc => (sc.SourceName.HashNamespace(), sc.SourceCode))
+					.ToList();
 
 				if (true)
 				{
