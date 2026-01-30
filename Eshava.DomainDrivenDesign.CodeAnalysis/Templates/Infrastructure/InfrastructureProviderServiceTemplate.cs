@@ -147,6 +147,11 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 
 			if (codeSnippet is not null)
 			{
+				foreach (var additionalUsing in codeSnippet.AdditionalUsings)
+				{
+					unitInformation.AddUsing(additionalUsing);
+				}
+
 				foreach (var constructorParameter in codeSnippet.ConstructorParameters)
 				{
 					unitInformation.AddUsing(constructorParameter.Using);
