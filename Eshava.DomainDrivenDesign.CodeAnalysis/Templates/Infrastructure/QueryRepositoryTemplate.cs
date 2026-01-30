@@ -200,12 +200,12 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 
 		private static void CheckAndAddProviderReferences(UnitInformation unitInformation, InfrastructureProjectAlternativeClass alternativeClass, InfrastructureCodeSnippet codeSnippet)
 		{
-			foreach (var additionalUsing in codeSnippet.AdditionalUsings)
+			foreach (var additionalUsing in codeSnippet.AdditionalUsings ?? [])
 			{
 				unitInformation.AddUsing(additionalUsing);
 			}
 
-			foreach (var constructorParameter in codeSnippet.ConstructorParameters)
+			foreach (var constructorParameter in codeSnippet.ConstructorParameters ?? [])
 			{
 				unitInformation.AddUsing(constructorParameter.Using);
 				unitInformation.AddConstructorParameter(constructorParameter.Name, constructorParameter.Type.ToIdentifierName(), Enums.ParameterTargetTypes.Field);

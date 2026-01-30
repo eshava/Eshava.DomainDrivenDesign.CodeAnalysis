@@ -6,6 +6,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models.Infrastructure
 	{
 		public InfrastructureCodeSnippet()
 		{
+			AdditionalUsings = [];
 			ConstructorParameters = [];
 			PropertyStatements = [];
 		}

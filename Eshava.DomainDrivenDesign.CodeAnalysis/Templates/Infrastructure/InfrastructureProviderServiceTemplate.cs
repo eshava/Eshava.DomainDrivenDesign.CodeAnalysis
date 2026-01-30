@@ -147,12 +147,12 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 
 			if (codeSnippet is not null)
 			{
-				foreach (var additionalUsing in codeSnippet.AdditionalUsings)
+				foreach (var additionalUsing in codeSnippet.AdditionalUsings ?? [])
 				{
 					unitInformation.AddUsing(additionalUsing);
 				}
 
-				foreach (var constructorParameter in codeSnippet.ConstructorParameters)
+				foreach (var constructorParameter in codeSnippet.ConstructorParameters ?? [])
 				{
 					unitInformation.AddUsing(constructorParameter.Using);
 					unitInformation.AddConstructorParameter(constructorParameter.Name, constructorParameter.Type.ToIdentifierName(), Enums.ParameterTargetTypes.Field);
@@ -164,7 +164,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				return;
 			}
 
-			foreach (var constructorParameter in domainModelMap.DomainModel.ProviderServiceConstructorParameters)
+			foreach (var constructorParameter in domainModelMap.DomainModel.ProviderServiceConstructorParameters ?? [])
 			{
 				unitInformation.AddUsing(constructorParameter.UsingForType);
 				unitInformation.AddConstructorParameter(constructorParameter.Name, constructorParameter.Type.ToIdentifierName());
