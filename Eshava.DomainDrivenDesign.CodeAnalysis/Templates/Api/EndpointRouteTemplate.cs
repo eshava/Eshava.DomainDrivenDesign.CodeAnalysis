@@ -248,7 +248,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Api
 			{
 				return isUseCaseCall
 					? $"{apiRouteUseCase.UseCaseName}Async"
-					: $"{httpMethod}{apiRouteUseCase.UseCaseName}Async";
+					: $"{httpMethod}{apiRouteUseCase.ClassificationKey}{apiRouteUseCase.UseCaseName}Async";
 			}
 
 			var methodName = apiRouteUseCase.MethodToCall;
@@ -260,7 +260,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Api
 
 			if (!isUseCaseCall)
 			{
-				methodName += $"For{apiRouteUseCase.UseCaseName}";
+				methodName += $"For{apiRouteUseCase.ClassificationKey}{apiRouteUseCase.UseCaseName}";
 			}
 
 			if (apiRouteUseCase.IsAsync)
