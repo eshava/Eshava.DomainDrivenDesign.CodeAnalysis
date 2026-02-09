@@ -39,6 +39,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Api
 			var apiRoutesToProcess = new List<(ApiRoute Route, UseCaseMap UseCaseMap, AdditionalApiRouteInformation Additional, List<ApiRouteCodeSnippet> CodeSnippets)>();
 			foreach (var apiRoute in apiRoutes)
 			{
+				apiRoute.HttpMethod = apiRoute.HttpMethod?.ToUpperInvariant();
+
 				if (!useCasesMap.TryGetUseCase(apiRoute.UseCase.Domain, apiRoute.UseCase.ClassificationKey, apiRoute.UseCase.UseCaseName, apiRoute.UseCase.ReferenceModel, out var useCaseMap))
 				{
 					continue;
@@ -77,7 +79,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Api
 				unitInformation.AddUsing(useCaseMap.Namespace);
 				apiRoutesToProcess.Add((apiRoute, useCaseMap, additional, filteredCodeSnippets));
 
-				if (useCaseMap.UseCase.Type == Models.Application.ApplicationUseCaseType.Search)
+				if (useCaseMap.UseCase.Type == Models.Application.ApplicationUseCaseType.Search && !useCaseMap.UseCase.SkipCountUseCase)
 				{
 					var countApiRoute = apiRoute.ConvertToCountRoute();
 
@@ -337,6 +339,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Api
 			{
 				Models.Application.ApplicationUseCaseType.Read => true,
 				Models.Application.ApplicationUseCaseType.Delete => true,
+				Models.Application.ApplicationUseCaseType.Search when apiRoute.HttpMethod == "GET" => true,
 				Models.Application.ApplicationUseCaseType.Unique when apiRoute.HttpMethod == "GET" => true,
 				Models.Application.ApplicationUseCaseType.Suggestions when apiRoute.HttpMethod == "GET" => true,
 				_ => false
