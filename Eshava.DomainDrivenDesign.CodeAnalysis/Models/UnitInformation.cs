@@ -258,18 +258,15 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models
 			else
 			{
 				AddConstructorBodyStatementAndField(DomainNames.VALIDATION.Parameter);
-
 			}
 		}
 
 		public void AddConstructorParameter(NameAndType nameAndType, ParameterTargetTypes targetType = ParameterTargetTypes.Field)
 		{
-			if (ConstructorParameters.Any(p => p.Name == nameAndType.Name))
+			if (!ConstructorParameters.Any(p => p.Name == nameAndType.Name))
 			{
-				return;
+				AddConstructorParameter(nameAndType);
 			}
-
-			AddConstructorParameter(nameAndType);
 
 			if (targetType.HasFlag(ParameterTargetTypes.Field))
 			{

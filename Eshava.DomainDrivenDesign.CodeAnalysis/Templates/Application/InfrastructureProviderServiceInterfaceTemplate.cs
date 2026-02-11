@@ -39,10 +39,33 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 				var methodDeclarationName = $"ReadFor{foreignKeyReference.PropertyName}Async";
 				var methodDeclaration = methodDeclarationName
 					.ToMethodDefinition(
-					"Task".AsGeneric("ResponseData".AsGeneric("IEnumerable".AsGeneric(fullDomainModelName))),
+					"Task".AsGeneric(CommonNames.RESPONSEDATA.AsGeneric("IEnumerable".AsGeneric(fullDomainModelName))),
 					null
 					)
 					.WithParameter($"{foreignKeyReference.PropertyName.ToVariableName()}".ToParameter().WithType(domainModelMap.IdentifierType.ToType()))
+					.AddSemicolon();
+
+				unitInformation.AddMethod((methodDeclarationName, methodDeclaration));
+			}
+
+			foreach (var property in domainModelMap.DomainModel.Properties)
+			{
+				if (!property.AllowReadByProperty && !property.AllowReadManyByProperty)
+				{
+					continue;
+				}
+
+				var returnType = property.AllowReadByProperty
+					? "Task".AsGeneric(CommonNames.RESPONSEDATA.AsGeneric(fullDomainModelName))
+					: "Task".AsGeneric(CommonNames.RESPONSEDATA.AsGeneric("IEnumerable".AsGeneric(fullDomainModelName)));
+
+				var methodDeclarationName = $"ReadBy{property.Name}Async";
+				var methodDeclaration = methodDeclarationName
+					.ToMethodDefinition(
+					returnType,
+					null
+					)
+					.WithParameter($"{property.Name.ToVariableName()}".ToParameter().WithType(property.TypeWithUsing.ToType()))
 					.AddSemicolon();
 
 				unitInformation.AddMethod((methodDeclarationName, methodDeclaration));

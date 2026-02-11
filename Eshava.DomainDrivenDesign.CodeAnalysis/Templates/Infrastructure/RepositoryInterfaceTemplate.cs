@@ -54,10 +54,37 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 					var methodDeclarationName = $"ReadFor{foreignKeyReference.PropertyName}Async";
 					var methodDeclaration = methodDeclarationName
 						.ToMethodDefinition(
-						"Task".AsGeneric("ResponseData".AsGeneric("IEnumerable".AsGeneric(fullDomainModelName))),
+						"Task".AsGeneric(CommonNames.RESPONSEDATA.AsGeneric("IEnumerable".AsGeneric(fullDomainModelName))),
 						null
 						)
 						.WithParameter($"{foreignKeyReference.PropertyName.ToVariableName()}".ToParameter().WithType(domainModelMap.IdentifierType.ToType()))
+						.AddSemicolon();
+
+					unitInformation.AddMethod((methodDeclarationName, methodDeclaration));
+				}
+
+				foreach (var property in domainModelMap.DomainModel.Properties)
+				{
+					if (!property.AllowReadByProperty && !property.AllowReadManyByProperty)
+					{
+						continue;
+					}
+
+					unitInformation.AddUsing(CommonNames.Namespaces.GENERIC);
+					unitInformation.AddUsing(CommonNames.Namespaces.TASKS);
+					unitInformation.AddUsing(CommonNames.Namespaces.Eshava.Core.MODELS);
+
+					var returnType = property.AllowReadByProperty
+						? "Task".AsGeneric(CommonNames.RESPONSEDATA.AsGeneric(fullDomainModelName))
+						: "Task".AsGeneric(CommonNames.RESPONSEDATA.AsGeneric("IEnumerable".AsGeneric(fullDomainModelName)));
+
+					var methodDeclarationName = $"ReadBy{property.Name}Async";
+					var methodDeclaration = methodDeclarationName
+						.ToMethodDefinition(
+						returnType,
+						null
+						)
+						.WithParameter($"{property.Name.ToVariableName()}".ToParameter().WithType(property.TypeWithUsing.ToType()))
 						.AddSemicolon();
 
 					unitInformation.AddMethod((methodDeclarationName, methodDeclaration));

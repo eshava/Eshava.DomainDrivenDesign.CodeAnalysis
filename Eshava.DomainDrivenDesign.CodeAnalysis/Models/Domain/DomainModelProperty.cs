@@ -31,6 +31,17 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models.Domain
 		public string ReferenceDomain { get; set; }
 		public bool IsProcessingProperty { get; set; }
 		/// <summary>
+		/// Adds a ReadByPropertyName method to infrastructure provider service and repository in order to read the domain model
+		/// Note: Either <see cref="ReadByProperty"/> or <see cref="ReadManyByProperty"/> can be used.
+		/// </summary>
+		public bool ReadByProperty { get; set; }
+		/// <summary>
+		/// Adds a ReadByPropertyName method to infrastructure provider service and repository in order to read multiple domain models
+		/// Note: Either <see cref="ReadByProperty"/> or <see cref="ReadManyByProperty"/> can be used.
+		/// </summary>
+		public bool ReadManyByProperty { get; set; }
+
+		/// <summary>
 		/// Only for value objects
 		/// Value object will be automatically mapped to an data model (if configured) or mapped by custom code
 		/// </summary>
@@ -55,6 +66,27 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models.Domain
 				return UsingForType.IsNullOrEmpty()
 					? Type
 					: $"{UsingForType}.{Type}";
+			}
+		}
+
+		internal bool AllowReadByProperty
+		{
+			get
+			{
+				return ReadByProperty 
+					&& !IsProcessingProperty 
+					&& !ProcessAsUnit;
+			}
+		}
+
+		internal bool AllowReadManyByProperty
+		{
+			get
+			{
+				return ReadManyByProperty
+					&& !ReadByProperty
+					&& !IsProcessingProperty
+					&& !ProcessAsUnit;
 			}
 		}
 	}

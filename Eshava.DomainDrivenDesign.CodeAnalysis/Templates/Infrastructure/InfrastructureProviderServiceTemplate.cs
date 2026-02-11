@@ -116,6 +116,21 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 					unitInformation.AddMethod(CreateReadForMethod(domainModelMap, foreignKeyReference, fullDomainModelName));
 				}
 
+				foreach (var property in domainModelMap.DomainModel.Properties)
+				{
+					if (!property.AllowReadByProperty && !property.AllowReadManyByProperty)
+					{
+						continue;
+					}
+
+					unitInformation.AddUsing(CommonNames.Namespaces.GENERIC);
+					unitInformation.AddUsing(CommonNames.Namespaces.TASKS);
+					unitInformation.AddUsing(CommonNames.Namespaces.Eshava.Core.MODELS);
+					unitInformation.AddConstructorBodyStatementAndField($"{domainModelMap.DomainModelName.ToVariableName()}Repository", $"I{domainModelMap.DomainModelName}Repository".ToIdentifierName());
+
+					unitInformation.AddMethod(CreateReadByMethod(domainModelMap, property, fullDomainModelName));
+				}
+
 				CheckAndAddProviderReferences(unitInformation, domainModelMap, alternativeClass, providerCodeSnippet);
 			}
 			else
@@ -499,6 +514,42 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				)
 			);
 		}
+
+		private static (string Name, MethodDeclarationSyntax Method) CreateReadByMethod(
+			ReferenceDomainModelMap domainModelMap,
+			Models.Domain.DomainModelProperty domainModelProperty,
+			string fullDomainModelName
+		)
+		{
+			var statements = new List<StatementSyntax>();
+			var methodName = $"ReadBy{domainModelProperty.Name}Async";
+			var parameterName = $"{domainModelProperty.Name.ToVariableName()}";
+
+			var call = StatementHelpers.GetMethodCall($"{domainModelMap.DomainModelName.ToVariableName().ToFieldName()}Repository".ToIdentifierName(), methodName, parameterName.ToIdentifierName());
+
+			statements.Add(call.Return());
+
+			var returnType = domainModelProperty.AllowReadByProperty
+				? "Task".AsGeneric(CommonNames.RESPONSEDATA.AsGeneric(fullDomainModelName))
+				: "Task".AsGeneric(CommonNames.RESPONSEDATA.AsGeneric("IEnumerable".AsGeneric(fullDomainModelName)));
+
+			var methodDeclaration = methodName.ToMethod(
+				returnType,
+				statements,
+				SyntaxKind.PublicKeyword
+			);
+
+			return (
+				methodName,
+				methodDeclaration
+				.WithParameter(
+					parameterName
+					.ToParameter()
+					.WithType(domainModelProperty.TypeWithUsing.ToType())
+				)
+			);
+		}
+
 		private enum MethodAction
 		{
 			Create = 1,

@@ -19,6 +19,7 @@
 					],
 					"properties": [
 						{
+							"readByProperty": true,
 							"type": "string",
 							"name": "Name",
 							"dataModelPropertyName": "CompanyName",

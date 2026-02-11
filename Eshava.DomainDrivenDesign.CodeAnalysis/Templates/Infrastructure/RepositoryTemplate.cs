@@ -164,6 +164,19 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 					unitInformation.AddUsing(CommonNames.Namespaces.TASKS);
 					unitInformation.AddMethod(CreateReadForMethod(model, childsForModel, domainModelMap, foreignKeyReference, relatedDataModels, fullDomainModelName, repositoryCodeSnippet.PropertyStatements, project.ImplementSoftDelete));
 				}
+
+				foreach (var property in domainModelMap.DomainModel.Properties)
+				{
+					if (!property.AllowReadByProperty && !property.AllowReadManyByProperty)
+					{
+						continue;
+					}
+
+					unitInformation.AddUsing(CommonNames.Namespaces.GENERIC);
+					unitInformation.AddUsing(CommonNames.Namespaces.TASKS);
+					unitInformation.AddUsing(CommonNames.Namespaces.Eshava.Core.MODELS);
+					unitInformation.AddMethod(CreateReadByMethod(model, childsForModel, domainModelMap, property, relatedDataModels, fullDomainModelName, repositoryCodeSnippet.PropertyStatements, project.ImplementSoftDelete));
+				}
 			}
 
 			unitInformation.AddLogger(className, true);
@@ -217,8 +230,37 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 		{
 			var readByPropertyName = "Id";
 			var readByVariableName = $"{model.ClassificationKey}Id";
-			(var query, var queryParameters) = GetReadByQuery(model, readByPropertyName, readByVariableName, domainModelMap, relatedDataModels, codeSnippets, implementSoftDelete);
+			var readByPropertyType = model.IdentifierType.ToType();
 
+			return CreateReadMethod(
+				model,
+				domainModelMap,
+				fullDomainModelName,
+				childsForModel,
+				relatedDataModels,
+				codeSnippets,
+				implementSoftDelete,
+				readByPropertyName,
+				readByVariableName,
+				readByPropertyType
+			);
+		}
+
+		private static (string Name, MemberDeclarationSyntax) CreateReadMethod(
+			InfrastructureModel model,
+			ReferenceDomainModelMap domainModelMap,
+			string fullDomainModelName,
+			Dictionary<string, List<InfrastructureModel>> childsForModel,
+			List<QueryAnalysisItem> relatedDataModels,
+			IEnumerable<InfrastructureModelPropertyCodeSnippet> codeSnippets,
+			bool implementSoftDelete,
+			string readByPropertyName,
+			string readByVariableName,
+			TypeSyntax readByPropertyType,
+			string methodName = "Read"
+		)
+		{
+			(var query, var queryParameters) = GetReadByQuery(model, readByPropertyName, readByVariableName, domainModelMap, relatedDataModels, codeSnippets, implementSoftDelete);
 
 			var tryBlockStatements = new List<StatementSyntax>
 			{
@@ -255,7 +297,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				tryBlockStatements.TryCatch(GetReadByCatchBlock(model, readByVariableName, fullDomainModelName, false))
 			};
 
-			var methodDeclarationName = "ReadAsync";
+			var methodDeclarationName = $"{methodName}Async";
 			var methodDeclaration = methodDeclarationName
 				.ToMethod(
 					"Task".AsGeneric("ResponseData".AsGeneric($"Domain.{domainModelMap.Domain}.{domainModelMap.DomainModel.NamespaceDirectory}.{domainModelMap.DomainModelName}")),
@@ -269,7 +311,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				methodDeclaration
 				.WithParameter(readByVariableName.ToVariableName()
 					.ToParameter()
-					.WithType(model.IdentifierType.ToType())
+					.WithType(readByPropertyType)
 				)
 			);
 		}
@@ -971,6 +1013,37 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 		{
 			var readByPropertyName = foreignKeyReference.PropertyName;
 			var readByVariableName = foreignKeyReference.PropertyName;
+			var readByPropertyType = foreignKeyReference.DomainModel.IdentifierType.ToType();
+
+			return CreateReadForMethod
+			(
+				model,
+				childsForModel,
+				domainModelMap,
+				relatedDataModels,
+				fullDomainModelName,
+				codeSnippets,
+				implementSoftDelete,
+				readByPropertyName,
+				readByVariableName,
+				readByPropertyType
+			);
+		}
+
+		private static (string Name, MemberDeclarationSyntax) CreateReadForMethod(
+			InfrastructureModel model,
+			Dictionary<string, List<InfrastructureModel>> childsForModel,
+			ReferenceDomainModelMap domainModelMap,
+			List<QueryAnalysisItem> relatedDataModels,
+			string fullDomainModelName,
+			IEnumerable<InfrastructureModelPropertyCodeSnippet> codeSnippets,
+			bool implementSoftDelete,
+			string readByPropertyName,
+			string readByVariableName,
+			TypeSyntax readByPropertyType,
+			string methodName = "ReadFor"
+		)
+		{
 			var returnListName = $"{domainModelMap.DomainModelName.ToVariableName()}Models";
 
 			(var query, var queryParameters) = GetReadByQuery(model, readByPropertyName, readByVariableName, domainModelMap, relatedDataModels, codeSnippets, implementSoftDelete);
@@ -1006,7 +1079,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				tryBlockStatements.TryCatch(GetReadByCatchBlock(model, readByVariableName, fullDomainModelName, true))
 			};
 
-			var methodDeclarationName = $"ReadFor{foreignKeyReference.PropertyName}Async";
+			var methodDeclarationName = $"{methodName}{readByPropertyName}Async";
 			var methodDeclaration = methodDeclarationName.ToMethod(
 				"Task".AsGeneric(CommonNames.RESPONSEDATA.AsGeneric("IEnumerable".AsGeneric(fullDomainModelName))),
 				statements,
@@ -1019,10 +1092,59 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 					readByVariableName
 					.ToVariableName()
 					.ToParameter()
-					.WithType(domainModelMap.IdentifierType.ToType())
+					.WithType(readByPropertyType)
 				);
 
 			return (methodDeclarationName, methodDeclaration);
+		}
+
+		private static (string Name, MemberDeclarationSyntax) CreateReadByMethod(
+			InfrastructureModel model,
+			Dictionary<string, List<InfrastructureModel>> childsForModel,
+			ReferenceDomainModelMap domainModelMap,
+			DomainModelProperty domainModelProperty,
+			List<QueryAnalysisItem> relatedDataModels,
+			string fullDomainModelName,
+			IEnumerable<InfrastructureModelPropertyCodeSnippet> codeSnippets,
+			bool implementSoftDelete
+		)
+		{
+			if (domainModelProperty.AllowReadByProperty)
+			{
+
+				return CreateReadMethod(
+					model,
+					domainModelMap,
+					fullDomainModelName,
+					childsForModel,
+					relatedDataModels,
+					codeSnippets,
+					implementSoftDelete,
+					domainModelProperty.DataModelPropertyName.IsNullOrEmpty()
+						? domainModelProperty.Name
+						: domainModelProperty.DataModelPropertyName,
+					domainModelProperty.Name,
+					domainModelProperty.TypeWithUsing.ToType(),
+					$"ReadBy{domainModelProperty.Name}"
+				);
+			}
+
+			return CreateReadForMethod
+			(
+				model,
+				childsForModel,
+				domainModelMap,
+				relatedDataModels,
+				fullDomainModelName,
+				codeSnippets,
+				implementSoftDelete,
+				domainModelProperty.DataModelPropertyName.IsNullOrEmpty()
+						? domainModelProperty.Name
+						: domainModelProperty.DataModelPropertyName,
+				domainModelProperty.Name,
+				domainModelProperty.TypeWithUsing.ToType(),
+				$"ReadBy"
+			);
 		}
 
 		private static (string Name, MemberDeclarationSyntax) CreateMapPatchesForValueObjectsMethod(
@@ -1441,8 +1563,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			var modelItem = relatedDataModels.First(m => m.DataModel.Name == dataModel.Name && m.IsRootModel);
 
 			interpolatedStringParts.Add(@"
-				WHERE
-					".Interpolate());
+					WHERE
+						".Interpolate());
 			interpolatedStringParts.Add(modelItem.TableAliasConstant.ToIdentifierName().Interpolate());
 			interpolatedStringParts.Add(".".Interpolate());
 			interpolatedStringParts.Add(Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(dataModel.Name.Access(readByPropertyName).ToArgument()).Interpolate());
@@ -1451,8 +1573,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			if (implementSoftDelete)
 			{
 				interpolatedStringParts.Add($@"
-				AND
-					".Interpolate());
+					AND
+						".Interpolate());
 				interpolatedStringParts.Add(modelItem.TableAliasConstant.ToIdentifierName().Interpolate());
 				interpolatedStringParts.Add(".".Interpolate());
 				interpolatedStringParts.Add(Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(dataModel.Name.Access("Status").ToArgument()).Interpolate());
@@ -1473,8 +1595,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 					}
 
 					interpolatedStringParts.Add($@"
-				AND
-					".Interpolate());
+					AND
+						".Interpolate());
 					interpolatedStringParts.Add(modelItem.TableAliasConstant.ToIdentifierName().Interpolate());
 					interpolatedStringParts.Add(".".Interpolate());
 					interpolatedStringParts.Add(Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(dataModel.Name.Access(propertySnippet.PropertyName).ToArgument()).Interpolate());

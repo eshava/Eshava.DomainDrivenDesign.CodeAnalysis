@@ -71,6 +71,7 @@
 							]
 						},
 						{
+							"readManyByProperty": true,
 							"skipForConstructor": true,
 							"type": "ProductCategory",
 							"usingForType": "Eshava.Example.Domain.Ordering.ProductFeature",

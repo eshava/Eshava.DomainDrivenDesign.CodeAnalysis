@@ -95,6 +95,13 @@
 					"type": 2,
 					"useCaseName": "Search",
 					"classificationKey": "Product",
+					"additionalContructorParameter": [
+						{
+							"name": "sortingQueryEngine",
+							"type": "ISortingQueryEngine",
+							"usingForType": "Eshava.Core.Linq.Interfaces"
+						}
+					],
 					"dtos": [
 						{
 							"name": "ProductItem",
