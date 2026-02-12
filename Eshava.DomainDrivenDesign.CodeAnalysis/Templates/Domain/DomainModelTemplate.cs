@@ -241,130 +241,200 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Domain
 				foreach (var childDomainModel in childDomainModels)
 				{
 					var childType = childDomainModel.GetDomainModelTypeName(null);
+					var fieldName = childDomainModel.ChildEnumerableName.ToFieldName().ToPlural();
 
 					// Get child method
-					var methodName = "Get" + childDomainModel.ChildEnumerableName;
-					var returnValue = CommonNames.RESPONSEDATA.AsGeneric(childType);
-					var statements = new List<StatementSyntax>();
-					var fieldName = childDomainModel.ChildEnumerableName.ToFieldName().ToPlural();
-					var parameterName = childDomainModel.ClassificationKey.ToVariableName() + "Id";
-
-					statements.Add(
-						"GetChild"
-						.ToIdentifierName()
-						.Call(fieldName.ToArgument(), parameterName.ToArgument())
-						.Return()
-					);
-
-					methodDeclarations.Add((
-						methodName,
-						methodName
-						.ToMethod(returnValue, statements, SyntaxKind.PublicKeyword)
-						.WithParameter(
-							parameterName
-							.ToParameter()
-							.WithType(childDomainModel.IdentifierType.ToType())
-						)
-					));
+					methodDeclarations.Add(CreateGetChildMethod(childDomainModel, childType, fieldName));
 
 					// Add child method
-					var addChildDeclarationName = "Add" + childDomainModel.ChildEnumerableName;
-					var addChildDeclaration = addChildDeclarationName.ToMethod(
-						CommonNames.RESPONSEDATA.AsGeneric(childDomainModel.DomainModelName),
-						null,
-						SyntaxKind.PublicKeyword
-					);
-
-					var childActionCallback = GetCallbackFieldName(childDomainModel);
-
-					var parameterList = new List<ParameterSyntax>();
-					statements = new List<StatementSyntax>();
-
-					var dtoDeclaration = "dto".ToParameter()
-						.WithType("TDto".ToType());
-
-					parameterList.Add(dtoDeclaration);
-					parameterList.Add(CreateDtoMappingTuple(childType));
-
-					var createResult = "createResult"
-						.ToVariableStatement(
-							childType.Call(
-								"CreateEntity",
-								false,
-								"dto".ToArgument(),
-								DomainNames.VALIDATION.Parameter.Name.ToPropertyName().ToArgument(),
-								"mappings".ToArgument()
-							)
-						);
-
-					statements.Add(createResult);
-
-					statements.Add(
-						"createResult"
-						.ToIdentifierName()
-						.Access("IsFaulty")
-						.If("createResult".ToIdentifierName().Return())
-					);
-
-					statements.Add(
-						fieldName
-						.Call(
-							"Add",
-							false,
-							"createResult".ToIdentifierName().Access("Data").ToArgument()
-						)
-						.ToExpressionStatement()
-					);
-
-					statements.Add(
-						childActionCallback
-						.ToIdentifierName()
-						.IsNull()
-						.If(
-							"createResult"
-							.ToIdentifierName()
-							.Return()
-						)
-					);
-
-					statements.Add(
-						"createResult"
-						.ToIdentifierName()
-						.Access("Data")
-						.Access("SetActionCallback")
-						.Call(childActionCallback.ToArgument())
-						.ToExpressionStatement()
-					);
-
-					StatementHelpers.AddLocalMethodCallAndFaultyCheck(
-						statements,
-						childActionCallback,
-						"actionCallbackResult",
-						childDomainModel.DomainModelName,
-						"createResult"
-							.ToIdentifierName()
-							.Access("Data")
-					);
-
-					statements.Add(
-						"createResult"
-						.ToIdentifierName()
-						.Return()
-					);
-
-					addChildDeclaration = addChildDeclaration
-						.WithTypeParameter("TDto".ToTypeParameter())
-						.WithConstraints(("TDto", Eshava.CodeAnalysis.SyntaxConstants.ClassConstraint.AsArray()))
-						.WithParameter(parameterList.ToArray())
-						.AddBodyStatements(statements.ToArray());
-					;
-
-					methodDeclarations.Add((addChildDeclarationName, addChildDeclaration));
+					methodDeclarations.Add(CreateAddChildMethod(childDomainModel, childType, fieldName, true));
+					methodDeclarations.Add(CreateAddChildMethod(childDomainModel, childType, fieldName, false));
 				}
 			}
 
 			return methodDeclarations;
 		}
+
+		private static (string Name, MemberDeclarationSyntax Method) CreateGetChildMethod(ReferenceDomainModelMap childDomainModel, string childType, string fieldName)
+		{
+			var methodName = "Get" + childDomainModel.ChildEnumerableName;
+			var returnValue = CommonNames.RESPONSEDATA.AsGeneric(childType);
+			var statements = new List<StatementSyntax>();
+			var parameterName = childDomainModel.ClassificationKey.ToVariableName() + "Id";
+
+			statements.Add(
+				"GetChild"
+				.ToIdentifierName()
+				.Call(fieldName.ToArgument(), parameterName.ToArgument())
+				.Return()
+			);
+
+			return (
+				methodName,
+				methodName
+				.ToMethod(returnValue, statements, SyntaxKind.PublicKeyword)
+				.WithParameter(
+					parameterName
+					.ToParameter()
+					.WithType(childDomainModel.IdentifierType.ToType())
+				)
+			);
+		}
+
+		private static (string Name, MemberDeclarationSyntax Method) CreateAddChildMethod(ReferenceDomainModelMap childDomainModel, string childType, string fieldName, bool isDtoMethod)
+		{
+			var addChildDeclarationName = "Add" + childDomainModel.ChildEnumerableName;
+			var addChildDeclaration = addChildDeclarationName.ToMethod(
+				CommonNames.RESPONSEDATA.AsGeneric(childDomainModel.DomainModelName),
+				null,
+				SyntaxKind.PublicKeyword
+			);
+
+			var childActionCallback = GetCallbackFieldName(childDomainModel);
+
+			(var parameterList, var argumentList) = isDtoMethod
+				? GetParametersAndArgumentsForAddChildMethodForDto(childDomainModel, childType)
+				: GetParametersAndArgumentsForAddChildMethodForProperties(childDomainModel);
+
+			var statements = new List<StatementSyntax>();
+
+			var createResult = "createResult"
+				.ToVariableStatement(
+					childType.Call("CreateEntity", false, argumentList.ToArray())
+				);
+
+			statements.Add(createResult);
+
+			statements.Add(
+				"createResult"
+				.ToIdentifierName()
+				.Access("IsFaulty")
+				.If("createResult".ToIdentifierName().Return())
+			);
+
+			statements.Add(
+				fieldName
+				.Call("Add", false, "createResult".ToIdentifierName().Access("Data").ToArgument())
+				.ToExpressionStatement()
+			);
+
+			statements.Add(
+				childActionCallback
+				.ToIdentifierName()
+				.IsNull()
+				.If(
+					"createResult"
+					.ToIdentifierName()
+					.Return()
+				)
+			);
+
+			statements.Add(
+				"createResult"
+				.ToIdentifierName()
+				.Access("Data")
+				.Access("SetActionCallback")
+				.Call(childActionCallback.ToArgument())
+				.ToExpressionStatement()
+			);
+
+			StatementHelpers.AddLocalMethodCallAndFaultyCheck(
+				statements,
+				childActionCallback,
+				"actionCallbackResult",
+				childDomainModel.DomainModelName,
+				"createResult"
+					.ToIdentifierName()
+					.Access("Data")
+			);
+
+			statements.Add(
+				"createResult"
+				.ToIdentifierName()
+				.Return()
+			);
+
+			if (isDtoMethod)
+			{
+				addChildDeclaration = addChildDeclaration
+					.WithTypeParameter("TDto".ToTypeParameter())
+					.WithConstraints(("TDto", Eshava.CodeAnalysis.SyntaxConstants.ClassConstraint.AsArray()))
+				;
+			}
+
+			addChildDeclaration = addChildDeclaration
+					.WithParameter(parameterList.ToArray())
+					.AddBodyStatements(statements.ToArray());
+			;
+
+			return (addChildDeclarationName, addChildDeclaration);
+		}
+
+		private static (List<ParameterSyntax> Parameters, List<ArgumentSyntax> Arguments) GetParametersAndArgumentsForAddChildMethodForDto(ReferenceDomainModelMap childDomainModel, string childType)
+		{
+			var parameterList = new List<ParameterSyntax>();
+			var argumentList = new List<ArgumentSyntax>
+			{
+				"dto"
+					.ToArgument(),
+				DomainNames.VALIDATION.Parameter.Name
+					.ToPropertyName()
+					.ToArgument(),
+				"mappings"
+					.ToArgument()
+			};
+
+			var dtoDeclaration = "dto".ToParameter()
+				.WithType("TDto".ToType());
+
+			parameterList.Add(dtoDeclaration);
+			parameterList.Add(CreateDtoMappingTuple(childType));
+
+			return (parameterList, argumentList);
+		}
+
+		private static (List<ParameterSyntax> Parameters, List<ArgumentSyntax> Arguments) GetParametersAndArgumentsForAddChildMethodForProperties(ReferenceDomainModelMap childDomainModel)
+		{
+			var parameterList = new List<ParameterSyntax>();
+			var argumentList = new List<ArgumentSyntax>
+			{
+				DomainNames.VALIDATION.Parameter.Name
+					.ToPropertyName()
+					.ToArgument()
+			};
+
+			var statements = new List<StatementSyntax>();
+
+			var properties = SortProperties(childDomainModel.DomainModel.Properties);
+
+			foreach (var property in properties)
+			{
+				if (property.SkipForConstructor)
+				{
+					continue;
+				}
+
+				var variableName = property.Name.ToVariableName();
+				var propertyParameterDeclaration = variableName.ToParameter()
+					.WithType(property.Type.ToType());
+
+				if (property.Type.EndsWith("?"))
+				{
+					propertyParameterDeclaration = propertyParameterDeclaration
+						.WithDefault(Eshava.CodeAnalysis.SyntaxConstants.Null.ToEqualsValueClause());
+				}
+
+				parameterList.Add(propertyParameterDeclaration);
+
+				var propertyExpression = "p".ToPropertyExpression(property.Name).ToArgument();
+				var variableArgument = variableName.ToIdentifierName().ToArgument();
+
+				argumentList.Add(variableArgument);
+			}
+
+			return (parameterList, argumentList);
+		}
+
 
 		private static IEnumerable<(string Name, MemberDeclarationSyntax Method)> CreateChildDelegateAndAggregateInitMethods(ReferenceDomainModelMap aggregate, IEnumerable<ReferenceDomainModelMap> childDomainModels)
 		{
@@ -860,11 +930,19 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Domain
 				SyntaxKind.StaticKeyword
 			);
 
-			var parameterList = new List<ParameterSyntax>();
+			var parameterList = new List<ParameterSyntax>
+			{
+				DomainNames.VALIDATION.Parameter.Name
+					.ToParameter()
+					.WithType(DomainNames.VALIDATION.Parameter.Type)
+			};
+
 			var statements = new List<StatementSyntax>();
 			var patchStatements = new List<InvocationExpressionSyntax>();
 
-			foreach (var property in domainModelMap.DomainModel.Properties)
+			var properties = SortProperties(domainModelMap.DomainModel.Properties);
+
+			foreach (var property in properties)
 			{
 				if (property.SkipForConstructor)
 				{
@@ -874,6 +952,12 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Domain
 				var variableName = property.Name.ToVariableName();
 				var propertyParameterDeclaration = variableName.ToParameter()
 					.WithType(property.Type.ToType());
+
+				if (property.Type.EndsWith("?"))
+				{
+					propertyParameterDeclaration = propertyParameterDeclaration
+						.WithDefault(Eshava.CodeAnalysis.SyntaxConstants.Null.ToEqualsValueClause());
+				}
 
 				parameterList.Add(propertyParameterDeclaration);
 
@@ -887,13 +971,6 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Domain
 					.Call(propertyExpression, variableArgument)
 				);
 			}
-
-
-			parameterList.Add(
-				DomainNames.VALIDATION.Parameter.Name
-				.ToParameter()
-				.WithType(DomainNames.VALIDATION.Parameter.Type)
-			);
 
 			statements.Add(
 				"patches"
@@ -1022,6 +1099,14 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Domain
 				.WithExpressionBody(domain.ToLiteralString());
 
 			unitInformation.AddProperty(property, propertyName);
+		}
+
+		private static List<DomainModelProperty> SortProperties(IEnumerable<DomainModelProperty> properties)
+		{
+			var sortedProperties = properties.Where(p => !p.Type.EndsWith("?")).OrderBy(p => p.Name).ToList();
+			sortedProperties.AddRange(properties.Where(p => p.Type.EndsWith("?")).OrderBy(p => p.Name));
+
+			return sortedProperties;
 		}
 
 		private class ChildInitializerContainer

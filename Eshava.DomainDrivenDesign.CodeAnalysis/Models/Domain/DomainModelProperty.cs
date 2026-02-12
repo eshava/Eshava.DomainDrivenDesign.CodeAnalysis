@@ -20,7 +20,9 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models.Domain
 		/// </summary>
 		public string DataModelPropertyName { get; set; }
 
-
+		/// <summary>
+		/// Specifies whether the property is added to the static method CreateEntity or not.
+		/// </summary>
 		public bool SkipForConstructor { get; set; }
 
 		/// <summary>
