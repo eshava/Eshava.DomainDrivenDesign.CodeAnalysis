@@ -61,6 +61,22 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models
 		public IList<SyntaxKind> ClassModifiers { get; set; }
 		public IList<SyntaxKind> ConstructorModifiers { get; set; }
 
+		public bool ContainsUsing(string @using)
+		{
+			if (@using == Namespace || @using.IsNullOrEmpty())
+			{
+				return true;
+			}
+
+			var @usings = @using.Split(['|'], System.StringSplitOptions.RemoveEmptyEntries);
+
+			return @usings.All(usingPart => {
+				var usingTrimmed = usingPart.Trim();
+
+				return Usings.Contains(usingTrimmed);
+			});
+		}
+
 		public void AddUsing(string @using)
 		{
 			if (@using == Namespace || @using.IsNullOrEmpty())

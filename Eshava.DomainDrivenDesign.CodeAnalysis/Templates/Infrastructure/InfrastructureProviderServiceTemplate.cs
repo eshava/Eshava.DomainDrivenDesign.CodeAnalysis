@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Eshava.CodeAnalysis;
 using Eshava.CodeAnalysis.Extensions;
@@ -128,7 +129,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 					unitInformation.AddUsing(CommonNames.Namespaces.Eshava.Core.MODELS);
 					unitInformation.AddConstructorBodyStatementAndField($"{domainModelMap.DomainModelName.ToVariableName()}Repository", $"I{domainModelMap.DomainModelName}Repository".ToIdentifierName());
 
-					unitInformation.AddMethod(CreateReadByMethod(domainModelMap, property, fullDomainModelName));
+					unitInformation.AddMethod(CreateReadByMethod(domainModelMap, property, fullDomainModelName, unitInformation.ContainsUsing));
 				}
 
 				CheckAndAddProviderReferences(unitInformation, domainModelMap, alternativeClass, providerCodeSnippet);
@@ -518,7 +519,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 		private static (string Name, MethodDeclarationSyntax Method) CreateReadByMethod(
 			ReferenceDomainModelMap domainModelMap,
 			Models.Domain.DomainModelProperty domainModelProperty,
-			string fullDomainModelName
+			string fullDomainModelName,
+			Func<string, bool> isDeclaredUsing
 		)
 		{
 			var statements = new List<StatementSyntax>();
@@ -539,13 +541,17 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				SyntaxKind.PublicKeyword
 			);
 
+			var propertyType = isDeclaredUsing(domainModelProperty.UsingForType)
+				? domainModelProperty.Type
+				: domainModelProperty.TypeWithUsing;
+
 			return (
 				methodName,
 				methodDeclaration
 				.WithParameter(
 					parameterName
 					.ToParameter()
-					.WithType(domainModelProperty.TypeWithUsing.ToType())
+					.WithType(propertyType.ToType())
 				)
 			);
 		}

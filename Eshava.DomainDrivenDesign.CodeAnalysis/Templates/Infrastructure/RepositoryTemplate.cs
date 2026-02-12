@@ -175,7 +175,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 					unitInformation.AddUsing(CommonNames.Namespaces.GENERIC);
 					unitInformation.AddUsing(CommonNames.Namespaces.TASKS);
 					unitInformation.AddUsing(CommonNames.Namespaces.Eshava.Core.MODELS);
-					unitInformation.AddMethod(CreateReadByMethod(model, childsForModel, domainModelMap, property, relatedDataModels, fullDomainModelName, repositoryCodeSnippet.PropertyStatements, project.ImplementSoftDelete));
+					unitInformation.AddMethod(CreateReadByMethod(model, childsForModel, domainModelMap, property, relatedDataModels, fullDomainModelName, repositoryCodeSnippet.PropertyStatements, project.ImplementSoftDelete, unitInformation.ContainsUsing));
 				}
 			}
 
@@ -1106,11 +1106,17 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			List<QueryAnalysisItem> relatedDataModels,
 			string fullDomainModelName,
 			IEnumerable<InfrastructureModelPropertyCodeSnippet> codeSnippets,
-			bool implementSoftDelete
+			bool implementSoftDelete,
+			Func<string, bool> isDeclaredUsing
 		)
 		{
+			var propertyType = isDeclaredUsing(domainModelProperty.UsingForType)
+				? domainModelProperty.Type
+				: domainModelProperty.TypeWithUsing;
+
 			if (domainModelProperty.AllowReadByProperty)
 			{
+
 
 				return CreateReadMethod(
 					model,
@@ -1124,7 +1130,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 						? domainModelProperty.Name
 						: domainModelProperty.DataModelPropertyName,
 					domainModelProperty.Name,
-					domainModelProperty.TypeWithUsing.ToType(),
+					propertyType.ToType(),
 					$"ReadBy{domainModelProperty.Name}"
 				);
 			}
@@ -1142,7 +1148,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 						? domainModelProperty.Name
 						: domainModelProperty.DataModelPropertyName,
 				domainModelProperty.Name,
-				domainModelProperty.TypeWithUsing.ToType(),
+				propertyType.ToType(),
 				$"ReadBy"
 			);
 		}

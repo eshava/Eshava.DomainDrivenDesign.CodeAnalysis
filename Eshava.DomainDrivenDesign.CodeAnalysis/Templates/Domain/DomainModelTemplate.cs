@@ -92,7 +92,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Domain
 
 			unitInformation.AddMethod(CreateDataToInstanceMethod(domainModelMap));
 			unitInformation.AddMethod(CreateEntityFromDtoMethod(domainModelMap));
-			unitInformation.AddMethod(CreateEntityFromPropertiesMethod(domainModelMap));
+			unitInformation.AddMethod(CreateEntityFromPropertiesMethod(domainModelMap, @namespace, unitInformation.ContainsUsing));
 
 			if (domainModelMap.DomainModel.AddGeneralPatchMethod)
 			{
@@ -108,7 +108,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Domain
 					unitInformation.AddMethod(deactivateMethodDeclaration);
 				}
 
-				var childMethods = CreateGetAndAddChildsMethods(domainModelMap.ChildDomainModels);
+				var childMethods = CreateGetAndAddChildsMethods(domainModelMap.ChildDomainModels, @namespace, unitInformation.ContainsUsing);
 				foreach (var childMethod in childMethods)
 				{
 					unitInformation.AddMethod(childMethod);
@@ -232,7 +232,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Domain
 			);
 		}
 
-		private static IEnumerable<(string Name, MemberDeclarationSyntax Method)> CreateGetAndAddChildsMethods(IEnumerable<ReferenceDomainModelMap> childDomainModels)
+		private static IEnumerable<(string Name, MemberDeclarationSyntax Method)> CreateGetAndAddChildsMethods(IEnumerable<ReferenceDomainModelMap> childDomainModels, string @namespace, Func<string, bool> isDeclaredUsing)
 		{
 			var methodDeclarations = new List<(string Name, MemberDeclarationSyntax Method)>();
 
@@ -247,8 +247,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Domain
 					methodDeclarations.Add(CreateGetChildMethod(childDomainModel, childType, fieldName));
 
 					// Add child method
-					methodDeclarations.Add(CreateAddChildMethod(childDomainModel, childType, fieldName, true));
-					methodDeclarations.Add(CreateAddChildMethod(childDomainModel, childType, fieldName, false));
+					methodDeclarations.Add(CreateAddChildMethod(childDomainModel, childType, fieldName, true, @namespace, isDeclaredUsing));
+					methodDeclarations.Add(CreateAddChildMethod(childDomainModel, childType, fieldName, false, @namespace, isDeclaredUsing));
 				}
 			}
 
@@ -281,7 +281,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Domain
 			);
 		}
 
-		private static (string Name, MemberDeclarationSyntax Method) CreateAddChildMethod(ReferenceDomainModelMap childDomainModel, string childType, string fieldName, bool isDtoMethod)
+		private static (string Name, MemberDeclarationSyntax Method) CreateAddChildMethod(ReferenceDomainModelMap childDomainModel, string childType, string fieldName, bool isDtoMethod, string @namespace, Func<string, bool> isDeclaredUsing)
 		{
 			var addChildDeclarationName = "Add" + childDomainModel.ChildEnumerableName;
 			var addChildDeclaration = addChildDeclarationName.ToMethod(
@@ -294,7 +294,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Domain
 
 			(var parameterList, var argumentList) = isDtoMethod
 				? GetParametersAndArgumentsForAddChildMethodForDto(childDomainModel, childType)
-				: GetParametersAndArgumentsForAddChildMethodForProperties(childDomainModel);
+				: GetParametersAndArgumentsForAddChildMethodForProperties(childDomainModel, @namespace, isDeclaredUsing);
 
 			var statements = new List<StatementSyntax>();
 
@@ -393,7 +393,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Domain
 			return (parameterList, argumentList);
 		}
 
-		private static (List<ParameterSyntax> Parameters, List<ArgumentSyntax> Arguments) GetParametersAndArgumentsForAddChildMethodForProperties(ReferenceDomainModelMap childDomainModel)
+		private static (List<ParameterSyntax> Parameters, List<ArgumentSyntax> Arguments) GetParametersAndArgumentsForAddChildMethodForProperties(ReferenceDomainModelMap childDomainModel, string @namespace, Func<string, bool> isDeclaredUsing)
 		{
 			var parameterList = new List<ParameterSyntax>();
 			var argumentList = new List<ArgumentSyntax>
@@ -414,9 +414,14 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Domain
 					continue;
 				}
 
+				var propertyType = @namespace != property.UsingForType
+					&& !isDeclaredUsing(property.UsingForType)
+						? property.TypeWithUsing
+						: property.Type;
+
 				var variableName = property.Name.ToVariableName();
 				var propertyParameterDeclaration = variableName.ToParameter()
-					.WithType(property.Type.ToType());
+					.WithType(propertyType.ToType());
 
 				if (property.Type.EndsWith("?"))
 				{
@@ -916,7 +921,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Domain
 				.WithDefault(Eshava.CodeAnalysis.SyntaxConstants.Null.ToEqualsValueClause());
 		}
 
-		private static (string Name, MemberDeclarationSyntax Method) CreateEntityFromPropertiesMethod(ReferenceDomainModelMap domainModelMap)
+		private static (string Name, MemberDeclarationSyntax Method) CreateEntityFromPropertiesMethod(ReferenceDomainModelMap domainModelMap, string @namespace, Func<string, bool> isDeclaredUsing)
 		{
 			var accessModified = !domainModelMap.IsChildDomainModel
 				? SyntaxKind.PublicKeyword
@@ -949,9 +954,14 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Domain
 					continue;
 				}
 
+				var propertyType = @namespace != property.UsingForType
+					&& !isDeclaredUsing(property.UsingForType)
+						? property.TypeWithUsing
+						: property.Type;
+
 				var variableName = property.Name.ToVariableName();
 				var propertyParameterDeclaration = variableName.ToParameter()
-					.WithType(property.Type.ToType());
+					.WithType(propertyType.ToType());
 
 				if (property.Type.EndsWith("?"))
 				{

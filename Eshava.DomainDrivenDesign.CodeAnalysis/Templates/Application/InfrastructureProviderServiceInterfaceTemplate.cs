@@ -59,13 +59,17 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 					? "Task".AsGeneric(CommonNames.RESPONSEDATA.AsGeneric(fullDomainModelName))
 					: "Task".AsGeneric(CommonNames.RESPONSEDATA.AsGeneric("IEnumerable".AsGeneric(fullDomainModelName)));
 
+				var propertyType = unitInformation.ContainsUsing(property.UsingForType)
+					? property.Type
+					: property.TypeWithUsing;
+
 				var methodDeclarationName = $"ReadBy{property.Name}Async";
 				var methodDeclaration = methodDeclarationName
 					.ToMethodDefinition(
 					returnType,
 					null
 					)
-					.WithParameter($"{property.Name.ToVariableName()}".ToParameter().WithType(property.TypeWithUsing.ToType()))
+					.WithParameter($"{property.Name.ToVariableName()}".ToParameter().WithType(propertyType.ToType()))
 					.AddSemicolon();
 
 				unitInformation.AddMethod((methodDeclarationName, methodDeclaration));
