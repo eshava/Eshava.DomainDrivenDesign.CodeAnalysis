@@ -21,19 +21,24 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models.Application
 		public string Name { get; set; }
 		public string Type { get; set; }
 		public string UsingForType { get; set; }
-		public bool IsEnumerable { get; set; }
-		public bool IsGroupProperty { get; set; }
 
-		public bool? IsSortable { get; set; }
-		public bool? UseForDefaultSorting { get; set; }
+		public bool IsEnumerable { get; set; }
+		/// <summary>
+		/// Must be set to true if grouping is to be performed on this property and this property is not named as "Id" 
+		/// </summary>
+		public bool IsGroupProperty { get; set; }
 
 		/// <summary>
 		/// Only for suggestion use case
 		/// Hint: The property data type will be converted to a nullable type
 		/// </summary>
 		public bool? AddToRequest { get; set; }
+		
 		public bool? IsSearchable { get; set; }
 		public List<string> SearchOperations { get; set; }
+		public bool? IsSortable { get; set; }
+		public bool? UseForDefaultSorting { get; set; }
+		
 		public List<AttributeDefinition> Attributes { get; set; }
 
 		/// <summary>

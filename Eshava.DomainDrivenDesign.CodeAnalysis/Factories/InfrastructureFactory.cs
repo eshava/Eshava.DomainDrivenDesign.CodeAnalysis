@@ -71,7 +71,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 				var applicationNamespace = $"{applicationProjectConfig.FullQualifiedNamespace}.{@namespace.Domain}";
 
 				var childsForModel = @namespace.Models
-					.Where(m => m.IsChild && !m.ReferencedParent.IsNullOrEmpty())
+					.Where(m => !m.ReferencedParent.IsNullOrEmpty())
 					.GroupBy(m => m.ReferencedParent)
 					.ToDictionary(m => m.Key, m => m.Select(c => c).ToList());
 
@@ -377,15 +377,15 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 				return;
 			}
 
-			InfrastructureModel parent = null;
-			if (model.IsChild)
-			{
-				parent = modelsFromNamespace.Values.FirstOrDefault(m => m.Name == model.ReferencedParent);
-			}
-
 			if (!domainModelReferenceMap.TryGetDomainModelByDataModel(domain, model.Name, out var domainModels))
 			{
 				domainModels = Array.Empty<ReferenceDomainModelMap>();
+			}
+
+			InfrastructureModel parent = null;
+			if (domainModels.Any(dm =>dm.IsChildDomainModel))
+			{
+				parent = modelsFromNamespace.Values.FirstOrDefault(m => m.Name == model.ReferencedParent);
 			}
 
 			if (domainModels.Any())

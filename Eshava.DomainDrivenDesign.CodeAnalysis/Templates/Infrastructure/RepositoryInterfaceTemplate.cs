@@ -21,7 +21,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 
 			unitInformation.AddUsing(CommonNames.Namespaces.Eshava.DomainDrivenDesign.Infrastructure.INTERFACESREPOSITORIES);
 
-			if (model.IsChild)
+			if (domainModelMap.IsChildDomainModel)
 			{
 				unitInformation.AddUsing($"{project.FullQualifiedNamespace}.{domain}.{domainModelMap.AggregateDomainModel.ClassificationKey.ToPlural()}");
 				baseInterface = InfrastructureNames.INTERFACECHILDDOMAINMODELREPOSITORY;
@@ -32,7 +32,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			}
 
 			var fullDomainModelName = $"Domain.{domain}.{domainModelMap.DomainModel.NamespaceDirectory}.{domainModelMap.DomainModelName}";
-			var baseType = model.IsChild
+			var baseType = domainModelMap.IsChildDomainModel
 				? baseInterface.AsGeneric(fullDomainModelName, $"{domainModelMap.AggregateDomainModel.ClassificationKey.ToPlural()}.{domainModelMap.AggregateDomainModel.DomainModelName}CreationBag", model.IdentifierType).ToSimpleBaseType()
 				: baseInterface.AsGeneric(fullDomainModelName, model.IdentifierType).ToSimpleBaseType();
 

@@ -177,7 +177,6 @@
 					"classificationKey": "OrderPosition",
 					"createRepository": true,
 					"createDbConfiguration": true,
-					"isChild": true,
 					"referencedParent": "OrderData",
 					"properties": [
 						{

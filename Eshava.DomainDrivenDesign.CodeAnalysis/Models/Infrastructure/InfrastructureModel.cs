@@ -19,7 +19,6 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models.Infrastructure
 		public List<InfrastructureModelProperty> Properties { get; set; }
 
 		public bool CreateCreationBag { get; set; }
-		public bool IsChild { get; set; }
 		public bool CreateRepository { get; set; }
 		public bool CreateProviderService { get; set; }
 		public bool CreateDbConfiguration { get; set; }

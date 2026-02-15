@@ -75,7 +75,6 @@
 					"classificationKey": "Office",
 					"createRepository": true,
 					"createDbConfiguration": true,
-					"isChild": true,
 					"createCreationBag": true,
 					"referencedParent": "CustomerData",
 					"properties": [
@@ -150,7 +149,6 @@
 					"classificationKey": "Location",
 					"createRepository": true,
 					"createDbConfiguration": true,
-					"isChild": true,
 					"createCreationBag": true,
 					"referencedParent": "OfficeData",
 					"properties": [
@@ -190,7 +188,6 @@
 					"classificationKey": "Building",
 					"createRepository": true,
 					"createDbConfiguration": true,
-					"isChild": true,
 					"referencedParent": "LocationData",
 					"properties": [
 						{
@@ -229,7 +226,6 @@
 					"classificationKey": "Contact",
 					"createRepository": true,
 					"createDbConfiguration": true,
-					"isChild": true,
 					"referencedParent": "CustomerData",
 					"properties": [
 						{
@@ -272,7 +268,6 @@
 					"classificationKey": "Communication",
 					"createRepository": true,
 					"createDbConfiguration": true,
-					"isChild": true,
 					"referencedParent": "CustomerData",
 					"properties": [
 						{

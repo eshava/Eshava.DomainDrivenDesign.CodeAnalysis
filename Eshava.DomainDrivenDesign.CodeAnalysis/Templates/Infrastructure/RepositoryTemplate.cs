@@ -84,7 +84,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			var collectPropertyMappings = CollectDataToDomainPropertyMappings(domainModelMap);
 			collectPropertyMappings.ForEach(mapping => unitInformation.AddField((mapping.FieldName, FieldType.Static, mapping.Declaration)));
 
-			if (model.IsChild)
+			if (domainModelMap.IsChildDomainModel)
 			{
 				unitInformation.AddUsing($"{project.FullQualifiedNamespace}.{domain}.{domainModelMap.AggregateDomainModel.ClassificationKey.ToPlural()}");
 				alternativeClass = project.AlternativeClasses.FirstOrDefault(ac => ac.Type == InfrastructureAlternativeClassType.ChildDomainModelRepository);
@@ -134,7 +134,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				}
 			}
 
-			var baseType = model.IsChild
+			var baseType = domainModelMap.IsChildDomainModel
 				? baseClass.AsGeneric(fullDomainModelName, $"{domainModelMap.AggregateDomainModel.ClassificationKey.ToPlural()}.{domainModelMap.AggregateDomainModel.DomainModelName}CreationBag", model.Name, model.IdentifierType, project.ScopedSettingsClass).ToSimpleBaseType()
 				: baseClass.AsGeneric(fullDomainModelName, model.Name, model.IdentifierType, project.ScopedSettingsClass).ToSimpleBaseType();
 			var repositoryInterface = $"I{className}".ToType().ToSimpleBaseType();
@@ -623,7 +623,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			{
 				if (dataModelProperty.SkipFromDomainModel)
 				{
-					if (dataModel.IsChild)
+					if (domainModelMap.IsChildDomainModel)
 					{
 						if (parentDataModel.Properties.Any(p => p.AddToCreationBag && p.Name == dataModelProperty.Name))
 						{
@@ -656,7 +656,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 					continue;
 				}
 
-				if (dataModel.IsChild && dataModelProperty.Name == $"{parentDataModel.ClassificationKey}Id")
+				if (domainModelMap.IsChildDomainModel && dataModelProperty.Name == $"{parentDataModel.ClassificationKey}Id")
 				{
 					statements.Add(
 						instanceVar
@@ -665,7 +665,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 						.ToExpressionStatement()
 					);
 				}
-				else if (dataModel.IsChild && parentDataModel.Properties.Any(p => p.AddToCreationBag && p.Name == dataModelProperty.Name))
+				else if (domainModelMap.IsChildDomainModel && parentDataModel.Properties.Any(p => p.AddToCreationBag && p.Name == dataModelProperty.Name))
 				{
 					statements.Add(
 						instanceVar
@@ -789,7 +789,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				.Else(withMappingStatements.ToArray())
 			);
 
-			if (dataModel.IsChild)
+			if (domainModelMap.IsChildDomainModel)
 			{
 				statements.Add(
 					"FromDomainModel"
@@ -819,7 +819,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			var domainModelReferenceType = fullDomainModelName.ToType();
 			var domainModelReferenceParameter = "model".ToParameter().WithType(domainModelReferenceType);
 
-			if (dataModel.IsChild)
+			if (domainModelMap.IsChildDomainModel)
 			{
 				var parentReferenceType = $"{domainModelMap.AggregateDomainModel.ClassificationKey.ToPlural()}.{domainModelMap.AggregateDomainModel.DomainModelName}CreationBag".ToType();
 				var parentReferenceParameter = "creationBag".ToParameter().WithType(parentReferenceType);
