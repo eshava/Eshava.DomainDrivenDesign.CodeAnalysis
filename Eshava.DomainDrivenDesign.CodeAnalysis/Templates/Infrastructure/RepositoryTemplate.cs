@@ -1565,7 +1565,9 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 		)
 		{
 
-			var interpolatedStringParts = TemplateMethods.CreateSqlQueryWithoutWhereCondition(dataModel, domainModelMap.Domain, relatedDataModels, implementSoftDelete, false);
+			var queryParameters = new List<(ExpressionSyntax Property, string Name)>();
+
+			var interpolatedStringParts = TemplateMethods.CreateSqlQueryWithoutWhereCondition(dataModel, domainModelMap.Domain, relatedDataModels, implementSoftDelete, false, queryParameters, codeSnippets);
 			var modelItem = relatedDataModels.First(m => m.DataModel.Name == dataModel.Name && m.IsRootModel);
 
 			interpolatedStringParts.Add(@"
@@ -1615,6 +1617,11 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			interpolatedStringParts.Add($@"
 					".Interpolate());
 
+			if (queryParameters.Count > 0)
+			{
+				appliedSnippets.AddRange(queryParameters.Select(qp => new InfrastructureModelPropertyCodeSnippet { PropertyName = qp.Name, Expression = qp.Property }));
+			}
+
 			return ("query".ToVariableStatement(interpolatedStringParts.ToRawStringExpression()), appliedSnippets);
 		}
 
@@ -1637,9 +1644,11 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				parameterItems.Add(("Status".Access("Active"), "Status"));
 			}
 
-			foreach (var addtionalQueryParameter in addtionalQueryParameters)
+			foreach (var addtionalQueryParameter in addtionalQueryParameters.GroupBy(aqp => aqp.PropertyName))
 			{
-				parameterItems.Add((addtionalQueryParameter.Expression, addtionalQueryParameter.PropertyName));
+				var parameter = addtionalQueryParameter.First();
+
+				parameterItems.Add((parameter.Expression, parameter.PropertyName));
 			}
 
 			var mapperExpression = GetMapperExpression(domainModelMap, model, childsForModel);

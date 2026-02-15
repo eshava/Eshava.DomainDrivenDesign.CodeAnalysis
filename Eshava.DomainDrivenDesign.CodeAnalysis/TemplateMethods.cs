@@ -1091,7 +1091,15 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis
 				: referenceDomain;
 		}
 
-		public static List<InterpolatedStringContentSyntax> CreateSqlQueryWithoutWhereCondition(InfrastructureModel model, string domain, List<QueryAnalysisItem> relatedDataModels, bool implementSoftDelete, bool asCount)
+		public static List<InterpolatedStringContentSyntax> CreateSqlQueryWithoutWhereCondition(
+			InfrastructureModel model,
+			string domain,
+			List<QueryAnalysisItem> relatedDataModels,
+			bool implementSoftDelete,
+			bool asCount,
+			List<(ExpressionSyntax Property, string Name)> queryParameters,
+			IEnumerable<InfrastructureModelPropertyCodeSnippet> codeSnippets
+		)
 		{
 			var interpolatedColumnParts = new List<InterpolatedStringContentSyntax>();
 			var interpolatedTableParts = new List<InterpolatedStringContentSyntax>();
@@ -1168,7 +1176,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis
 				.Select(g => g.First())
 				.ToList();
 
-			CreateJoinQueryParts(modelItem, referenceRelations, interpolatedTableParts, implementSoftDelete);
+			CreateJoinQueryParts(modelItem, referenceRelations, interpolatedTableParts, implementSoftDelete, queryParameters, codeSnippets);
 
 			interpolatedStringParts.AddRange(interpolatedColumnParts);
 			interpolatedStringParts.Add(@"
@@ -1283,6 +1291,58 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis
 			return domainModelWithMappings;
 		}
 
+		public static void AddCodeSnippetReadConditions(
+			List<InterpolatedStringContentSyntax> interpolatedStringParts,
+			List<(ExpressionSyntax Property, string Name)> queryParameters,
+			InfrastructureModel dataModel,
+			string dataModelTypeForJoin,
+			IdentifierNameSyntax tableAliasConstant,
+			IEnumerable<InfrastructureModelPropertyCodeSnippet> codeSnippets,
+			bool isJoinCondition = false
+		)
+		{
+
+			if (dataModelTypeForJoin.IsNullOrEmpty())
+			{
+				dataModelTypeForJoin = dataModel.Name;
+			}
+
+			foreach (var codeSnippet in codeSnippets)
+			{
+				foreach (var dataModelProperty in dataModel.Properties)
+				{
+					var propertySnippet = codeSnippets.FirstOrDefault(cs => cs.CodeSnippeKey == $"{dataModel.Name}.{dataModelProperty.Name}" && cs.IsFilter)
+							?? codeSnippets.FirstOrDefault(cs => cs.CodeSnippeKey == dataModelProperty.Name && cs.IsFilter);
+
+					if (propertySnippet is null)
+					{
+						continue;
+					}
+
+					if (isJoinCondition)
+					{
+						interpolatedStringParts.Add(@"
+							AND ".Interpolate());
+					}
+					else
+					{
+						interpolatedStringParts.Add(@"
+					AND
+						".Interpolate());
+					}
+					interpolatedStringParts.Add(tableAliasConstant.Interpolate());
+					interpolatedStringParts.Add(".".Interpolate());
+					interpolatedStringParts.Add(Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(dataModelTypeForJoin.Access(propertySnippet.PropertyName).ToArgument()).Interpolate());
+					interpolatedStringParts.Add($@" = @{propertySnippet.PropertyName}".Interpolate());
+
+					if (queryParameters.All(qp => qp.Name != propertySnippet.PropertyName))
+					{
+						queryParameters.Add((propertySnippet.Expression, propertySnippet.PropertyName));
+					}
+				}
+			}
+		}
+
 		public static void CollectPropertyUsings(UnitInformation unitInformation, ApplicationUseCaseDtoProperty property, Dictionary<string, List<AttributeDefinition>> propertyAttributes, ReferenceDomainModelMap domainModel, bool isValidation)
 		{
 			if (!property.UsingForType.IsNullOrEmpty())
@@ -1349,7 +1409,9 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis
 			QueryAnalysisItem parentItem,
 			List<QueryAnalysisItem> items,
 			List<InterpolatedStringContentSyntax> interpolatedTableParts,
-			bool implementSoftDelete
+			bool implementSoftDelete,
+			List<(ExpressionSyntax Property, string Name)> queryParameters,
+			IEnumerable<InfrastructureModelPropertyCodeSnippet> codeSnippets
 		)
 		{
 			var processedTableAliases = new HashSet<string>();
@@ -1365,7 +1427,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis
 					continue;
 				}
 
-				CreateJoinQueryParts(parentItem.Domain, parentItem.DataModel.Name, parentItem, item, items, interpolatedTableParts, processedTableAliases, implementSoftDelete);
+				CreateJoinQueryParts(parentItem.Domain, parentItem.DataModel.Name, parentItem, item, items, interpolatedTableParts, processedTableAliases, implementSoftDelete, queryParameters, codeSnippets);
 			}
 		}
 
@@ -1388,7 +1450,9 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis
 			List<QueryAnalysisItem> items,
 			List<InterpolatedStringContentSyntax> interpolatedTableParts,
 			HashSet<string> processedTableAliases,
-			bool implementSoftDelete
+			bool implementSoftDelete,
+			List<(ExpressionSyntax Property, string Name)> queryParameters,
+			IEnumerable<InfrastructureModelPropertyCodeSnippet> codeSnippets
 		)
 		{
 			if (processedTableAliases.Contains(item.TableAliasConstant))
@@ -1412,6 +1476,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis
 					var parentDataType = parentItem.GetDataType(referenceDomain, referenceDataModel);
 					interpolatedTableParts.AddRange(GetJoinsQueryParts(item.TableAliasConstant, dataType, item.Property.Name, parentItem.TableAliasConstant, parentDataType, "Id", implementSoftDelete));
 					match = true;
+
+					AddCodeSnippetReadConditions(interpolatedTableParts, queryParameters, item.DataModel, dataType, item.TableAliasConstant.ToIdentifierName(), codeSnippets, true);
 				}
 				else
 				{
@@ -1430,6 +1496,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis
 						var parentDataType = parentItem.GetDataType(referenceDomain, referenceDataModel);
 						interpolatedTableParts.AddRange(GetJoinsQueryParts(item.TableAliasConstant, dataType, referenceProperty.Name, parentItem.TableAliasConstant, parentDataType, "Id", implementSoftDelete));
 						match = true;
+
+						AddCodeSnippetReadConditions(interpolatedTableParts, queryParameters, item.DataModel, dataType, item.TableAliasConstant.ToIdentifierName(), codeSnippets,true);
 					}
 				}
 				else
@@ -1440,6 +1508,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis
 					// current models has a foreign key for this domain model
 					interpolatedTableParts.AddRange(GetJoinsQueryParts(item.TableAliasConstant, dataType, "Id", parentItem.TableAliasConstant, parentDataType, referenceProperty.Name, implementSoftDelete));
 					match = true;
+
+					AddCodeSnippetReadConditions(interpolatedTableParts, queryParameters, item.DataModel, dataType, item.TableAliasConstant.ToIdentifierName(), codeSnippets, true);
 				}
 			}
 
@@ -1471,7 +1541,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis
 						}
 					}
 
-					CreateJoinQueryParts(referenceDomain, referenceDataModel, item, newItem, items, interpolatedTableParts, processedTableAliases, implementSoftDelete);
+					CreateJoinQueryParts(referenceDomain, referenceDataModel, item, newItem, items, interpolatedTableParts, processedTableAliases, implementSoftDelete, queryParameters, codeSnippets);
 				}
 			}
 		}

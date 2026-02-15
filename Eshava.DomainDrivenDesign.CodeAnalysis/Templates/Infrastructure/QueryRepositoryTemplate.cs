@@ -272,7 +272,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				(idParameter.Name.ToIdentifierName(), idParameter.Name.ToPropertyName())
 			};
 
-			AddCodeSnippetReadConditions(interpolatedStringParts, parameterItems, dataModel, modelConstant.ToIdentifierName(), codeSnippets);
+			TemplateMethods.AddCodeSnippetReadConditions(interpolatedStringParts, parameterItems, dataModel, null, modelConstant.ToIdentifierName(), codeSnippets);
 
 			interpolatedStringParts.Add($@"
 					".Interpolate());
@@ -411,7 +411,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				parameterItems.Add(("Status".Access("Active"), "Status"));
 			}
 
-			AddCodeSnippetReadConditions(interpolatedStringParts, parameterItems, dataModel, modelConstant.ToIdentifierName(), codeSnippets);
+			TemplateMethods.AddCodeSnippetReadConditions(interpolatedStringParts, parameterItems, dataModel, null, modelConstant.ToIdentifierName(), codeSnippets);
 
 			interpolatedStringParts.Add($@"
 					".Interpolate());
@@ -564,7 +564,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 						interpolatedFromParts.Add(@" = @Status".Interpolate());
 					}
 
-					AddCodeSnippetReadConditions(interpolatedFromParts, parameterItems, parentModel, parentModelConstant.ToIdentifierName(), codeSnippets);
+					TemplateMethods.AddCodeSnippetReadConditions(interpolatedFromParts, parameterItems, parentModel, null, parentModelConstant.ToIdentifierName(), codeSnippets);
 				}
 
 				loopModel = parentModel;
@@ -597,7 +597,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				parameterItems.Add(("Status".Access("Active"), "Status"));
 			}
 
-			AddCodeSnippetReadConditions(interpolatedQueryParts, parameterItems, childDataModel, childModelConstant.ToIdentifierName(), codeSnippets);
+			TemplateMethods.AddCodeSnippetReadConditions(interpolatedQueryParts, parameterItems, childDataModel, null, childModelConstant.ToIdentifierName(), codeSnippets);
 
 			interpolatedQueryParts.Add($@"
 						".Interpolate());
@@ -703,7 +703,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				parameterItems.Add(("Status".Access("Active"), "Status"));
 			}
 
-			AddCodeSnippetReadConditions(interpolatedStringParts, parameterItems, dataModel, modelConstant.ToIdentifierName(), codeSnippets);
+			TemplateMethods.AddCodeSnippetReadConditions(interpolatedStringParts, parameterItems, dataModel, null, modelConstant.ToIdentifierName(), codeSnippets);
 
 			interpolatedStringParts.Add($@"
 					".Interpolate());
@@ -770,7 +770,12 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			var modelItem = relatedDataModels.First(m => m.DataModel.Name == dataModel.Name && m.Domain == methodMap.Domain && m.IsRootModel);
 			var idParameter = methodMap.ParameterTypes.First();
 
-			var interpolatedStringParts = TemplateMethods.CreateSqlQueryWithoutWhereCondition(dataModel, methodMap.Domain, relatedDataModels, implementSoftDelete, false);
+			var parameterItems = new List<(ExpressionSyntax Property, string Name)>
+			{
+				(idParameter.Name.ToIdentifierName(), idParameter.Name.ToPropertyName())
+			};
+
+			var interpolatedStringParts = TemplateMethods.CreateSqlQueryWithoutWhereCondition(dataModel, methodMap.Domain, relatedDataModels, implementSoftDelete, false, parameterItems, codeSnippets);
 			var dtoInitializerExpressions = new List<ExpressionSyntax>();
 			GetDtoInitializerExpressions(methodMap.Domain, dataModel.Name, null, null, relatedDataModels, dtoInitializerExpressions, new HashSet<string>());
 
@@ -804,12 +809,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				interpolatedStringParts.Add(@" = @Status".Interpolate());
 			}
 
-			var parameterItems = new List<(ExpressionSyntax Property, string Name)>
-			{
-				(idParameter.Name.ToIdentifierName(), idParameter.Name.ToPropertyName())
-			};
-
-			AddCodeSnippetReadConditions(interpolatedStringParts, parameterItems, dataModel, modelItem.TableAliasConstant.ToIdentifierName(), codeSnippets);
+			TemplateMethods.AddCodeSnippetReadConditions(interpolatedStringParts, parameterItems, dataModel, null, modelItem.TableAliasConstant.ToIdentifierName(), codeSnippets);
 
 			interpolatedStringParts.Add($@"
 					".Interpolate());
@@ -843,7 +843,12 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				parameterItems.Add(("Status".Access("Active"), "Status"));
 			}
 
-			var parameterVariableDeclaration = SyntaxHelper.CreateAnonymousObject(parameterItems.ToArray());
+			var parameterVariableDeclaration = SyntaxHelper.CreateAnonymousObject(
+				parameterItems
+				.GroupBy(aqp => aqp.Name)
+				.Select(apq => apq.First())
+				.ToArray()
+			);
 			var mapperExpression = GetMapperExpression(returnDto.DtoName, dtoInitializerExpressions);
 
 			var usingInnerStatments = new List<StatementSyntax>
@@ -928,7 +933,9 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			var modelItem = relatedDataModels.First(m => m.DataModel.Name == dataModel.Name && m.Domain == methodMap.Domain && m.IsRootModel);
 			var filterRequestParameter = methodMap.ParameterTypes.First();
 
-			var interpolatedStringParts = TemplateMethods.CreateSqlQueryWithoutWhereCondition(dataModel, methodMap.Domain, relatedDataModels, implementSoftDelete, false);
+			var additionalQueryParameters = new List<(ExpressionSyntax Property, string Name)>();
+
+			var interpolatedStringParts = TemplateMethods.CreateSqlQueryWithoutWhereCondition(dataModel, methodMap.Domain, relatedDataModels, implementSoftDelete, false, additionalQueryParameters, codeSnippets);
 			var dtoInitializerExpressions = new List<ExpressionSyntax>();
 			GetDtoInitializerExpressions(methodMap.Domain, dataModel.Name, null, null, relatedDataModels, dtoInitializerExpressions, new HashSet<string>());
 
@@ -975,13 +982,20 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 
 			if (implementSoftDelete)
 			{
+				additionalQueryParameters.Add(("Status".Access("Active"), "Status"));
+			}
+
+			foreach (var additionalQueryParameter in additionalQueryParameters.GroupBy(aqp => aqp.Name))
+			{
+				var parameter = additionalQueryParameter.First();
+
 				tryBlockStatements.Add(
 					"settings"
 					.Access("QueryParameter")
 					.Access("Add")
 					.Call(
-						"Status".ToLiteralString().ToArgument(),
-						"Status".Access("Active").ToArgument()
+						parameter.Name.ToLiteralString().ToArgument(),
+						parameter.Property.ToArgument()
 					)
 					.ToExpressionStatement()
 				);
@@ -1055,7 +1069,9 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			var modelItem = relatedDataModels.First(m => m.DataModel.Name == dataModel.Name && m.Domain == methodMap.Domain && m.IsRootModel);
 			var filterRequestParameter = methodMap.ParameterTypes.First();
 
-			var interpolatedStringParts = TemplateMethods.CreateSqlQueryWithoutWhereCondition(dataModel, methodMap.Domain, relatedDataModels, implementSoftDelete, true);
+			var additionalQueryParameters = new List<(ExpressionSyntax Property, string Name)>();
+
+			var interpolatedStringParts = TemplateMethods.CreateSqlQueryWithoutWhereCondition(dataModel, methodMap.Domain, relatedDataModels, implementSoftDelete, true, additionalQueryParameters, codeSnippets);
 
 			var tryBlockStatements = new List<StatementSyntax>
 			{
@@ -1098,13 +1114,20 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 
 			if (implementSoftDelete)
 			{
+				additionalQueryParameters.Add(("Status".Access("Active"), "Status"));
+			}
+
+			foreach (var additionalQueryParameter in additionalQueryParameters.GroupBy(aqp => aqp.Name))
+			{
+				var parameter = additionalQueryParameter.First();
+
 				tryBlockStatements.Add(
 					"settings"
 					.Access("QueryParameter")
 					.Access("Add")
 					.Call(
-						"Status".ToLiteralString().ToArgument(),
-						"Status".Access("Active").ToArgument()
+						parameter.Name.ToLiteralString().ToArgument(),
+						parameter.Property.ToArgument()
 					)
 					.ToExpressionStatement()
 				);
@@ -1885,42 +1908,6 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 						)
 						.ToExpressionStatement()
 					);
-				}
-			}
-		}
-
-		private static void AddCodeSnippetReadConditions(
-			List<InterpolatedStringContentSyntax> interpolatedStringParts,
-			List<(ExpressionSyntax Property, string Name)> queryParameters,
-			InfrastructureModel dataModel,
-			IdentifierNameSyntax tableAliasConstant,
-			IEnumerable<InfrastructureModelPropertyCodeSnippet> codeSnippets)
-		{
-
-			foreach (var codeSnippet in codeSnippets)
-			{
-				foreach (var dataModelProperty in dataModel.Properties)
-				{
-					var propertySnippet = codeSnippets.FirstOrDefault(cs => cs.CodeSnippeKey == $"{dataModel.Name}.{dataModelProperty.Name}" && cs.IsFilter)
-							?? codeSnippets.FirstOrDefault(cs => cs.CodeSnippeKey == dataModelProperty.Name && cs.IsFilter);
-
-					if (propertySnippet is null)
-					{
-						continue;
-					}
-
-					interpolatedStringParts.Add($@"
-					AND
-						".Interpolate());
-					interpolatedStringParts.Add(tableAliasConstant.Interpolate());
-					interpolatedStringParts.Add(".".Interpolate());
-					interpolatedStringParts.Add(Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(dataModel.Name.Access(propertySnippet.PropertyName).ToArgument()).Interpolate());
-					interpolatedStringParts.Add($@" = @{propertySnippet.PropertyName}".Interpolate());
-
-					if (queryParameters.All(qp => qp.Name != propertySnippet.PropertyName))
-					{
-						queryParameters.Add((propertySnippet.Expression, propertySnippet.PropertyName));
-					}
 				}
 			}
 		}
