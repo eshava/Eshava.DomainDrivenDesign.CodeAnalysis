@@ -54,6 +54,14 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 					dtoReferenceMap.TryGetDto(domain, useCase.UseCaseName, useCase.ClassificationKey, useCase.MainDto ?? useCase.Dtos.First().Name, out var readDtoMap);
 					AddProperty(unitInformation, $"{useCase.ClassificationKey}Id", null, readDtoMap.DataModel.IdentifierType.ToType(), attributes);
 
+					foreach (var property in readDtoMap.Dto.Properties.Where(p => p.AddToRequest ?? false))
+					{
+						var propertyType = property.IsNullableType || property.Type == "string"
+							? property.Type
+							: $"{property.Type}?";
+						AddProperty(unitInformation, property.Name, property.UsingForType, propertyType.ToType(), attributes);
+					}
+
 					break;
 				case ApplicationUseCaseType.Delete:
 
