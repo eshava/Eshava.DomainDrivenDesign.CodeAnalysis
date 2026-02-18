@@ -9,6 +9,7 @@ using Eshava.DomainDrivenDesign.CodeAnalysis.Extensions;
 using Eshava.DomainDrivenDesign.CodeAnalysis.Models;
 using Eshava.DomainDrivenDesign.CodeAnalysis.Models.Application;
 using Eshava.DomainDrivenDesign.CodeAnalysis.Models.Infrastructure;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
@@ -765,7 +766,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 		)
 		{
 			var returnDto = methodMap.ReturnType.DtoMap;
-			var relatedDataModels = CollectDataModelsForReferenceProperties(methodMap.Domain, returnDto, dataModel, infrastructureModelsConfig, true);
+			var relatedDataModels = CollectDataModelsForReferenceProperties(methodMap.Domain, returnDto, dataModel, infrastructureModelsConfig, true, false);
 
 			var modelItem = relatedDataModels.First(m => m.DataModel.Name == dataModel.Name && m.Domain == methodMap.Domain && m.IsRootModel);
 			var idParameter = methodMap.ParameterTypes.First();
@@ -928,7 +929,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 		)
 		{
 			var returnDto = methodMap.ParameterTypes.First().Generic.First().DtoMap;
-			var relatedDataModels = CollectDataModelsForReferenceProperties(methodMap.Domain, returnDto, dataModel, infrastructureModelsConfig, true);
+			var relatedDataModels = CollectDataModelsForReferenceProperties(methodMap.Domain, returnDto, dataModel, infrastructureModelsConfig, true, false);
 
 			var modelItem = relatedDataModels.First(m => m.DataModel.Name == dataModel.Name && m.Domain == methodMap.Domain && m.IsRootModel);
 			var filterRequestParameter = methodMap.ParameterTypes.First();
@@ -1064,7 +1065,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 		)
 		{
 			var returnDto = methodMap.ParameterTypes.First().Generic.First().DtoMap;
-			var relatedDataModels = CollectDataModelsForReferenceProperties(methodMap.Domain, returnDto, dataModel, infrastructureModelsConfig, true);
+			var relatedDataModels = CollectDataModelsForReferenceProperties(methodMap.Domain, returnDto, dataModel, infrastructureModelsConfig, true, false);
 
 			var modelItem = relatedDataModels.First(m => m.DataModel.Name == dataModel.Name && m.Domain == methodMap.Domain && m.IsRootModel);
 			var filterRequestParameter = methodMap.ParameterTypes.First();
@@ -1270,12 +1271,15 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			ReferenceDtoMap dto,
 			InfrastructureModel model,
 			InfrastructureModels infrastructureModelsConfig,
-			bool isRoot
+			bool isRoot,
+			bool isValueObject
 		)
 		{
 			var relatedDataModels = new List<QueryAnalysisItem>();
 
-			var parentReferenceProperty = model.Properties.FirstOrDefault(p => p.IsParentReference);
+			var parentReferenceProperty = isValueObject
+				? null
+				: model.Properties.FirstOrDefault(p => p.IsParentReference);
 			if (parentReferenceProperty is not null)
 			{
 				var dtoProperty = dto.Dto.Properties.FirstOrDefault(p => p.Name == parentReferenceProperty.Name || p.ReferenceProperty == parentReferenceProperty.Name);
@@ -1308,7 +1312,9 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 						continue;
 					}
 
-					var currentRelatedDataModels = CollectDataModelsForReferenceProperties(childReferenceProperty.Dto.Domain, childReferenceProperty.Dto, childDataModel, infrastructureModelsConfig, false);
+					var childIsValueObject = model.Name == childDataModel.Name;
+
+					var currentRelatedDataModels = CollectDataModelsForReferenceProperties(childReferenceProperty.Dto.Domain, childReferenceProperty.Dto, childDataModel, infrastructureModelsConfig, false, childIsValueObject);
 					if (currentRelatedDataModels.Count > 0)
 					{
 						foreach (var relatedModel in currentRelatedDataModels)
@@ -1458,6 +1464,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 					return false;
 				}
 
+				var foreignKeyDataProperty = currentDataModel.Properties.FirstOrDefault(p => p.Name == currentDataProperty.ReferencePropertyName);
+				
 				var referenceDomain = currentDataProperty.ReferenceDomain.IsNullOrEmpty()
 					? currentDomain
 					: currentDataProperty.ReferenceDomain;
@@ -1500,7 +1508,9 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 						referenceDataModel.Properties.Add(dataProperty);
 					}
 
-					var tableAlias = String.Concat(referencePropertyParts.Take(i + 1)).CreateModelConstantField();
+					var tableAlias = referencePropertyPartsIndex == 0 && (foreignKeyDataProperty?.IsParentReference ?? false)
+						? referenceDataModel.Name.CreateModelConstantField()
+						: String.Concat(referencePropertyParts.Take(i + 1)).CreateModelConstantField();
 					relatedDataModels.Add(new QueryAnalysisItem
 					{
 						ParentDomain = currentDomain,
@@ -1537,7 +1547,11 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 					// Check if its a value object
 					var tableAlias = referenceDataModel.TableName.IsNullOrEmpty()
 						? currentDataModel.Name.CreateModelConstantField()
-						: String.Concat(referencePropertyParts.Take(i + 1)).CreateModelConstantField();
+						: (
+							(referencePropertyPartsIndex == 0 && (foreignKeyDataProperty?.IsParentReference ?? false))
+								? referenceDataModel.Name.CreateModelConstantField()
+								: String.Concat(referencePropertyParts.Take(i + 1)).CreateModelConstantField()
+						);
 					relatedDataModels.Add(new QueryAnalysisItem
 					{
 						ParentDomain = currentDomain,
