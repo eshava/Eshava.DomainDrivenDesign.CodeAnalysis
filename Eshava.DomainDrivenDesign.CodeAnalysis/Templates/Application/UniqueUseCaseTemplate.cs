@@ -248,7 +248,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			var statements = new List<StatementSyntax>
 			{
 				tryBlockStatements.TryCatch(
-					TemplateMethods.CreateCatchBlock(returnDataType, useCase, null, true)
+					ApplicationTemplateMethods.CreateCatchBlock(returnDataType, useCase, null, true)
 				)
 			};
 

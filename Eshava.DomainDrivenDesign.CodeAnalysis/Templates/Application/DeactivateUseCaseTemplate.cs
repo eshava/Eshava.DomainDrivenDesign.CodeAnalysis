@@ -66,7 +66,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			unitInformation.AddUsing(CommonNames.Namespaces.Eshava.DomainDrivenDesign.Domain.CONSTANTS);
 			unitInformation.AddUsing(CommonNames.Namespaces.Eshava.DomainDrivenDesign.Domain.EXTENSIONS);
 
-			TemplateMethods.AddDomainModelUsings(unitInformation, domainModelMap, request.DomainProjectNamespace, request.Domain);
+			ApplicationTemplateMethods.AddDomainModelUsings(unitInformation, domainModelMap, request.DomainProjectNamespace, request.Domain);
 
 			var scopedSettingsTargetType = ParameterTargetTypes.Field;
 			if (alternativeClass?.ConstructorParameters?.Any(cp => cp.Type == request.ScopedSettingsClass) ?? false)
@@ -86,7 +86,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			}
 
 			unitInformation.AddMethod(
-				TemplateMethods.CreateUseCaseMainMethod(
+				ApplicationTemplateMethods.CreateUseCaseMainMethod(
 					request.UseCase,
 					null,
 					domainModelMap,
@@ -111,7 +111,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 
 			if (request.UseCase.CheckForeignKeyReferencesAutomatically)
 			{
-				TemplateMethods.AddReferenceUsageChecks(unitInformation, request.ApplicationProjectNamespace, request.UseCasesMap, request.UseCase, domainModelMap);
+				ApplicationTemplateMethods.AddReferenceUsageChecks(unitInformation, request.ApplicationProjectNamespace, request.UseCasesMap, request.UseCase, domainModelMap);
 			}
 
 			CheckAndAddProviderReferences(unitInformation, request.UseCase, alternativeClass, codeSnippets);
@@ -187,7 +187,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 
 			if (domainModelMap.IsChildDomainModel)
 			{
-				statements.AddRange(TemplateMethods.CreateCollectChildStatementsForDeactivate(domainModelMap, domainProjectNamespace, useCase.ResponseType.ToType(), useCase.ReadAggregateByChildId));
+				statements.AddRange(ApplicationTemplateMethods.CreateCollectChildStatementsForDeactivate(domainModelMap, domainProjectNamespace, useCase.ResponseType.ToType(), useCase.ReadAggregateByChildId));
 			}
 
 			var modelReference = domainModelMap.IsChildDomainModel
@@ -237,7 +237,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 				? domainModel.ClassificationKey.ToVariableName().ToIdentifierName()
 				: null;
 
-			var hasAsyncMethodCalls = TemplateMethods.AddReferenceUsageChecks(request.UseCase, domainModel, statements, request.ApplicationProjectNamespace, primaryKeyVariable, aggregateName);
+			var hasAsyncMethodCalls = ApplicationTemplateMethods.AddReferenceUsageChecks(request.UseCase, domainModel, statements, request.ApplicationProjectNamespace, primaryKeyVariable, aggregateName);
 
 			statements.Add(StatementHelpers.GetResponseDataReturn(true, !hasAsyncMethodCalls));
 

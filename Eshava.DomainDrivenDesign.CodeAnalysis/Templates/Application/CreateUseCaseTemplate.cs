@@ -78,7 +78,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			unitInformation.AddScopedSettings(request.ScopedSettingsUsing, request.ScopedSettingsClass, scopedSettingsTargetType);
 			unitInformation.AddValidationEngine();
 
-			TemplateMethods.AddDomainModelUsings(unitInformation, domainModelMap, request.DomainProjectNamespace, request.Domain);
+			ApplicationTemplateMethods.AddDomainModelUsings(unitInformation, domainModelMap, request.DomainProjectNamespace, request.Domain);
 
 			if (request.UseCase.AddValidationConfigurationMethod)
 			{
@@ -89,11 +89,11 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			unitInformation.AddUsing(provider.Using);
 			unitInformation.AddConstructorParameter(provider.Name, provider.Type);
 
-			var foreignKeyReferenceContainer = TemplateMethods.CollectForeignKeyReferenceTypes(request.DomainProjectNamespace, domainModelMap);
-			var domainModelWithMappings = TemplateMethods.CheckForPropertyMappings(unitInformation, request.Domain, request.UseCase.Dtos, request.DomainModelReferenceMap);
+			var foreignKeyReferenceContainer = ApplicationTemplateMethods.CollectForeignKeyReferenceTypes(request.DomainProjectNamespace, domainModelMap);
+			var domainModelWithMappings = ApplicationTemplateMethods.CheckForPropertyMappings(unitInformation, request.Domain, request.UseCase.Dtos, request.DomainModelReferenceMap);
 
 			unitInformation.AddMethod(
-				TemplateMethods.CreateUseCaseMainMethod(
+				ApplicationTemplateMethods.CreateUseCaseMainMethod(
 					request.UseCase,
 					request.Domain,
 					domainModelMap,
@@ -108,10 +108,10 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 
 			if (request.UseCase.AddValidationConfigurationMethod)
 			{
-				unitInformation.AddMethod(TemplateMethods.CreateValidationConfigurationMethod(request.UseCase));
+				unitInformation.AddMethod(ApplicationTemplateMethods.CreateValidationConfigurationMethod(request.UseCase));
 			}
 
-			var childCreateMethodsResult = TemplateMethods.CreateCreateChildsMethods(request, domainModelMap, foreignKeyReferenceContainer, domainModelWithMappings, true, true);
+			var childCreateMethodsResult = ApplicationTemplateMethods.CreateCreateChildsMethods(request, domainModelMap, foreignKeyReferenceContainer, domainModelWithMappings, true, true);
 			foreach (var childCreateMethods in childCreateMethodsResult)
 			{
 				unitInformation.AddMethod(childCreateMethods);
@@ -126,14 +126,14 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			if (domainModelMap.DomainModel.HasValidationRules && !domainModelMap.IsChildDomainModel)
 			{
 				var dto = request.UseCase.Dtos.First(dto => dto.Name == request.UseCase.MainDto);
-				unitInformation.AddMethod(TemplateMethods.CreateCheckValidationConstraintsMethod(request.UseCase, request.Domain, domainModelMap, dto));
+				unitInformation.AddMethod(ApplicationTemplateMethods.CreateCheckValidationConstraintsMethod(request.UseCase, request.Domain, domainModelMap, dto));
 			}
 
 			if (request.UseCase.CheckForeignKeyReferencesAutomatically)
 			{
-				TemplateMethods.AddReferenceTypes(unitInformation, request.UseCasesMap, foreignKeyReferenceContainer.ForeignKeyHashSets, request.ApplicationProjectNamespace);
+				ApplicationTemplateMethods.AddReferenceTypes(unitInformation, request.UseCasesMap, foreignKeyReferenceContainer.ForeignKeyHashSets, request.ApplicationProjectNamespace);
 
-				var foreignKeyCheckMethods = TemplateMethods.CreateExistsForeignKeyMethod(foreignKeyReferenceContainer.ForeignKeyHashSets);
+				var foreignKeyCheckMethods = ApplicationTemplateMethods.CreateExistsForeignKeyMethod(foreignKeyReferenceContainer.ForeignKeyHashSets);
 				foreach (var foreignKeyCheckMethod in foreignKeyCheckMethods)
 				{
 					unitInformation.AddMethod(foreignKeyCheckMethod);
@@ -221,7 +221,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 				statements.AddRange(readStatements);
 				aggregateReadResult = providerResult;
 
-				var dtoForeignKeyReferences = TemplateMethods.CollectForeignKeysAndAddToMethodCall(
+				var dtoForeignKeyReferences = ApplicationTemplateMethods.CollectForeignKeysAndAddToMethodCall(
 					foreignKeyReferenceContainer,
 					domainModelMap,
 					dtoMap,
@@ -264,7 +264,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 				var domainModelName = domainModelMap.GetDomainModelTypeName(domainProjectNamespace);
 				if (useCase.CheckForeignKeyReferencesAutomatically)
 				{
-					var dtoForeignKeyReferences = TemplateMethods.CollectForeignKeysAndAddToMethodCall(
+					var dtoForeignKeyReferences = ApplicationTemplateMethods.CollectForeignKeysAndAddToMethodCall(
 						foreignKeyReferenceContainer,
 						domainModelMap,
 						dtoMap,
@@ -295,7 +295,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 
 			if (domainModelMap.IsAggregate && !domainModelMap.IsChildDomainModel)
 			{
-				TemplateMethods.AddCreateChildModelsStatements(domainModelMap, dtoMap, statements, returnDataType, createResult, dto);
+				ApplicationTemplateMethods.AddCreateChildModelsStatements(domainModelMap, dtoMap, statements, returnDataType, createResult, dto);
 			}
 
 			var entityToSave = domainModelMap.IsChildDomainModel
@@ -337,7 +337,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			}
 
 			var domainModelName = domainModelMap.GetDomainModelTypeName(domainProjectNamespace);
-			var dtoForeignKeyReferences = TemplateMethods.CollectForeignKeysAndAddToMethodCall(
+			var dtoForeignKeyReferences = ApplicationTemplateMethods.CollectForeignKeysAndAddToMethodCall(
 				foreignKeyReferenceContainer,
 				domainModelMap,
 				dtoMap,
@@ -353,7 +353,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 
 			var statements = new List<StatementSyntax>();
 
-			TemplateMethods.CreateForeignKeyCheckStatements(domainModelMap, useCase.ClassificationKey.ToVariableName().ToIdentifierName(), dtoForeignKeyReferences, statements, Eshava.CodeAnalysis.SyntaxConstants.Bool, true);
+			ApplicationTemplateMethods.CreateForeignKeyCheckStatements(domainModelMap, useCase.ClassificationKey.ToVariableName().ToIdentifierName(), dtoForeignKeyReferences, statements, Eshava.CodeAnalysis.SyntaxConstants.Bool, true);
 
 			statements.Add(
 				Eshava.CodeAnalysis.SyntaxConstants.True

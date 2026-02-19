@@ -3,7 +3,6 @@ using System.Linq;
 using Eshava.CodeAnalysis.Extensions;
 using Eshava.DomainDrivenDesign.CodeAnalysis.Constants;
 using Eshava.DomainDrivenDesign.CodeAnalysis.Models;
-using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 
 namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
@@ -23,7 +22,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 
 			foreach (var property in dtoMap.Dto.Properties)
 			{
-				TemplateMethods.CollectPropertyUsings(unitInformation, property, propertyAttributes, domainModel, false);
+				ApplicationTemplateMethods.CollectPropertyUsings(unitInformation, property, propertyAttributes, domainModel, false);
 
 				var attributes = AttributeTemplate.CreateAttributes(propertyAttributes[property.Name]);
 				var propertyType = property.IsEnumerable
@@ -51,7 +50,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			{
 				foreach (var property in dtoMap.Dto.ValidationRuleProperties)
 				{
-					TemplateMethods.CollectPropertyUsings(unitInformation, property, propertyAttributes, domainModel, true);
+					ApplicationTemplateMethods.CollectPropertyUsings(unitInformation, property, propertyAttributes, domainModel, true);
 				}
 
 				foreach (var property in dtoMap.Dto.ValidationRuleProperties)
@@ -63,7 +62,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 
 			foreach (var property in dtoMap.Dto.Properties)
 			{
-				TemplateMethods.CollectPropertyUsings(unitInformation, property, propertyAttributes, domainModel, false);
+				ApplicationTemplateMethods.CollectPropertyUsings(unitInformation, property, propertyAttributes, domainModel, false);
 			}
 
 			foreach (var property in dtoMap.Dto.Properties)

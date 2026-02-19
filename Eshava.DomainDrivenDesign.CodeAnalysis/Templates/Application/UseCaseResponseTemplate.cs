@@ -96,7 +96,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 
 							foreach (var property in dto.Properties)
 							{
-								TemplateMethods.CollectPropertyUsings(unitInformation, property, propertyAttributes, null, false);
+								ApplicationTemplateMethods.CollectPropertyUsings(unitInformation, property, propertyAttributes, null, false);
 								var attributesForProperty = AttributeTemplate.CreateAttributes(propertyAttributes[property.Name]);
 								var propertyType = property.IsEnumerable
 									? "IEnumerable".AsGeneric(property.Type)

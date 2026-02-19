@@ -64,13 +64,13 @@ namespace Eshava.Example.SourceGenerator.Generators
 		private List<InfrastructureCodeSnippet> GetCodeSnippets()
 		{
 			return [
-				GetUserIdRepositoryCodeSnippet(),
-				GetUserIdQueryRepositoryCodeSnippet(),
+				GetUserIdAndStatusRepositoryCodeSnippet(),
+				GetUserIdAndStatusQueryRepositoryCodeSnippet(),
 				GetUserIdInfrastructureProviderServiceCodeSnippet()
 			];
 		}
 
-		private InfrastructureCodeSnippet GetUserIdRepositoryCodeSnippet()
+		private InfrastructureCodeSnippet GetUserIdAndStatusRepositoryCodeSnippet()
 		{
 			return new InfrastructureCodeSnippet
 			{
@@ -83,6 +83,32 @@ namespace Eshava.Example.SourceGenerator.Generators
 						IsFilter = true,
 						PropertyName = "UserId",
 						Expression = "ScopedSettings".ToIdentifierName().Access("UserId")
+					},
+					new InfrastructureModelPropertyCodeSnippet
+					{
+						IsFilter = true,
+						PropertyName = "Status",
+						Expression = null,
+						Exceptions = [
+							new InfrastructureExceptionCodeSnippet
+							{
+								DataModelName = "CustomerData",
+								MethodName = "ReadByNameAsync",
+								ClassName = "CustomerDDDRepository",
+								UseInstead = true,
+								Operation = DomainDrivenDesign.CodeAnalysis.Enums.OperationType.NotEqual,
+								Expression = "Status".Access("Inactive")
+							},
+							new InfrastructureExceptionCodeSnippet
+							{
+								DataModelName = "LocationData",
+								MethodName = "ReadByNameAsync",
+								ClassName = "CustomerDDDRepository",
+								UseInstead = true,
+								Operation = DomainDrivenDesign.CodeAnalysis.Enums.OperationType.NotEqual,
+								Expression = "Status".Access("Inactive")
+							}
+						]
 					}
 				]
 			};
@@ -113,7 +139,7 @@ namespace Eshava.Example.SourceGenerator.Generators
 			};
 		}
 
-		private InfrastructureCodeSnippet GetUserIdQueryRepositoryCodeSnippet()
+		private InfrastructureCodeSnippet GetUserIdAndStatusQueryRepositoryCodeSnippet()
 		{
 			return new InfrastructureCodeSnippet
 			{
@@ -124,7 +150,92 @@ namespace Eshava.Example.SourceGenerator.Generators
 					{
 						IsFilter = true,
 						PropertyName = "UserId",
-						Expression = "_scopedSettings".ToIdentifierName().Access("UserId")
+						Expression = "_scopedSettings".ToIdentifierName().Access("UserId"),
+						Exceptions = [
+							new InfrastructureExceptionCodeSnippet
+							{
+								DataModelName = "CustomerData",
+								MethodName = "SearchOnlyInfrastructureAsync",
+								ClassName = "OfficeQueryRepository",
+								SkipUsage = true
+							},
+							new InfrastructureExceptionCodeSnippet
+							{
+								DataModelName = "OfficeData",
+								MethodName = "SearchOnlyInfrastructureAsync",
+								ClassName = "OfficeQueryRepository",
+								UseInstead = true,
+								Operation = DomainDrivenDesign.CodeAnalysis.Enums.OperationType.In,
+								Expression = "List".AsGeneric("int").ToInstanceWithInitializer("Int32".ToIdentifierName().Access("MaxValue"), "0".ToLiteralInt())
+							},
+							new InfrastructureExceptionCodeSnippet
+							{
+								DataModelName = "OfficeData",
+								MethodName = "ReadBillingOfficeOnlyInfrastructureAsync",
+								ClassName = "OfficeQueryRepository",
+								Operation = DomainDrivenDesign.CodeAnalysis.Enums.OperationType.NotEqual,
+							}
+						]
+					},
+					new InfrastructureModelPropertyCodeSnippet
+					{
+						IsFilter = true,
+						PropertyName = "Status",
+						Expression = null,
+						Exceptions = [
+							new InfrastructureExceptionCodeSnippet
+							{
+								DataModelName = "OfficeData",
+								MethodName = "ReadBillingOfficeOnlyInfrastructureAsync",
+								ClassName = "OfficeQueryRepository",
+								SkipUsage = true
+							},
+							new InfrastructureExceptionCodeSnippet
+							{
+								DataModelName = "OfficeData",
+								MethodName = "SearchOnlyInfrastructureAsync",
+								ClassName = "OfficeQueryRepository",
+								UseInstead = true,
+								Operation = DomainDrivenDesign.CodeAnalysis.Enums.OperationType.In,
+								Expression = "List".AsGeneric("Status").ToInstanceWithInitializer("Status".Access("Active"), "Status".Access("Inactive"))
+							},
+							new InfrastructureExceptionCodeSnippet
+							{
+								DataModelName = "CustomerData",
+								MethodName = "SearchOnlyInfrastructureAsync",
+								ClassName = "OfficeQueryRepository",
+								UseInstead = true,
+								Operation = DomainDrivenDesign.CodeAnalysis.Enums.OperationType.NotEqual,
+								Expression = "Status".Access("Inactive")
+							},
+							new InfrastructureExceptionCodeSnippet
+							{
+								DataModelName = "OfficeData",
+								MethodName = "ReadCustomerIdAsync",
+								ClassName = "OfficeQueryRepository",
+								UseInstead = true,
+								Operation = DomainDrivenDesign.CodeAnalysis.Enums.OperationType.NotEqual,
+								Expression = "Status".Access("Inactive")
+							},
+							new InfrastructureExceptionCodeSnippet
+							{
+								DataModelName = "OfficeData",
+								MethodName = "ReadCustomerIdAsync",
+								ClassName = "LocationQueryRepository",
+								UseInstead = true,
+								Operation = DomainDrivenDesign.CodeAnalysis.Enums.OperationType.NotEqual,
+								Expression = "Status".Access("Inactive")
+							},
+							new InfrastructureExceptionCodeSnippet
+							{
+								DataModelName = "LocationData",
+								MethodName = "ReadCustomerIdAsync",
+								ClassName = "LocationQueryRepository",
+								UseInstead = true,
+								Operation = DomainDrivenDesign.CodeAnalysis.Enums.OperationType.NotEqual,
+								Expression = "Status".Access("Inactive")
+							}
+						]
 					}
 				]
 			};
