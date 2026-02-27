@@ -42,7 +42,7 @@ namespace Eshava.Example.SourceGenerator.Generators
 				var infrastructureProjectConfig = configurationFile.FirstOrDefault(f => f.Type == ConfigurationFileTypes.InfrastructureProject)?.Parse<InfrastructureProject>() ?? new InfrastructureProject();
 				var infrastructureModelsConfigs = configurationFile.Where(f => f.Type == ConfigurationFileTypes.InfrastructureModels).Select(f => f.Parse<InfrastructureModels>()).ToList();
 
-				if (apiProjectConfig is null || apiRoutesConfigs is null)
+				if (apiProjectConfig is null || apiRoutesConfigs.Count == 0)
 				{
 					return;
 				}

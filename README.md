@@ -14,7 +14,7 @@ A "simple" sample API is provided for better understanding of the code generator
 
 ## Setup and project configuration
 The code generator can be integrated into any existing project solution, provided that it complies with the structure specified in the NuGet package “Eshava.DomainDrivenDesign”.
-Each layer requires its own generator class. A new project must be added to the solution in order to deploy or execute the generators. The target framework must be netstandard2.0.
+Each layer requires its own generator class. A new class library project must be added to the solution in order to deploy or execute the generators. The target framework must be netstandard2.0.
 The name of the project can be chosen freely. In the example, the project is called “Eshava.Example.SourceGenerator”. Four generator classes must be created in the project solution. One generator class for each layer.
 Currently, the generator package only supports one project per layer. The names of the generator classes can also be freely chosen. An extension class is also required. This initialized the context for the generator classes.
 

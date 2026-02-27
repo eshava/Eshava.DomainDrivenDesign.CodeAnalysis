@@ -27,7 +27,7 @@ namespace Eshava.Example.SourceGenerator
 				var domainProjectConfig = configurationFile.FirstOrDefault(f => f.Type == ConfigurationFileTypes.DomainProject)?.Parse<DomainProject>();
 				var domainModelsConfigs = configurationFile.Where(f => f.Type == ConfigurationFileTypes.DomainModels).Select(f => f.Parse<DomainModels>()).ToList();
 
-				if (domainProjectConfig is null || domainModelsConfigs is null)
+				if (domainProjectConfig is null || domainModelsConfigs.Count == 0)
 				{
 					return;
 				}

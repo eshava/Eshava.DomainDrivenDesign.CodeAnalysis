@@ -37,7 +37,7 @@ namespace Eshava.Example.SourceGenerator.Generators
 				var infrastructureProjectConfig = configurationFile.FirstOrDefault(f => f.Type == ConfigurationFileTypes.InfrastructureProject)?.Parse<InfrastructureProject>();
 				var infrastructureModelsConfigs = configurationFile.Where(f => f.Type == ConfigurationFileTypes.InfrastructureModels).Select(f => f.Parse<InfrastructureModels>()).ToList();
 
-				if (infrastructureProjectConfig is null || infrastructureModelsConfigs is null)
+				if (infrastructureProjectConfig is null || infrastructureModelsConfigs.Count == 0)
 				{
 					return;
 				}
