@@ -42,7 +42,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 					"Task".AsGeneric(CommonNames.RESPONSEDATA.AsGeneric("IEnumerable".AsGeneric(fullDomainModelName))),
 					null
 					)
-					.WithParameter($"{foreignKeyReference.PropertyName.ToVariableName()}".ToParameter().WithType(domainModelMap.IdentifierType.ToType()))
+					.WithParameter($"{foreignKeyReference.PropertyName.ToVariableName()}".ToParameter().WithType(foreignKeyReference.DomainModel.IdentifierType.ToType()))
 					.AddSemicolon();
 
 				unitInformation.AddMethod((methodDeclarationName, methodDeclaration));

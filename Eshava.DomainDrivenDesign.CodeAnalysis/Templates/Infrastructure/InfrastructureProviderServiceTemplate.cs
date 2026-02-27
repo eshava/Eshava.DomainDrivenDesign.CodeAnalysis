@@ -511,7 +511,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				.WithParameter(
 					parameterName
 					.ToParameter()
-					.WithType(domainModelMap.IdentifierType.ToType())
+					.WithType(foreignKeyReference.DomainModel.IdentifierType.ToType())
 				)
 			);
 		}

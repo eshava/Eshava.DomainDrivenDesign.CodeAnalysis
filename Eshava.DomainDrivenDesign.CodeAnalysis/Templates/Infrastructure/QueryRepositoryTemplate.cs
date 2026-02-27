@@ -980,6 +980,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 
 				tryBlockStatements.Add(
 					processResultName
+					.Access("ToList")
+					.Call()
 					.Access("ToIEnumerableResponseData")
 					.Call()
 					.Return()
