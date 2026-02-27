@@ -1538,6 +1538,36 @@
 					]
 				},
 				{
+					"type": 1,
+					"useCaseName": "ReadWithOffice",
+					"classificationKey": "Customer",
+					"featureName": "CustomerFeature",
+					"skipUseCase": true,
+					"mainDto": "CustomerWithOfficeRead",
+					"dtos": [
+						{
+							"name": "CustomerWithOfficeRead",
+							"referenceModelName": "CustomerData",
+							"properties": [
+								{
+									"name": "Id",
+									"type": "int"
+								},
+								{
+									"name": "Name",
+									"type": "string",
+									"referenceProperty": "CompanyName"
+								},
+								{
+									"name": "OfficeName",
+									"type": "string",
+									"referenceProperty": "Office.Name"
+								}
+							]
+						}
+					]
+				},
+				{
 					"type": 2,
 					"useCaseName": "SearchOnlyInfrastructure",
 					"classificationKey": "Office",

@@ -94,9 +94,11 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			var allModelsForDomain = infrastructureModelsConfig.Namespaces.First(ns => ns.Domain == domain).Models.ToList();
 			var allModelsForDomainByClassificationKey = allModelsForDomain.GroupBy(m => m.ClassificationKey).ToDictionary(m => m.Key, m => m.ToList());
 			var allModelsForDomainDic = allModelsForDomain.ToDictionary(m => m.Name, m => m);
-			var childsForModel = childsForAllModels.ContainsKey(model.Name)
-			? childsForAllModels[model.Name]
-			: new List<InfrastructureModel>();
+
+			if (!childsForAllModels.TryGetValue(model.Name, out var childsForModel))
+			{
+				childsForModel = [];
+			}
 
 			var modelConstantNames = CreateModelConstantNames(model, childsForModel, allModelsForDomainDic, allModelsForDomainByClassificationKey, fullQualifiedDomainNamespace);
 			foreach (var modelConstantName in modelConstantNames)
@@ -127,16 +129,16 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				switch (methodMap.Type)
 				{
 					case MethodType.Read:
-						methodCreationResult = CreateReadMethod(model, methodMap, infrastructureModelsConfig, metaData, project.ImplementSoftDelete);
+						methodCreationResult = CreateReadMethod(model, methodMap, childsForAllModels, infrastructureModelsConfig, metaData, project.ImplementSoftDelete);
 
 						break;
 					case MethodType.Search:
-						methodCreationResult = CreateSearchMethod(model, methodMap, infrastructureModelsConfig, metaData, project.ImplementSoftDelete);
+						methodCreationResult = CreateSearchMethod(model, methodMap, childsForAllModels, infrastructureModelsConfig, metaData, project.ImplementSoftDelete);
 						addFieldsToMapping = true;
 
 						break;
 					case MethodType.SearchCount:
-						methodCreationResult = CreateSearchCountMethod(model, methodMap, infrastructureModelsConfig, metaData, project.ImplementSoftDelete);
+						methodCreationResult = CreateSearchCountMethod(model, methodMap, childsForAllModels, infrastructureModelsConfig, metaData, project.ImplementSoftDelete);
 						addFieldsToMapping = true;
 
 						break;
@@ -720,6 +722,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 		private static MethodCreationResult CreateReadMethod(
 			InfrastructureModel dataModel,
 			UseCaseQueryProviderMethodMap methodMap,
+			Dictionary<string, List<InfrastructureModel>> childsForAllModels,
 			InfrastructureModels infrastructureModelsConfig,
 			MethodMetaData metaData,
 			bool implementSoftDelete
@@ -727,7 +730,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 		{
 			var methodMetaData = metaData.Clone(methodMap.Name);
 			var returnDto = methodMap.ReturnType.DtoMap;
-			var relatedDataModels = CollectDataModelsForReferenceProperties(methodMap.Domain, returnDto, dataModel, infrastructureModelsConfig, true, false);
+			var relatedDataModels = CollectDataModelsForReferenceProperties(methodMap.Domain, returnDto, dataModel, childsForAllModels, infrastructureModelsConfig, true, false);
 
 			var modelItem = relatedDataModels.First(m => m.DataModel.Name == dataModel.Name && m.Domain == methodMap.Domain && m.IsRootModel);
 			var idParameter = methodMap.ParameterTypes.First();
@@ -874,6 +877,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 		private static MethodCreationResult CreateSearchMethod(
 			InfrastructureModel dataModel,
 			UseCaseQueryProviderMethodMap methodMap,
+			Dictionary<string, List<InfrastructureModel>> childsForAllModels,
 			InfrastructureModels infrastructureModelsConfig,
 			MethodMetaData metaData,
 			bool implementSoftDelete
@@ -881,7 +885,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 		{
 			var methodMetaData = metaData.Clone(methodMap.Name);
 			var returnDto = methodMap.ParameterTypes.First().Generic.First().DtoMap;
-			var relatedDataModels = CollectDataModelsForReferenceProperties(methodMap.Domain, returnDto, dataModel, infrastructureModelsConfig, true, false);
+			var relatedDataModels = CollectDataModelsForReferenceProperties(methodMap.Domain, returnDto, dataModel, childsForAllModels, infrastructureModelsConfig, true, false);
 
 			var modelItem = relatedDataModels.First(m => m.DataModel.Name == dataModel.Name && m.Domain == methodMap.Domain && m.IsRootModel);
 			var filterRequestParameter = methodMap.ParameterTypes.First();
@@ -1011,6 +1015,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 		private static MethodCreationResult CreateSearchCountMethod(
 			InfrastructureModel dataModel,
 			UseCaseQueryProviderMethodMap methodMap,
+			Dictionary<string, List<InfrastructureModel>> childsForAllModels,
 			InfrastructureModels infrastructureModelsConfig,
 			MethodMetaData metaData,
 			bool implementSoftDelete
@@ -1018,7 +1023,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 		{
 			var methodMetaData = metaData.Clone(methodMap.Name);
 			var returnDto = methodMap.ParameterTypes.First().Generic.First().DtoMap;
-			var relatedDataModels = CollectDataModelsForReferenceProperties(methodMap.Domain, returnDto, dataModel, infrastructureModelsConfig, true, false);
+			var relatedDataModels = CollectDataModelsForReferenceProperties(methodMap.Domain, returnDto, dataModel, childsForAllModels, infrastructureModelsConfig, true, false);
 
 			var modelItem = relatedDataModels.First(m => m.DataModel.Name == dataModel.Name && m.Domain == methodMap.Domain && m.IsRootModel);
 			var filterRequestParameter = methodMap.ParameterTypes.First();
@@ -1223,6 +1228,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			string domain,
 			ReferenceDtoMap dto,
 			InfrastructureModel model,
+			Dictionary<string, List<InfrastructureModel>> childsForAllModels,
 			InfrastructureModels infrastructureModelsConfig,
 			bool isRoot,
 			bool isValueObject
@@ -1267,7 +1273,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 
 					var childIsValueObject = model.Name == childDataModel.Name;
 
-					var currentRelatedDataModels = CollectDataModelsForReferenceProperties(childReferenceProperty.Dto.Domain, childReferenceProperty.Dto, childDataModel, infrastructureModelsConfig, false, childIsValueObject);
+					var currentRelatedDataModels = CollectDataModelsForReferenceProperties(childReferenceProperty.Dto.Domain, childReferenceProperty.Dto, childDataModel, childsForAllModels, infrastructureModelsConfig, false, childIsValueObject);
 					if (currentRelatedDataModels.Count > 0)
 					{
 						foreach (var relatedModel in currentRelatedDataModels)
@@ -1384,7 +1390,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 					// if it is not empty and contains at least one dot, it is an reference type and a left join is needed
 					var referencePropertyParts = property.ReferenceProperty.Split('.');
 					var currentRelatedDataModels = new List<QueryAnalysisItem>();
-					var referenceResult = CollectDataModelsForReferenceProperties(property, referencePropertyParts, 0, domain, model, infrastructureModelsConfig, currentRelatedDataModels);
+					var referenceResult = CollectDataModelsForReferenceProperties(property, referencePropertyParts, 0, domain, model, childsForAllModels, infrastructureModelsConfig, currentRelatedDataModels);
 					if (referenceResult)
 					{
 						relatedDataModels.AddRange(currentRelatedDataModels);
@@ -1404,34 +1410,60 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			int referencePropertyPartsIndex,
 			string currentDomain,
 			InfrastructureModel currentDataModel,
+			Dictionary<string, List<InfrastructureModel>> childsForAllModels,
 			InfrastructureModels infrastructureModelsConfig,
 			List<QueryAnalysisItem> relatedDataModels
 		)
 		{
 			for (var i = referencePropertyPartsIndex; i < (referencePropertyParts.Length - 1); i++)
 			{
+				InfrastructureModel referenceDataModel = null;
+				var isParentReference = false;
+				var referenceDomain = currentDomain;
 				var referenceProperty = referencePropertyParts[i];
 				var currentDataProperty = currentDataModel.Properties.FirstOrDefault(p => p.Name == referenceProperty);
 				if (currentDataProperty is null)
 				{
-					return false;
+					if (!childsForAllModels.TryGetValue(currentDataModel.Name, out var childsForModel))
+					{
+						childsForModel = [];
+					}
+
+					var childModel = childsForModel.FirstOrDefault(cm => cm.ClassificationKey == referenceProperty);
+					if (childModel is null)
+					{
+						return false;
+					}
+
+					referenceDataModel = childModel;
+					// Fake property for join calculation
+					currentDataProperty = new InfrastructureModelProperty
+					{
+						Name = childModel.ClassificationKey,
+						Type = childModel.Name,
+						ReferencePropertyName = childModel.Properties.FirstOrDefault(p => p.IsParentReference)?.Name
+					};
 				}
 
-				var foreignKeyDataProperty = currentDataModel.Properties.FirstOrDefault(p => p.Name == currentDataProperty.ReferencePropertyName);
+				if (referenceDataModel is null)
+				{
+					var foreignKeyDataProperty = currentDataModel.Properties.FirstOrDefault(p => p.Name == currentDataProperty.ReferencePropertyName);
+					isParentReference = foreignKeyDataProperty?.IsParentReference ?? false;
 
-				var referenceDomain = currentDataProperty.ReferenceDomain.IsNullOrEmpty()
-					? currentDomain
-					: currentDataProperty.ReferenceDomain;
+					referenceDomain = currentDataProperty.ReferenceDomain.IsNullOrEmpty()
+						? currentDomain
+						: currentDataProperty.ReferenceDomain;
 
-				// Check if its a value object
-				var referenceType = currentDataProperty.ReferenceType.IsNullOrEmpty()
-					? currentDataProperty.Type
-					: currentDataProperty.ReferenceType;
+					// Check if its a value object
+					var referenceType = currentDataProperty.ReferenceType.IsNullOrEmpty()
+						? currentDataProperty.Type
+						: currentDataProperty.ReferenceType;
 
-				var referenceDataModel = infrastructureModelsConfig.Namespaces
-					.FirstOrDefault(ns => ns.Domain == referenceDomain)
-					?.Models
-					.FirstOrDefault(m => m.Name == referenceType);
+					referenceDataModel = infrastructureModelsConfig.Namespaces
+						.FirstOrDefault(ns => ns.Domain == referenceDomain)
+						?.Models
+						.FirstOrDefault(m => m.Name == referenceType);
+				}
 
 				if (referenceDataModel is null)
 				{
@@ -1461,7 +1493,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 						referenceDataModel.Properties.Add(dataProperty);
 					}
 
-					var tableAlias = referencePropertyPartsIndex == 0 && (foreignKeyDataProperty?.IsParentReference ?? false)
+					var tableAlias = referencePropertyPartsIndex == 0 && isParentReference
 						? referenceDataModel.Name.CreateModelConstantField()
 						: String.Concat(referencePropertyParts.Take(i + 1)).CreateModelConstantField();
 					relatedDataModels.Add(new QueryAnalysisItem
@@ -1477,7 +1509,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 						TableAliasField = tableAlias.Declaration
 					});
 
-					return CollectDataModelsForReferenceProperties(dtoProperty, referencePropertyParts, i + 1, referenceDomain, referenceDataModel, infrastructureModelsConfig, relatedDataModels);
+					return CollectDataModelsForReferenceProperties(dtoProperty, referencePropertyParts, i + 1, referenceDomain, referenceDataModel, childsForAllModels, infrastructureModelsConfig, relatedDataModels);
 				}
 				else
 				{
@@ -1501,7 +1533,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 					var tableAlias = referenceDataModel.TableName.IsNullOrEmpty()
 						? currentDataModel.Name.CreateModelConstantField()
 						: (
-							(referencePropertyPartsIndex == 0 && (foreignKeyDataProperty?.IsParentReference ?? false))
+							(referencePropertyPartsIndex == 0 && isParentReference)
 								? referenceDataModel.Name.CreateModelConstantField()
 								: String.Concat(referencePropertyParts.Take(i + 1)).CreateModelConstantField()
 						);
