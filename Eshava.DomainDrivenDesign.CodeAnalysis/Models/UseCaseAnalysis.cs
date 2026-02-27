@@ -258,6 +258,11 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models
 
 		private static void AddQueryProviderExistsMethod(UseCasesMap useCasesMap, UseCaseMap useCaseMap, ReferenceDtoMap dtoMap, ReferenceDomainModelMap domainModelMap)
 		{
+			if (dtoMap is null)
+			{
+				return;
+			}
+
 			foreach (var dtoProperty in dtoMap.Dto.Properties)
 			{
 				var dtoPropertyName = dtoProperty.ReferenceProperty.IsNullOrEmpty()
@@ -546,7 +551,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models
 
 			if (rule.RelatedProperties.Count > 0)
 			{
-				method.ParameterTypes.AddRange(rule.RelatedProperties.Select(p =>
+				method.ParameterTypes.AddRange(rule.RelatedProperties.Where(p => !p.IsNullOrEmpty()).Select(p =>
 				{
 					var relatedProperty = domainModelMap.DomainModel.Properties.First(dmp => dmp.Name == p);
 
