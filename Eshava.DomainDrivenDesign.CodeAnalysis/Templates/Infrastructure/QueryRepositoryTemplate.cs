@@ -123,6 +123,11 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 
 			foreach (var methodMap in queryProviderMap.Methods)
 			{
+				if (methodMap.SkipRepositoryImplementation)
+				{
+					continue;
+				}
+
 				MethodCreationResult methodCreationResult = null;
 
 				var addFieldsToMapping = false;

@@ -344,7 +344,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models
 						Name = $"{useCaseMap.ReferenceDtoMap.NamespaceClassificationKey.ToVariableName()}Id",
 						Type = useCaseMap.ReferenceDtoMap.DataModel.IdentifierType.ToType()
 					}
-				]
+				],
+				SkipRepositoryImplementation = useCaseMap.UseCase.SkipRepositoryMethod
 			};
 
 			useCaseMap.QueryProviderMethodMaps.Add(method);
@@ -389,7 +390,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models
 							}
 						]
 					}
-				]
+				],
+				SkipRepositoryImplementation = useCaseMap.UseCase.SkipRepositoryMethod
 			};
 
 			useCaseMap.QueryProviderMethodMaps.Add(searchMethod);
@@ -421,7 +423,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models
 							}
 						]
 					}
-				]
+				],
+				SkipRepositoryImplementation = useCaseMap.UseCase.SkipRepositoryMethod
 			};
 
 			useCaseMap.QueryProviderMethodMaps.Add(searchCountMethod);
@@ -467,7 +470,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models
 							}
 						]
 					}
-				]
+				],
+				SkipRepositoryImplementation = useCaseMap.UseCase.SkipRepositoryMethod
 			};
 
 			useCaseMap.QueryProviderMethodMaps.Add(method);
@@ -502,7 +506,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models
 							}
 						]
 					}
-				]
+				],
+				SkipRepositoryImplementation = useCaseMap.UseCase.SkipRepositoryMethod
 			};
 
 			useCaseMap.QueryProviderMethodMaps.Add(method);
@@ -865,6 +870,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models
 		public string DataModelTypePropertyValue { get; set; }
 
 		public bool UseCustomGroupDtoMethod { get; set; }
+		public bool SkipRepositoryImplementation { get; set; }
 		public UseCaseQueryProviderMethodParameterTypeMap ReturnType { get; set; }
 		public List<UseCaseQueryProviderMethodParameterTypeMap> ParameterTypes { get; set; }
 	}

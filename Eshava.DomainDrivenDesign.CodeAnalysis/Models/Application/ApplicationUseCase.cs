@@ -66,7 +66,15 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models.Application
 		public bool SkipUseCase { get; set; }
 		public bool SkipUseCaseClass { get; set; }
 		public bool SkipCountUseCase { get; set; }
+		/// <summary>
+		/// Skip the generation of the method in the (query) repository, interface (query) repository, (query) infrastructure provider service and interface (query) infrastructure provider service
+		/// </summary>
 		public bool SkipInfrastructureProviderServiceMethod { get; set; }
+		/// <summary>
+		/// Skip the generation of the method in the (query) repository, 
+		/// but generate them in the interface (query) repository, (query) infrastructure provider service and interface (query) infrastructure provider service
+		/// </summary>
+		public bool SkipRepositoryMethod { get; set; }
 		public bool WarpInTransaction { get; set; }
 		public bool ReadAggregateByChildId { get; set; }
 		public bool UseCustomGroupDtoMethod { get; set; }
@@ -117,6 +125,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models.Application
 				SkipCountUseCase = SkipCountUseCase,
 				SkipUseCaseClass = SkipUseCaseClass,
 				SkipInfrastructureProviderServiceMethod = SkipInfrastructureProviderServiceMethod,
+				SkipRepositoryMethod = SkipRepositoryMethod,
 				AdditionalContructorParameter = AdditionalContructorParameter
 					.Select(p => new ConstructorParameter
 					{
