@@ -1764,6 +1764,20 @@
 									"name": "OfficeIds",
 									"type": "int",
 									"isEnumerable": true
+								},
+								{
+									"name": "Offices",
+									"type": "DummyForRequestItem",
+									"isEnumerable": true
+								}
+							]
+						},
+						{
+							"name": "DummyForRequestItem",
+							"properties": [
+								{
+									"name": "Name",
+									"type": "string"
 								}
 							]
 						},

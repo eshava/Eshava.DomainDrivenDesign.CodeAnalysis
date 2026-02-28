@@ -276,7 +276,7 @@
 					"useCase": {
 						"domain": "Ordering",
 						"classificationKey": "Product",
-						"useCaseName": "SuggestProductName"
+						"useCaseName": "SuggestProductNames"
 					},
 					"parameters": [
 						{
@@ -324,7 +324,7 @@
 					"useCase": {
 						"domain": "Ordering",
 						"classificationKey": "Product",
-						"useCaseName": "SuggestProductName"
+						"useCaseName": "SuggestProductNames"
 					},
 					"authorizationPolicies": [
 						{

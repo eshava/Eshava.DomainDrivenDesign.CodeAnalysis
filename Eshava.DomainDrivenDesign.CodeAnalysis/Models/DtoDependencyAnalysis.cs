@@ -76,17 +76,6 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models
 
 					foreach (var dtoDefinition in useCase.Dtos)
 					{
-						if (useCase.Type == ApplicationUseCaseType.Custom
-							&& (
-								((dtoDefinition.CustomUseCaseSettings?.AddToRequest ?? false) && (dtoDefinition.CustomUseCaseSettings?.AddOnlyPropertiesToRequest ?? false))
-								||
-								((dtoDefinition.CustomUseCaseSettings?.AddToResponse ?? false) && (dtoDefinition.CustomUseCaseSettings?.AddOnlyPropertiesToResponse ?? false))
-							)
-						)
-						{
-							continue;
-						}
-
 						var dtoMap = new ReferenceDtoMap
 						{
 							Domain = @namespace.Domain,
@@ -133,6 +122,19 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models
 						}
 
 						dtoDefinition.Name = dtoMap.DtoName;
+
+						if (useCase.Type == ApplicationUseCaseType.Custom
+							&& (
+								((dtoDefinition.CustomUseCaseSettings?.AddToRequest ?? false) && (dtoDefinition.CustomUseCaseSettings?.AddOnlyPropertiesToRequest ?? false))
+								||
+								((dtoDefinition.CustomUseCaseSettings?.AddToResponse ?? false) && (dtoDefinition.CustomUseCaseSettings?.AddOnlyPropertiesToResponse ?? false))
+							)
+						)
+						{
+							// Do not add dto map to DtoReferenceMap
+
+							continue;
+						}
 
 						map.AddDto(dtoMap);
 					}
