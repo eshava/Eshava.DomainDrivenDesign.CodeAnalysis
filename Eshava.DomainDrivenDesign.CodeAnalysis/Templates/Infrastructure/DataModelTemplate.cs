@@ -80,6 +80,10 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 						var referenceNameSpace = infrastructureModels[domain][child.Name].ToPlural();
 						var referenceType = $"{referenceNameSpace}.{child.Name}";
 						unitInformation.AddProperty(child.ClassificationKey.ToProperty(referenceType.ToType(), SyntaxKind.PublicKeyword, true, true), child.ClassificationKey);
+						if (child.ClassificationKey != child.Name)
+						{
+							unitInformation.AddProperty(child.Name.ToProperty(referenceType.ToType(), SyntaxKind.PublicKeyword, true, true), child.Name);
+						}
 					}
 				}
 			}

@@ -1667,7 +1667,14 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			return "mapper".ToParameterExpression(mapperStatements.ToArray());
 		}
 
-		private static IEnumerable<StatementSyntax> CreateMapperStatements(InfrastructureModel parentModel, ReferenceDomainModelMap domainModelMap, InfrastructureModel model, Dictionary<string, List<InfrastructureModel>> childsForModel, HashSet<string> processedDataModels, bool checkOnlyChilds)
+		private static IEnumerable<StatementSyntax> CreateMapperStatements(
+			InfrastructureModel parentModel, 
+			ReferenceDomainModelMap domainModelMap, 
+			InfrastructureModel model, 
+			Dictionary<string, List<InfrastructureModel>> childsForModel, 
+			HashSet<string> processedDataModels, 
+			bool checkOnlyChilds
+		)
 		{
 			var mapperStatements = new List<StatementSyntax>();
 			if (!checkOnlyChilds)
@@ -1693,7 +1700,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				else
 				{
 					var parentModelVariableName = parentModel.ClassificationKey.ToVariableName();
-					var parentPropertyName = parentModel.Properties.FirstOrDefault(p => p.ReferenceType == p.Type && p.ReferenceType == model.Name)?.Name ?? model.ClassificationKey;
+					var parentPropertyName = parentModel.Properties.FirstOrDefault(p => p.ReferenceType == p.Type && p.ReferenceType == model.Name)?.Name 
+							?? model.Name;
 
 					mapperStatements.Add(
 						 modelVariableName
@@ -2011,7 +2019,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				}
 				else
 				{
-					var propertyName = parentModel.Properties.FirstOrDefault(p => p.ReferenceType == p.Type && p.ReferenceType == model.Name)?.Name ?? model.ClassificationKey;
+					var propertyName = parentModel.Properties.FirstOrDefault(p => p.ReferenceType == p.Type && p.ReferenceType == model.Name)?.Name ?? model.Name;
 
 					rawItemsStatments.Add(
 						$"{model.ClassificationKey.ToVariableName()}RawItems"
