@@ -40,7 +40,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Constants
 		public static class Namespaces
 		{
 			public const string SYSTEM = "System";
-			public const string SYSTEMNET = "System.Net";
+			public const string SYSTEM_OI = "System.IO";
+			public const string SYSTEM_NET = "System.Net";
 			public const string GENERIC = "System.Collections.Generic";
 			public const string LINQ = "System.Linq";
 			public const string EXPRESSION = "System.Linq.Expressions";

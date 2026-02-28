@@ -5,6 +5,8 @@ using Eshava.DomainDrivenDesign.CodeAnalysis.Constants;
 using Eshava.DomainDrivenDesign.CodeAnalysis.Extensions;
 using Eshava.DomainDrivenDesign.CodeAnalysis.Models;
 using Eshava.DomainDrivenDesign.CodeAnalysis.Models.Api;
+using Eshava.DomainDrivenDesign.CodeAnalysis.Models.Application;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
@@ -179,39 +181,52 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Api
 			}
 
 			var httpStatusCode = 200;
-			switch (apiRoute.HttpMethod.ToLower())
+
+			if (useCaseMap.UseCase.Type == Models.Application.ApplicationUseCaseType.Custom
+				&& (useCaseMap.UseCase.FileStreamResult?.ProducesFileStreamResult ?? false))
 			{
-				case "get":
-				case "post":
+				httpStatusCode = apiRoute.UseCase.HttpStatusCode ?? (int)System.Net.HttpStatusCode.OK;
 
-					httpStatusCode = apiRoute.UseCase.HttpStatusCode ?? (int)System.Net.HttpStatusCode.OK;
+				mapCall = mapCall
+					.Access("Produces")
+					.Call([httpStatusCode.ToString().ToLiteralInt().ToArgument(), "System.IO.FileStream".ToIdentifierName().TypeOf().ToArgument()]);
+			}
+			else
+			{
+				switch (apiRoute.HttpMethod.ToLower())
+				{
+					case "get":
+					case "post":
 
-					mapCall = mapCall
-						.Access("Produces")
-						.Call([httpStatusCode.ToString().ToLiteralInt().ToArgument(), responseArgument]);
+						httpStatusCode = apiRoute.UseCase.HttpStatusCode ?? (int)System.Net.HttpStatusCode.OK;
 
-					break;
-
-				case "patch":
-				case "put":
-				case "delete":
-
-					httpStatusCode = apiRoute.UseCase.HttpStatusCode ?? (int)System.Net.HttpStatusCode.NoContent;
-
-					if (httpStatusCode != (int)System.Net.HttpStatusCode.NoContent)
-					{
 						mapCall = mapCall
 							.Access("Produces")
 							.Call([httpStatusCode.ToString().ToLiteralInt().ToArgument(), responseArgument]);
-					}
-					else
-					{
-						mapCall = mapCall
-							.Access("Produces")
-							.Call([httpStatusCode.ToString().ToLiteralInt().ToArgument()]);
-					}
 
-					break;
+						break;
+
+					case "patch":
+					case "put":
+					case "delete":
+
+						httpStatusCode = apiRoute.UseCase.HttpStatusCode ?? (int)System.Net.HttpStatusCode.NoContent;
+
+						if (httpStatusCode != (int)System.Net.HttpStatusCode.NoContent)
+						{
+							mapCall = mapCall
+								.Access("Produces")
+								.Call([httpStatusCode.ToString().ToLiteralInt().ToArgument(), responseArgument]);
+						}
+						else
+						{
+							mapCall = mapCall
+								.Access("Produces")
+								.Call([httpStatusCode.ToString().ToLiteralInt().ToArgument()]);
+						}
+
+						break;
+				}
 			}
 
 			if (!errorResponseClass.IsNullOrEmpty())
@@ -342,6 +357,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Api
 				Models.Application.ApplicationUseCaseType.Search when apiRoute.HttpMethod == "GET" => true,
 				Models.Application.ApplicationUseCaseType.Unique when apiRoute.HttpMethod == "GET" => true,
 				Models.Application.ApplicationUseCaseType.Suggestions when apiRoute.HttpMethod == "GET" => true,
+				Models.Application.ApplicationUseCaseType.Custom when apiRoute.HttpMethod == "GET" => true,
 				_ => false
 			};
 
@@ -463,11 +479,19 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Api
 				? useCaseCall.Call()
 				: useCaseCall.Call("request".ToArgument());
 
-			useCaseCall = isAsync
-				? useCaseCall.Access("ToResultAsync").Call().Await()
-				: useCaseCall.Access("ToResult").Call();
+			if (useCaseMap.UseCase.Type == Models.Application.ApplicationUseCaseType.Custom
+				&& (useCaseMap.UseCase.FileStreamResult?.ProducesFileStreamResult ?? false))
+			{
+				AddFileStreamReturnResult(statements, useCaseMap.UseCase, useCaseCall, isAsync);
+			}
+			else
+			{
+				useCaseCall = isAsync
+					? useCaseCall.Access("ToResultAsync").Call().Await()
+					: useCaseCall.Access("ToResult").Call();
 
-			statements.Add(useCaseCall.Return());
+				statements.Add(useCaseCall.Return());
+			}
 
 			var methodResultType = isAsync
 				? "Task".AsGeneric("IResult")
@@ -492,6 +516,42 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Api
 			);
 
 			return (methodName, methodDeclaration.WithParameter(parameters.ToArray()));
+		}
+
+		private static void AddFileStreamReturnResult(List<StatementSyntax> statements, ApplicationUseCase useCase, ExpressionSyntax useCaseCall, bool isAsync)
+		{
+			useCase.FileStreamResult.Validate();
+
+			var resultVariable = "result"
+				.ToVariableStatement(isAsync
+					? useCaseCall.Await()
+					: useCaseCall
+				);
+
+			statements.Add(resultVariable);
+			statements.Add("result"
+				.Access("IsFaulty")
+				.If("result"
+					.Access("ToResult")
+					.Call()
+					.Return()
+				)
+			);
+
+			var fileStreamArguments = new List<ArgumentSyntax>();
+			var file = useCase.FileStreamResult.ReturnAsObject
+				? "result".Access("Data").Access(useCase.FileStreamResult.PropertyNameForResponseObject)
+				: "result".Access("Data");
+
+			fileStreamArguments.Add(file.Access(useCase.FileStreamResult.PropertyNameForStream).ToArgument());
+			fileStreamArguments.Add(file.Access(useCase.FileStreamResult.PropertyNameForContentType).ToArgument());
+			fileStreamArguments.Add(file.Access(useCase.FileStreamResult.PropertyNameForFileName).ToArgument());
+
+			statements.Add("TypedResults"
+				.Access("File")
+				.Call(fileStreamArguments.ToArray())
+				.Return()
+			);
 		}
 
 		private static string GetParameterAttributeName(string parameterType)

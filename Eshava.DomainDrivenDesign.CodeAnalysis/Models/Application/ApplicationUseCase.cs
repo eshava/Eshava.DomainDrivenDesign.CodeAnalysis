@@ -83,6 +83,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models.Application
 		/// </summary>
 		public bool ReduceResultDtosToSuggestionProperty { get; set; }
 
+		public ApplicationUseCaseFileStreamResult FileStreamResult { get; set; }
+
 		/// <summary>
 		/// Optional
 		/// </summary>
@@ -203,5 +205,5 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models.Application
 					return NamespaceClassificationKey;
 			}
 		}
-	}	
+	}
 }

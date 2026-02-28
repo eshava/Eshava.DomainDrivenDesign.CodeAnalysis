@@ -58,7 +58,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			}
 
 			unitInformation.AddUsing(CommonNames.Namespaces.SYSTEM);
-			unitInformation.AddUsing(CommonNames.Namespaces.SYSTEMNET);
+			unitInformation.AddUsing(CommonNames.Namespaces.SYSTEM_NET);
 			unitInformation.AddUsing(CommonNames.Namespaces.TASKS);
 			unitInformation.AddUsing(CommonNames.Namespaces.Eshava.Core.EXTENSIONS);
 			unitInformation.AddUsing(CommonNames.Namespaces.Eshava.Core.MODELS);

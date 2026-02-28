@@ -1795,6 +1795,40 @@
 							]
 						}
 					]
+				},
+				{
+					"type": 9,
+					"useCaseName": "ExportCSV",
+					"classificationKey": "Office",
+					"featureName": "CustomerFeature",
+					"dtos": [],
+					"fileStreamResult": {
+						"producesFileStreamResult": true,
+						"returnAsObject": true,
+						"typeForReturnObject": "FileStreamDto",
+						"usingForTypeForReturnObject": "Eshava.Example.Application.Common",
+						"propertyNameForResponseObject": "CSV",
+						"propertyNameForStream": "Data",
+						"propertyNameForContentType": "TypeOfTheFileContent",
+						"propertyNameForFileName": "NameOfTheFile"
+					}
+				},
+				{
+					"type": 9,
+					"useCaseName": "ExportCSV2",
+					"classificationKey": "Office",
+					"featureName": "CustomerFeature",
+					"dtos": [],
+					"fileStreamResult": {
+						"producesFileStreamResult": true,
+						"returnAsObject": false,
+						"typeForReturnObject": null,
+						"usingForTypeForReturnObject": null,
+						"propertyNameForResponseObject": null,
+						"propertyNameForStream": null,
+						"propertyNameForContentType": null,
+						"propertyNameForFileName": null
+					}
 				}
 			]
 		}

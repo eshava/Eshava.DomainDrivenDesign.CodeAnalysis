@@ -118,6 +118,23 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 						}
 					}
 
+					if (useCase.FileStreamResult?.ProducesFileStreamResult ?? false)
+					{
+						useCase.FileStreamResult.Validate();
+						if (useCase.FileStreamResult.ReturnAsObject)
+						{
+							AddProperty(unitInformation, useCase.FileStreamResult.PropertyNameForResponseObject, useCase.FileStreamResult.TypeForReturnObject.ToType());
+							unitInformation.AddUsing(useCase.FileStreamResult.UsingForTypeForReturnObject);
+						}
+						else
+						{
+							AddProperty(unitInformation, useCase.FileStreamResult.PropertyNameForStream, "Stream".ToType());
+							AddProperty(unitInformation, useCase.FileStreamResult.PropertyNameForContentType, Eshava.CodeAnalysis.SyntaxConstants.String);
+							AddProperty(unitInformation, useCase.FileStreamResult.PropertyNameForFileName, Eshava.CodeAnalysis.SyntaxConstants.String);
+							unitInformation.AddUsing(CommonNames.Namespaces.SYSTEM_OI);
+						}
+					}
+
 					break;
 			}
 

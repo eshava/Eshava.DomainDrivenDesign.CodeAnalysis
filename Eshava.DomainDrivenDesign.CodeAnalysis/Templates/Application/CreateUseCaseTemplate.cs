@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using System.Net.Http.Headers;
 using Eshava.CodeAnalysis.Extensions;
 using Eshava.DomainDrivenDesign.CodeAnalysis.Constants;
 using Eshava.DomainDrivenDesign.CodeAnalysis.Enums;
@@ -59,7 +58,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			}
 
 			unitInformation.AddUsing(CommonNames.Namespaces.SYSTEM);
-			unitInformation.AddUsing(CommonNames.Namespaces.SYSTEMNET);
+			unitInformation.AddUsing(CommonNames.Namespaces.SYSTEM_NET);
 			unitInformation.AddUsing(CommonNames.Namespaces.GENERIC);
 			unitInformation.AddUsing(CommonNames.Namespaces.LINQ);
 			unitInformation.AddUsing(CommonNames.Namespaces.TASKS);

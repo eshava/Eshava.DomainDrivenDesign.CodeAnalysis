@@ -47,6 +47,50 @@
 							"using": "Eshava.Example.Api.Filters"
 						}
 					]
+				},
+				{
+					"httpMethod": "GET",
+					"route": "/reports/offices/export/csv",
+					"useCase": {
+						"domain": "Organizations",
+						"classificationKey": "Office",
+						"useCaseName": "ExportCSV"
+					},
+					"authorizationPolicies": [
+						{
+							"isString": false,
+							"name": "CustomAuthorizationPolicy.Product",
+							"using": "Eshava.Example.Api.Policies"
+						}
+					],
+					"apiRouteEndpointFilters": [
+						{
+							"name": "CustomEndpointFilter",
+							"using": "Eshava.Example.Api.Filters"
+						}
+					]
+				},
+				{
+					"httpMethod": "POST",
+					"route": "/reports/offices/export/csv2",
+					"useCase": {
+						"domain": "Organizations",
+						"classificationKey": "Office",
+						"useCaseName": "ExportCSV2"
+					},
+					"authorizationPolicies": [
+						{
+							"isString": false,
+							"name": "CustomAuthorizationPolicy.Product",
+							"using": "Eshava.Example.Api.Policies"
+						}
+					],
+					"apiRouteEndpointFilters": [
+						{
+							"name": "CustomEndpointFilter",
+							"using": "Eshava.Example.Api.Filters"
+						}
+					]
 				}
 			]
 		}
