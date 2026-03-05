@@ -384,8 +384,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			}
 
 			var parameterItems = methodMap.ParameterTypes
-				.Select(p => (Property: (ExpressionSyntax)p.Name.ToIdentifierName(), Name: p.PropertyName))
-				.ToList();
+			.Select(p => (Property: (ExpressionSyntax)p.Name.ToIdentifierName(), Name: p.PropertyName))
+			.ToList();
 
 			if (implementSoftDelete)
 			{
@@ -757,16 +757,14 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			interpolatedStringParts.Add(Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(dataModel.Name.Access("Id").ToArgument()).Interpolate());
 			interpolatedStringParts.Add($@" = @{idParameter.Name.ToPropertyName()}".Interpolate());
 
-			if (!methodMap.DataModelTypeProperty.IsNullOrEmpty() && !methodMap.DataModelTypePropertyValue.IsNullOrEmpty())
-			{
-				interpolatedStringParts.Add($@"
-					AND
-						".Interpolate());
-				interpolatedStringParts.Add(modelItem.TableAliasConstant.ToIdentifierName().Interpolate());
-				interpolatedStringParts.Add(".".Interpolate());
-				interpolatedStringParts.Add(Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(dataModel.Name.Access(methodMap.DataModelTypeProperty).ToArgument()).Interpolate());
-				interpolatedStringParts.Add($@" = @{methodMap.DataModelTypeProperty}".Interpolate());
-			}
+			CheckAndAddTypeMappingCondition(
+				dataModel,
+				returnDto.Dto.DataModelTypeProperty,
+				returnDto.Dto.DataModelTypePropertyValue,
+				modelItem.TableAliasConstant,
+				interpolatedStringParts,
+				parameterItems
+			);
 
 			if (implementSoftDelete)
 			{
@@ -778,30 +776,6 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 
 			interpolatedStringParts.Add($@"
 					".Interpolate());
-
-			if (!methodMap.DataModelTypeProperty.IsNullOrEmpty() && !methodMap.DataModelTypePropertyValue.IsNullOrEmpty())
-			{
-				var typeProperty = dataModel.Properties.FirstOrDefault(p => p.Name == methodMap.DataModelTypeProperty);
-				if (typeProperty is not null)
-				{
-					if (typeProperty.Type == "int")
-					{
-						parameterItems.Add((methodMap.DataModelTypePropertyValue.ToLiteralInt(), methodMap.DataModelTypeProperty));
-					}
-					else if (typeProperty.Type == "long")
-					{
-						parameterItems.Add((methodMap.DataModelTypePropertyValue.ToLiteralLong(), methodMap.DataModelTypeProperty));
-					}
-					else if (typeProperty.Type == "string")
-					{
-						parameterItems.Add((methodMap.DataModelTypePropertyValue.ToLiteralString(), methodMap.DataModelTypeProperty));
-					}
-					else
-					{
-						parameterItems.Add((methodMap.DataModelTypePropertyValue.ToIdentifierName(), methodMap.DataModelTypeProperty));
-					}
-				}
-			}
 
 			var parameterVariableDeclaration = SyntaxHelper.CreateAnonymousObject(
 				parameterItems
@@ -879,6 +853,54 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			};
 		}
 
+		private static void CheckAndAddTypeMappingCondition(
+			InfrastructureModel dataModel,
+			string dataModelTypeProperty,
+			string dataModelTypePropertyValue,
+			string tableAliasConstant,
+			List<InterpolatedStringContentSyntax> interpolatedStringParts,
+			List<(ExpressionSyntax Property, string Name)> parameterItems
+		)
+		{
+			if (dataModelTypeProperty.IsNullOrEmpty() || dataModelTypePropertyValue.IsNullOrEmpty())
+			{
+				return;
+			}
+
+			interpolatedStringParts.Add($@"
+					AND
+						".Interpolate());
+			interpolatedStringParts.Add(tableAliasConstant.ToIdentifierName().Interpolate());
+			interpolatedStringParts.Add(".".Interpolate());
+			interpolatedStringParts.Add(Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(dataModel.Name.Access(dataModelTypeProperty).ToArgument()).Interpolate());
+			interpolatedStringParts.Add($@" = @{dataModelTypeProperty}".Interpolate());
+
+			var typeProperty = dataModel.Properties.FirstOrDefault(p => p.Name == dataModelTypeProperty);
+			if (typeProperty is not null)
+			{
+				if (typeProperty.Type == "int")
+				{
+					parameterItems.Add((dataModelTypePropertyValue.ToLiteralInt(), dataModelTypeProperty));
+				}
+				else if (typeProperty.Type == "long")
+				{
+					parameterItems.Add((dataModelTypePropertyValue.ToLiteralLong(), dataModelTypeProperty));
+				}
+				else if (typeProperty.Type == "string")
+				{
+					parameterItems.Add((dataModelTypePropertyValue.ToLiteralString(), dataModelTypeProperty));
+				}
+				else if (typeProperty.Type == "bool")
+				{
+					parameterItems.Add((dataModelTypePropertyValue.ToLiteralBool(), dataModelTypeProperty));
+				}
+				else
+				{
+					parameterItems.Add((dataModelTypePropertyValue.ToIdentifierName(), dataModelTypeProperty));
+				}
+			}
+		}
+
 		private static MethodCreationResult CreateSearchMethod(
 			InfrastructureModel dataModel,
 			UseCaseQueryProviderMethodMap methodMap,
@@ -911,6 +933,18 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			if (implementSoftDelete)
 			{
 				AddStatusFilterCondition(tryBlockStatements, dataModel.Name, dataModel.IdentifierType, methodMetaData);
+			}
+
+			if (!returnDto.Dto.DataModelTypeProperty.IsNullOrEmpty()
+				&& !returnDto.Dto.DataModelTypePropertyValue.IsNullOrEmpty())
+			{
+				var typeProperty = dataModel.Properties.FirstOrDefault(p => p.Name == returnDto.Dto.DataModelTypeProperty);
+				if (typeProperty is not null)
+				{
+					var typeValue = returnDto.Dto.DataModelTypePropertyValue.ToLiteral(typeProperty.Type);
+
+					AddCodeSnippetFilterConditions(tryBlockStatements, returnDto.Dto.DataModelTypeProperty, typeValue, OperationType.Equal);
+				}
 			}
 
 			AddCodeSnippetFilterConditions(tryBlockStatements, dataModel, methodMetaData);
@@ -1303,7 +1337,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 
 							relatedModel.IsEnumerable = property.IsEnumerable;
 							relatedModel.ParentDtoPropertyName = property.Name;
-							relatedModel.DtoName = childReferenceProperty.Dto.DtoName;
+							relatedModel.Dto = childReferenceProperty.Dto.Dto;
 							if (relatedModel.ParentDataModel is null || (relatedModel.ParentDataModel is not null && relatedModel.ParentDataModel.Name == model.Name))
 							{
 								relatedModel.ParentDataModel = model;
@@ -1341,7 +1375,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 					}
 
 					var tableAlis = model.Name.CreateModelConstantField();
-					relatedDataModels.Add(new QueryAnalysisItem
+					var item = new QueryAnalysisItem
 					{
 						ParentDomain = null,
 						ParentDataModel = null,
@@ -1350,12 +1384,16 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 						DataModel = model,
 						Property = dataProperty,
 						DtoProperty = property,
-						DtoName = dto.DtoName,
+						Dto = dto.Dto,
 						TableAliasConstant = tableAlis.FieldName,
 						TableAliasField = tableAlis.Declaration,
 						IsGroupBy = property.IsGroupProperty || property.ReferenceProperty == "Id" || property.Name == "Id",
 						IsRootModel = isRoot
-					});
+					};
+
+					CheckAndAddTypeProperty(dto, model, dataProperty, item);
+
+					relatedDataModels.Add(item);
 				}
 				else if (!property.ReferenceProperty.Contains("."))
 				{
@@ -1376,7 +1414,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 					}
 
 					var tableAlis = model.Name.CreateModelConstantField();
-					relatedDataModels.Add(new QueryAnalysisItem
+					var item = new QueryAnalysisItem
 					{
 						ParentDomain = null,
 						ParentDataModel = null,
@@ -1385,12 +1423,16 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 						DataModel = model,
 						Property = dataProperty,
 						DtoProperty = property,
-						DtoName = dto.DtoName,
+						Dto = dto.Dto,
 						TableAliasConstant = tableAlis.FieldName,
 						TableAliasField = tableAlis.Declaration,
 						IsGroupBy = property.IsGroupProperty || property.ReferenceProperty == "Id" || property.Name == "Id",
 						IsRootModel = isRoot
-					});
+					};
+
+					CheckAndAddTypeProperty(dto, model, dataProperty, item);
+
+					relatedDataModels.Add(item);
 				}
 				else
 				{
@@ -1405,10 +1447,31 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				}
 			}
 
+			if (isRoot)
+			{
+				InfrastructureTemplateMethods.CheckAnalysisItemForTypeProperty(relatedDataModels);
+			}
+
 			return relatedDataModels = relatedDataModels
 				.OrderBy(m => m.TableAliasConstant)
 				.ThenBy(m => m.Property.Name)
 				.ToList();
+		}
+
+		private static void CheckAndAddTypeProperty(ReferenceDtoMap dto, InfrastructureModel model, InfrastructureModelProperty dataProperty, QueryAnalysisItem item)
+		{
+			if (!dataProperty.IsParentReference
+				|| dto.Dto.DataModelTypeProperty.IsNullOrEmpty()
+				|| dto.Dto.DataModelTypePropertyValue.IsNullOrEmpty())
+			{
+				return;
+			}
+
+			var typeProperty = model.Properties.SingleOrDefault(p => p.Name == dto.Dto.DataModelTypeProperty);
+			if (typeProperty is not null)
+			{
+				item.TypeProperty = (typeProperty, new List<string> { dto.Dto.DataModelTypePropertyValue });
+			}
 		}
 
 		private static bool CollectDataModelsForReferenceProperties(
@@ -1573,8 +1636,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 		)
 		{
 			var parentRelatedDataModels = relatedDataModels
-				.Where(m => (m.ParentDtoName is null && parentDtoName is null) || m.DtoName == dtoName)
-				.OrderByDescending(m => m.DtoName)
+				.Where(m => (m.ParentDtoName is null && parentDtoName is null) || m.Dto?.Name == dtoName)
+				.OrderByDescending(m => m.Dto?.Name)
 				.ThenBy(m => m.DtoProperty?.Name)
 				.ToList();
 
@@ -1631,21 +1694,21 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 					);
 				}
 
-				var dtoTableAlias = $"{item.DtoName ?? ""}_{item.TableAliasConstant}";
+				var dtoTableAlias = $"{item.Dto?.Name ?? ""}_{item.TableAliasConstant}";
 				if (!processedDtoTableAlias.Contains(dtoTableAlias))
 				{
 					processedDtoTableAlias.Add(dtoTableAlias);
 				}
 			}
 
-			if (parentRelatedDataModels.Count == 0 || parentRelatedDataModels[0].DtoName.IsNullOrEmpty())
+			if (parentRelatedDataModels.Count == 0 || (parentRelatedDataModels[0].Dto?.Name.IsNullOrEmpty() ?? true))
 			{
 				return;
 			}
 
-			parentDtoName = parentRelatedDataModels[0].DtoName;
+			parentDtoName = parentRelatedDataModels[0].Dto?.Name;
 
-			var dtoRelatedDataModels = relatedDataModels.Where(m => m.ParentDtoName == parentDtoName && !processedDtoTableAlias.Contains($"{m.DtoName ?? ""}_{m.TableAliasConstant}")).GroupBy(m => m.ParentDtoPropertyName);
+			var dtoRelatedDataModels = relatedDataModels.Where(m => m.ParentDtoName == parentDtoName && !processedDtoTableAlias.Contains($"{m.Dto?.Name ?? ""}_{m.TableAliasConstant}")).GroupBy(m => m.ParentDtoPropertyName);
 			if (!dtoRelatedDataModels.Any())
 			{
 				return;
@@ -1654,7 +1717,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			foreach (var propertyReferences in dtoRelatedDataModels)
 			{
 				var dtoReferenceItem = propertyReferences.FirstOrDefault(p => p.IsGroupBy) ?? propertyReferences.First();
-				dtoName = dtoReferenceItem.DtoName;
+				dtoName = dtoReferenceItem.Dto?.Name;
 
 				var childDtoInitializerExpressions = new List<ExpressionSyntax>();
 				GetDtoInitializerExpressions(referenceDomain, referenceType, parentDtoName, dtoName, relatedDataModels, childDtoInitializerExpressions, processedDtoTableAlias);
@@ -1665,13 +1728,22 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 					var dataType = dtoReferenceItem.GetDataType(referenceDomain, referenceType);
 					if (dtoReferenceItem.IsGroupBy)
 					{
-						dtoInstance = "mapper"
-							.Access("GetValue".AsGeneric(dtoReferenceItem.Property.TypeWithUsing))
-							.Call(
-								Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(dataType.Access(dtoReferenceItem.Property.Name).ToArgument()).ToArgument(),
-								dtoReferenceItem.TableAliasConstant.ToArgument()
-							)
-							.ToEquals(Eshava.CodeAnalysis.SyntaxConstants.Default)
+						var identifierCheck = GetMapperGetValueExpression(dtoReferenceItem.Property, dtoReferenceItem.TableAliasConstant, dataType)
+							.ToEquals(Eshava.CodeAnalysis.SyntaxConstants.Default);
+
+						if (!(dtoReferenceItem.Dto?.DataModelTypeProperty.IsNullOrEmpty() ?? true)
+							&& !(dtoReferenceItem.Dto?.DataModelTypePropertyValue.IsNullOrEmpty() ?? true))
+						{
+							var typeProperty = dtoReferenceItem.DataModel.Properties
+								.SingleOrDefault(p => p.Name == dtoReferenceItem.Dto.DataModelTypeProperty);
+
+							identifierCheck = identifierCheck.Or(
+								GetMapperGetValueExpression(typeProperty, dtoReferenceItem.TableAliasConstant, dataType)
+									.NotEquals(dtoReferenceItem.Dto.DataModelTypePropertyValue.ToLiteral(typeProperty.Type))
+							);
+						}
+
+						dtoInstance = identifierCheck
 							.ShortIf(
 								"List".AsGeneric(dtoName).ToInstance(),
 								"List".AsGeneric(dtoName).ToInstanceWithInitializer([dtoInstance])
@@ -1682,6 +1754,22 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 						dtoInstance = "List".AsGeneric(dtoName).ToInstanceWithInitializer([dtoInstance]);
 					}
 				}
+				else if (!(dtoReferenceItem.Dto?.DataModelTypeProperty.IsNullOrEmpty() ?? true)
+							&& !(dtoReferenceItem.Dto?.DataModelTypePropertyValue.IsNullOrEmpty() ?? true))
+				{
+					var dataType = dtoReferenceItem.GetDataType(referenceDomain, referenceType);
+					var typeProperty = dtoReferenceItem.DataModel.Properties
+						.SingleOrDefault(p => p.Name == dtoReferenceItem.Dto.DataModelTypeProperty);
+
+					var identifierCheck = GetMapperGetValueExpression(typeProperty, dtoReferenceItem.TableAliasConstant, dataType)
+						.NotEquals(dtoReferenceItem.Dto.DataModelTypePropertyValue.ToLiteral(typeProperty.Type));
+
+					dtoInstance = identifierCheck
+						.ShortIf(
+							Eshava.CodeAnalysis.SyntaxConstants.Null,
+							dtoInstance
+						);
+				}
 
 				dtoInitializerExpressions.Add(
 					dtoReferenceItem.ParentDtoPropertyName
@@ -1691,6 +1779,15 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			}
 		}
 
+		private static InvocationExpressionSyntax GetMapperGetValueExpression(InfrastructureModelProperty property, string tableAliasConstant, string dataType)
+		{
+			return "mapper"
+				.Access("GetValue".AsGeneric(property.TypeWithUsing))
+				.Call(
+					Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(dataType.Access(property.Name).ToArgument()).ToArgument(),
+					tableAliasConstant.ToArgument()
+				);
+		}
 
 		private static SimpleLambdaExpressionSyntax GetMapperExpression(string dtoName, List<ExpressionSyntax> dtoInitializerExpressions)
 		{
@@ -1786,6 +1883,47 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			{
 				if (!item.Property.IsEnumerable)
 				{
+					if (!(item.Dto?.Dto.DataModelTypeProperty.IsNullOrEmpty() ?? true)
+						&& !(item.Dto?.Dto.DataModelTypePropertyValue.IsNullOrEmpty() ?? true))
+					{
+						var typePropertyNestedPropertyName = item.Property.Name;
+						if (!nestedAccess.IsNullOrEmpty())
+						{
+							typePropertyNestedPropertyName = $"{nestedAccess}.{typePropertyNestedPropertyName}";
+						}
+
+						var typePropertyVariableName = $"item{layerIndex}{item.Property.Name}";
+						var typePropertyLayerGroupName = nestedAccess.IsNullOrEmpty()
+							? $"group{layerIndex}{referenceDto.Dto.Name}"
+							: $"group{layerIndex}{parentReferenceDto.Dto.Name}";
+
+						loopStatements.Add(
+							typePropertyVariableName
+							.ToVariableStatement(
+								typePropertyLayerGroupName
+								.Access("Where")
+								.Call($"child{layerIndex}".ToPropertyExpression(typePropertyNestedPropertyName).IsNotNull().ToArgument())
+								.Access("Select")
+								.Call($"child{layerIndex}".ToPropertyExpression(typePropertyNestedPropertyName).ToArgument())
+								.Access("ToList")
+								.Call()
+							)
+						);
+
+						var typePropertyLayerItemName = nestedAccess.IsNullOrEmpty()
+							? $"item{layerIndex}{referenceDto.Dto.Name}"
+							: $"item{layerIndex}{parentReferenceDto.Dto.Name}";
+
+						loopStatements.Add(
+							typePropertyLayerItemName
+							.Access(typePropertyNestedPropertyName)
+							.Assign(
+								typePropertyVariableName.ToIdentifierName().Access("FirstOrDefault").Call()
+							)
+							.ToExpressionStatement()
+						);
+					}
+
 					if (item.Dto.ChildReferenceProperties.Count > 0)
 					{
 						CreateGroupResultStatements($"group{layerIndex}{referenceDto.Dto.Name}".ToIdentifierName(), item.Property.Name, layerIndex, layerPostfix, referenceDto, item.Dto, loopStatements);

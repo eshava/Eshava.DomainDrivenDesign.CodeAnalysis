@@ -18,6 +18,15 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models.Application
 		public string ReferenceModelName { get; set; }
 
 		/// <summary>
+		/// Property that only exists in data model and defines the type identifier property for the dto
+		/// </summary>
+		public string DataModelTypeProperty { get; set; }
+		/// <summary>
+		/// Value of <see cref="DataModelTypeProperty"/>
+		/// </summary>
+		public string DataModelTypePropertyValue { get; set; }
+
+		/// <summary>
 		/// Optional
 		/// </summary>
 		public List<ApplicationUseCaseDtoProperty> Properties { get; set; }

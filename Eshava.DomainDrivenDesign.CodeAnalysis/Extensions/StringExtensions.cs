@@ -351,5 +351,22 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Extensions
 
 			return $"{namespaceHash}.{className}{extension}";
 		}
+
+		public static ExpressionSyntax ToLiteral(this string value, string type)
+		{
+			if (value is null)
+			{
+				return Eshava.CodeAnalysis.SyntaxConstants.Null;
+			}
+
+			return type switch
+			{
+				"int" => value.ToLiteralInt(),
+				"long" => value.ToLiteralLong(),
+				"string" => value.ToLiteralString(),
+				"bool" => value.ToLiteralBool(),
+				_ => value.ToIdentifierName(),
+			};
+		}
 	}
 }

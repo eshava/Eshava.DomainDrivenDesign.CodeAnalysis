@@ -15,7 +15,9 @@
 					"customCreatedOrChangedChildMethod": true,
 					"childDomainModels": [
 						"OfficeDDD",
-						"BillingOfficeDDD"
+						"BillingOfficeDDD",
+						"EmailCommunicationDDD",
+						"PhoneNumberCommunicationDDD"
 					],
 					"properties": [
 						{
@@ -75,6 +77,82 @@
 							"referenceType": "MetaDataVO",
 							"referenceDomain": "Organizations",
 							"processAsUnit": true
+						}
+					]
+				},
+				{
+					"identifierType": "int",
+					"name": "EmailCommunicationDDD",
+					"dataModelName": "CommunicationData",
+					"dataModelTypeProperty": "TypeId",
+					"dataModelTypePropertyValue": "1",
+					"featureName": "CustomerFeature",
+					"classificationKey": "Communication",
+					"addGeneralPatchMethod": true,
+					"properties": [
+						{
+							"type": "string",
+							"name": "Email",
+							"dataModelPropertyName": "Value",
+							"attributes": [
+								{
+									"name": "Required",
+									"usingForType": "System.ComponentModel.DataAnnotations"
+								},
+								{
+									"name": "MaxLength",
+									"usingForType": "System.ComponentModel.DataAnnotations",
+									"parameters": [
+										{
+											"type": "int",
+											"value": "250"
+										}
+									]
+								}
+							],
+							"validationRules": [
+								{
+									"type": 1
+								}
+							]
+						}
+					]
+				},
+				{
+					"identifierType": "int",
+					"name": "PhoneNumberCommunicationDDD",
+					"dataModelName": "CommunicationData",
+					"dataModelTypeProperty": "TypeId",
+					"dataModelTypePropertyValue": "2",
+					"featureName": "CustomerFeature",
+					"classificationKey": "Communication",
+					"addGeneralPatchMethod": true,
+					"properties": [
+						{
+							"type": "string",
+							"name": "PhoneNumber",
+							"dataModelPropertyName": "Value",
+							"attributes": [
+								{
+									"name": "Required",
+									"usingForType": "System.ComponentModel.DataAnnotations"
+								},
+								{
+									"name": "MaxLength",
+									"usingForType": "System.ComponentModel.DataAnnotations",
+									"parameters": [
+										{
+											"type": "int",
+											"value": "250"
+										}
+									]
+								}
+							],
+							"validationRules": [
+								{
+									"type": 1
+								}
+							]
 						}
 					]
 				},

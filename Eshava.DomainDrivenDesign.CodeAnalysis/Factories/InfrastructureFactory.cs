@@ -48,6 +48,11 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 					d => d.Models.ToDictionary(m => m.Name, m => m.ClassificationKey)
 				);
 
+			foreach (var useCaseMap in useCasesMap.GetUseCaseMaps())
+			{
+				CheckDownwardCompatibility(useCaseMap.Domain, useCaseMap.UseCase, dtoReferenceMap);
+			}
+
 			var factoryResult = new FactoryResult();
 
 			var dependencyInjections = new List<DependencyInjection>();
@@ -663,6 +668,20 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 					}
 				}
 			}
+		}
+
+		private static void CheckDownwardCompatibility(string domain, ApplicationUseCase useCase, DtoReferenceMap dtoReferenceMap)
+		{
+#pragma warning disable CS0618 // Type or member is obsolete
+			if (!useCase.DataModelTypeProperty.IsNullOrEmpty()
+				&& !useCase.MainDto.IsNullOrEmpty()
+				&& dtoReferenceMap.TryGetDto(domain, useCase.UseCaseName, useCase.ClassificationKey, useCase.MainDto, out var mainDtoMap)
+				&& mainDtoMap.Dto.DataModelTypeProperty.IsNullOrEmpty())
+			{
+				mainDtoMap.Dto.DataModelTypeProperty = useCase.DataModelTypeProperty;
+				mainDtoMap.Dto.DataModelTypePropertyValue = useCase.DataModelTypePropertyValue;
+			}
+#pragma warning restore CS0618 // Type or member is obsolete
 		}
 	}
 }

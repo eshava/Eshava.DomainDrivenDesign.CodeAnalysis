@@ -1002,26 +1002,47 @@
 									"isEnumerable": true
 								},
 								{
-									"name": "Communications",
-									"type": "CommunicationRead",
+									"name": "EmailAddress",
+									"type": "CommunicationEmail",
+									"isEnumerable": false
+								},
+								{
+									"name": "PhoneNumbers",
+									"type": "CommunicationPhoneNumber",
 									"isEnumerable": true
 								}
 							]
 						},
 						{
-							"name": "CommunicationRead",
+							"name": "CommunicationEmail",
 							"referenceModelName": "CommunicationData",
+							"dataModelTypeProperty": "TypeId",
+							"dataModelTypePropertyValue": "1",
 							"properties": [
 								{
 									"name": "Id",
 									"type": "int"
 								},
 								{
-									"name": "TypeId",
+									"name": "Email",
+									"referenceProperty": "Value",
+									"type": "string"
+								}
+							]
+						},
+						{
+							"name": "CommunicationPhoneNumber",
+							"referenceModelName": "CommunicationData",
+							"dataModelTypeProperty": "TypeId",
+							"dataModelTypePropertyValue": "2",
+							"properties": [
+								{
+									"name": "Id",
 									"type": "int"
 								},
 								{
-									"name": "Value",
+									"name": "PhoneNumber",
+									"referenceProperty": "Value",
 									"type": "string"
 								}
 							]
@@ -1143,12 +1164,81 @@
 				},
 				{
 					"type": 1,
+					"useCaseName": "ReadOffice",
+					"classificationKey": "Office",
+					"featureName": "CustomerFeature",
+					
+					"mainDto": "BillingOfficeRead",
+					"dtos": [
+						{
+							"name": "BillingOfficeRead",
+							"referenceModelName": "OfficeData",
+							"dataModelTypeProperty": "TypeId",
+							"dataModelTypePropertyValue": "1",
+							"properties": [
+								{
+									"name": "Id",
+									"type": "int"
+								},
+								{
+									"name": "Name",
+									"type": "string"
+								},
+								{
+									"name": "Address",
+									"type": "BillingOfficeAddressRead"
+								}
+							]
+						},
+						{
+							"name": "BillingOfficeAddressRead",
+							"referenceModelName": "OfficeData",
+							"properties": [
+								{
+									"name": "Street",
+									"type": "string"
+								},
+								{
+									"name": "StreetNumber",
+									"type": "string"
+								},
+								{
+									"name": "City",
+									"type": "string"
+								},
+								{
+									"name": "ZipCode",
+									"type": "string"
+								},
+								{
+									"name": "Country",
+									"type": "string"
+								}
+							]
+						}
+					],
+					"attributes": [
+						{
+							"name": "UseCaseClass",
+							"usingForType": "Eshava.Example.Application.Common.Attributes",
+							"parameters": [
+								{
+									"name": "name",
+									"type": "string",
+									"value": "Customer"
+								}
+							]
+						}
+					]
+				},
+				{
+					"type": 1,
 					"useCaseName": "ReadBillingOffice",
 					"classificationKey": "Office",
 					"featureName": "CustomerFeature",
 					"dataModelTypeProperty": "TypeId",
 					"dataModelTypePropertyValue": "2",
-					"mainDto": "OfficeRead",
+					"mainDto": "BillingOfficeRead",
 					"dtos": [
 						{
 							"name": "BillingOfficeRead",
@@ -1170,6 +1260,80 @@
 						},
 						{
 							"name": "BillingOfficeAddressRead",
+							"referenceModelName": "OfficeData",
+							"properties": [
+								{
+									"name": "Street",
+									"type": "string"
+								},
+								{
+									"name": "StreetNumber",
+									"type": "string"
+								},
+								{
+									"name": "City",
+									"type": "string"
+								},
+								{
+									"name": "ZipCode",
+									"type": "string"
+								},
+								{
+									"name": "Country",
+									"type": "string"
+								}
+							]
+						}
+					],
+					"attributes": [
+						{
+							"name": "UseCaseClass",
+							"usingForType": "Eshava.Example.Application.Common.Attributes",
+							"parameters": [
+								{
+									"name": "name",
+									"type": "string",
+									"value": "Customer"
+								}
+							]
+						}
+					]
+				},
+				{
+					"type": 2,
+					"useCaseName": "SearchBillingOffice",
+					"classificationKey": "Office",
+					"featureName": "CustomerFeature",
+					"mainDto": "BillingOfficeSearch",
+					"dtos": [
+						{
+							"name": "BillingOfficeSearch",
+							"dataModelTypeProperty": "TypeId",
+							"dataModelTypePropertyValue": "2",
+							"referenceModelName": "OfficeData",
+							"properties": [
+								{
+									"name": "Id",
+									"type": "int"
+								},
+								{
+									"name": "Name",
+									"type": "string",
+									"isSortable": true,
+									"isSearchable": true,
+									"searchOperations": [
+										"Equal",
+										"Contains"
+									]
+								},
+								{
+									"name": "Address",
+									"type": "BillingOfficeAddressSearch"
+								}
+							]
+						},
+						{
+							"name": "BillingOfficeAddressSearch",
 							"referenceModelName": "OfficeData",
 							"properties": [
 								{

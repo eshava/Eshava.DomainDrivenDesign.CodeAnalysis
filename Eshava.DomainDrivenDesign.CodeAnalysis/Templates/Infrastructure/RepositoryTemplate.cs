@@ -1668,11 +1668,11 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 		}
 
 		private static IEnumerable<StatementSyntax> CreateMapperStatements(
-			InfrastructureModel parentModel, 
-			ReferenceDomainModelMap domainModelMap, 
-			InfrastructureModel model, 
-			Dictionary<string, List<InfrastructureModel>> childsForModel, 
-			HashSet<string> processedDataModels, 
+			InfrastructureModel parentModel,
+			ReferenceDomainModelMap domainModelMap,
+			InfrastructureModel model,
+			Dictionary<string, List<InfrastructureModel>> childsForModel,
+			HashSet<string> processedDataModels,
 			bool checkOnlyChilds
 		)
 		{
@@ -1700,7 +1700,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				else
 				{
 					var parentModelVariableName = parentModel.ClassificationKey.ToVariableName();
-					var parentPropertyName = parentModel.Properties.FirstOrDefault(p => p.ReferenceType == p.Type && p.ReferenceType == model.Name)?.Name 
+					var parentPropertyName = parentModel.Properties.FirstOrDefault(p => p.ReferenceType == p.Type && p.ReferenceType == model.Name)?.Name
 							?? model.Name;
 
 					mapperStatements.Add(
@@ -2110,7 +2110,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 					Property = null, // Id property is not configured, its provided by the abstract data base model and is considered as virtual property
 					ParentDtoName = null,
 					ParentDtoPropertyName = null,
-					DtoName = null,
+					Dto = null,
 					DtoProperty = new Models.Application.ApplicationUseCaseDtoProperty { Name = "*" },
 					IsEnumerable = false,
 					IsGroupBy = false,
@@ -2140,7 +2140,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 					?? childModel.Properties.SingleOrDefault(p => p.IsReference && p.ReferenceType == model.Name)
 					;
 
-				items.Add(new QueryAnalysisItem
+				var item = new QueryAnalysisItem
 				{
 					ParentDomain = domainModelMap.Domain,
 					Domain = childDomainModel.Domain,
@@ -2150,15 +2150,31 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 					Property = childProperty,
 					ParentDtoName = null,
 					ParentDtoPropertyName = null,
-					DtoName = null,
+					Dto = null,
 					DtoProperty = new Models.Application.ApplicationUseCaseDtoProperty { Name = "*" },
 					IsEnumerable = true,
 					IsGroupBy = true,
 					TableAliasConstant = tableAlis.FieldName,
 					TableAliasField = tableAlis.Declaration,
-				});
+				};
+
+				if (!childDomainModel.DomainModel.DataModelTypeProperty.IsNullOrEmpty() && !childDomainModel.DomainModel.DataModelTypePropertyValue.IsNullOrEmpty())
+				{
+					var typeProperty = childModel.Properties.SingleOrDefault(p => p.Name == childDomainModel.DomainModel.DataModelTypeProperty);
+					if (typeProperty is not null)
+					{
+						item.TypeProperty = (typeProperty, new List<string> { childDomainModel.DomainModel.DataModelTypePropertyValue });
+					}
+				}
+
+				items.Add(item);
 
 				items.AddRange(CollectDataModelsForReferenceProperties(childModel, childDomainModel, childsForModel, false));
+			}
+
+			if (isTopLevelCall)
+			{
+				InfrastructureTemplateMethods.CheckAnalysisItemForTypeProperty(items);
 			}
 
 			return items;

@@ -47,8 +47,18 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				var addedSelectParts = new HashSet<string>();
 				foreach (var item in relatedDataModels)
 				{
-					if (item.DtoProperty is null || item.DtoProperty.IsVirtualProperty)
+					if (item.DtoProperty is null)
 					{
+						continue;
+					}
+
+					if (item.DtoProperty.IsVirtualProperty)
+					{
+						if (item.TypeProperty.Property is not null && item.DtoProperty.Name != "*")
+						{
+							isFirstColum = AddSelectStatement(interpolatedColumnParts, isFirstColum, addedSelectParts, item, item.GetDataType(domain, model.Name), item.TypeProperty.Property.Name);
+						}
+
 						continue;
 					}
 
@@ -59,7 +69,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 						var selectPart = $"{item.TableAliasConstant}.*";
 						if (!addedSelectParts.Contains(selectPart))
 						{
-							AddSelectColumnSeparator(interpolatedColumnParts, ref isFirstColum);
+							isFirstColum = AddSelectColumnSeparator(interpolatedColumnParts, isFirstColum);
 
 							interpolatedColumnParts.Add(item.TableAliasConstant.ToIdentifierName().Interpolate());
 							interpolatedColumnParts.Add(".*".Interpolate());
@@ -76,17 +86,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 							dataType = item.ParentDataModel.Name;
 						}
 
-						var selectPart = $"{item.TableAliasConstant}.{propertyName}";
-
-						if (!addedSelectParts.Contains(selectPart))
-						{
-							AddSelectColumnSeparator(interpolatedColumnParts, ref isFirstColum);
-
-							interpolatedColumnParts.Add(item.TableAliasConstant.ToIdentifierName().Interpolate());
-							interpolatedColumnParts.Add(".".Interpolate());
-							interpolatedColumnParts.Add(Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(dataType.Access(propertyName).ToArgument()).Interpolate());
-							addedSelectParts.Add(selectPart);
-						}
+						isFirstColum = AddSelectStatement(interpolatedColumnParts, isFirstColum, addedSelectParts, item, dataType, propertyName);
 					}
 				}
 			}
@@ -109,6 +109,23 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			interpolatedStringParts.AddRange(interpolatedTableParts);
 
 			return interpolatedStringParts;
+		}
+
+		private static bool AddSelectStatement(List<InterpolatedStringContentSyntax> interpolatedColumnParts, bool isFirstColum, HashSet<string> addedSelectParts, QueryAnalysisItem item, string dataType, string propertyName)
+		{
+			var selectPart = $"{item.TableAliasConstant}.{propertyName}";
+
+			if (!addedSelectParts.Contains(selectPart))
+			{
+				isFirstColum = AddSelectColumnSeparator(interpolatedColumnParts, isFirstColum);
+
+				interpolatedColumnParts.Add(item.TableAliasConstant.ToIdentifierName().Interpolate());
+				interpolatedColumnParts.Add(".".Interpolate());
+				interpolatedColumnParts.Add(Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(dataType.Access(propertyName).ToArgument()).Interpolate());
+				addedSelectParts.Add(selectPart);
+			}
+
+			return isFirstColum;
 		}
 
 		public static void AddCodeSnippetReadConditions(
@@ -289,19 +306,43 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			return propertySnippet;
 		}
 
-		private static void AddSelectColumnSeparator(List<InterpolatedStringContentSyntax> interpolatedColumnParts, ref bool isFirstColum)
+		public static void CheckAnalysisItemForTypeProperty(List<QueryAnalysisItem> items)
+		{
+			foreach (var itemGroup in items.GroupBy(item => new { item.TableAliasConstant, Model = item.DataModel.Name, Property = item.Property?.Name }))
+			{
+				if (itemGroup.Count() == 1)
+				{
+					continue;
+				}
+
+				var item = itemGroup.First();
+
+				InfrastructureModelProperty typeProperty = null;
+				var typeValues = new List<string>();
+				foreach (var itemWithTypeProperty in itemGroup.Where(p => p.TypeProperty.Property != null))
+				{
+					typeProperty = itemWithTypeProperty.TypeProperty.Property;
+					typeValues.AddRange(itemWithTypeProperty.TypeProperty.Values);
+				}
+
+				item.TypeProperty = (typeProperty, typeValues);
+			}
+		}
+
+		private static bool AddSelectColumnSeparator(List<InterpolatedStringContentSyntax> interpolatedColumnParts, bool isFirstColum)
 		{
 			if (isFirstColum)
 			{
 				interpolatedColumnParts.Add(@"
 						 ".Interpolate());
-				isFirstColum = false;
 			}
 			else
 			{
 				interpolatedColumnParts.Add(@"
 						,".Interpolate());
 			}
+
+			return false;
 		}
 
 		/// <summary>
@@ -396,6 +437,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 					);
 					match = true;
 
+					CheckAndAddTypePropertyJoinCondition(item, interpolatedTableParts, queryParameters, dataType);
 					AddCodeSnippetReadConditions(interpolatedTableParts, queryParameters, item.DataModel, dataType, item.TableAliasConstant.ToIdentifierName(), metaData, true);
 				}
 				else
@@ -487,6 +529,42 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 					}
 
 					CreateJoinQueryParts(referenceDomain, referenceDataModel, item, newItem, items, interpolatedTableParts, processedTableAliases, implementSoftDelete, queryParameters, metaData);
+				}
+			}
+		}
+
+		private static void CheckAndAddTypePropertyJoinCondition(QueryAnalysisItem item, List<InterpolatedStringContentSyntax> interpolatedTableParts, List<(ExpressionSyntax Property, string Name)> queryParameters, string dataType)
+		{
+			if (item.TypeProperty.Property is not null && item.TypeProperty.Values.Count > 0)
+			{
+				interpolatedTableParts.Add(@"
+							AND ".Interpolate());
+
+				var snippetOperation = item.TypeProperty.Values.Count == 1
+					? OperationType.Equal.Map()
+					: OperationType.In.Map();
+
+				var typePropertyParameter = $"{item.DataModel.Name}{item.TypeProperty.Property.Name}";
+
+				interpolatedTableParts.Add(item.TableAliasConstant.ToIdentifierName().Interpolate());
+				interpolatedTableParts.Add(".".Interpolate());
+				interpolatedTableParts.Add(Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(dataType.Access(item.TypeProperty.Property.Name).ToArgument()).Interpolate());
+				interpolatedTableParts.Add($@" {snippetOperation} @{typePropertyParameter}".Interpolate());
+
+				if (queryParameters.All(qp => qp.Name != typePropertyParameter))
+				{
+					ExpressionSyntax typeValue = null;
+					if (item.TypeProperty.Values.Count == 1)
+					{
+						typeValue = item.TypeProperty.Values[0].ToLiteral(item.TypeProperty.Property.Type);
+					}
+					else
+					{
+						var typeValues = item.TypeProperty.Values.Select(v => v.ToLiteral(item.TypeProperty.Property.Type)).ToArray();
+						typeValue = "List".AsGeneric(item.TypeProperty.Property.Type).ToInstanceWithInitializer(typeValues);
+					}
+
+					queryParameters.Add((typeValue, typePropertyParameter));
 				}
 			}
 		}

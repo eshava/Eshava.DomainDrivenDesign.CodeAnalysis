@@ -1,4 +1,5 @@
-﻿using Eshava.DomainDrivenDesign.CodeAnalysis.Extensions;
+﻿using System.Collections.Generic;
+using Eshava.DomainDrivenDesign.CodeAnalysis.Extensions;
 using Eshava.DomainDrivenDesign.CodeAnalysis.Models.Application;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
@@ -12,9 +13,14 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models.Infrastructure
 		public InfrastructureModel DataModel { get; set; }
 		public InfrastructureModelProperty ParentProperty { get; set; }
 		public InfrastructureModelProperty Property { get; set; }
+		/// <summary>
+		/// Property that only exists in data model and defines the type identifier property for the dto
+		/// </summary>
+		public (InfrastructureModelProperty Property, List<string> Values) TypeProperty { get; set; }
+
 		public string ParentDtoName { get; set; }
 		public string ParentDtoPropertyName { get; set; }
-		public string DtoName { get; set; }
+		public ApplicationUseCaseDto Dto { get; set; }
 		public ApplicationUseCaseDtoProperty DtoProperty { get; set; }
 		public bool IsEnumerable { get; set; }
 		public bool IsGroupBy { get; set; }

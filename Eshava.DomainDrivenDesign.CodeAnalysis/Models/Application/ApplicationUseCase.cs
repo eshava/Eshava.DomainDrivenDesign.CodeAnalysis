@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models.Application
@@ -36,12 +37,14 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models.Application
 		public string DomainModelReference { get; set; }
 
 		/// <summary>
-		/// Property that only exists in Data Model and defines the type identifier property for the domain model
+		/// Property that only exists in data model and defines the type identifier property for the dto
 		/// </summary>
+		[Obsolete($"Use {nameof(ApplicationUseCaseDto.DataModelTypeProperty)} instead")]
 		public string DataModelTypeProperty { get; set; }
 		/// <summary>
 		/// Value of <see cref="DataModelTypeProperty"/>
 		/// </summary>
+		[Obsolete($"Use {nameof(ApplicationUseCaseDto.DataModelTypePropertyValue)} instead")]
 		public string DataModelTypePropertyValue { get; set; }
 
 

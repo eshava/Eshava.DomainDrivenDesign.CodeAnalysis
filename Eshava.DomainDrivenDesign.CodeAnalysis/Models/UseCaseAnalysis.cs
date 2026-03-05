@@ -329,8 +329,6 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models
 				FeatureName = useCaseMap.UseCase.FeatureName,
 				Name = useCaseMap.UseCase.UseCaseName + "Async",
 				Type = MethodType.Read,
-				DataModelTypeProperty = useCaseMap.UseCase.DataModelTypeProperty,
-				DataModelTypePropertyValue = useCaseMap.UseCase.DataModelTypePropertyValue,
 				UseCustomGroupDtoMethod = useCaseMap.UseCase.UseCustomGroupDtoMethod,
 				ReturnType = new UseCaseQueryProviderMethodParameterTypeMap
 				{
@@ -859,15 +857,6 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models
 		/// </summary>
 		public string Name { get; set; }
 		public MethodType Type { get; set; }
-
-		/// <summary>
-		/// Property that only exists in Data Model and defines the type identifier property for the domain model
-		/// </summary>
-		public string DataModelTypeProperty { get; set; }
-		/// <summary>
-		/// Value of <see cref="DataModelTypeProperty"/>
-		/// </summary>
-		public string DataModelTypePropertyValue { get; set; }
 
 		public bool UseCustomGroupDtoMethod { get; set; }
 		public bool SkipRepositoryImplementation { get; set; }
