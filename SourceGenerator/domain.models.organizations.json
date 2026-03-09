@@ -297,7 +297,8 @@
 					"dataModelName": "BuildingData",
 					"featureName": "CustomerFeature",
 					"classificationKey": "Building",
-					"addGeneralPatchMethod": true,
+					"addGeneralPatchMethod": false,
+					"hasGeneralPatchMethod": false,
 					"addInfrastructureProviderServiceByPassMethod": true,
 					"providerServiceConstructorParameters": [
 						{

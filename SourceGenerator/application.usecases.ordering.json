@@ -236,6 +236,44 @@
 					]
 				},
 				{
+					"type": 5,
+					"useCaseName": "UpdateByCustomUpdateMethod",
+					"classificationKey": "Product",
+					"addValidationConfigurationMethod": true,
+					"validationConfigurationAsTreeStructure": true,
+					"checkForeignKeyReferencesAutomatically": true,
+					"dtos": [
+						{
+							"name": "ProductUpdate",
+							"referenceModelName": "ProductDDD",
+							"hasUseCaseSpecificPatchMethod": true,
+							"properties": [
+								{
+									"name": "Name",
+									"type": "string"
+								},
+								{
+									"name": "Price",
+									"type": "decimal"
+								}
+							]
+						}
+					],
+					"attributes": [
+						{
+							"name": "UseCaseClass",
+							"usingForType": "Eshava.Example.Application.Common.Attributes",
+							"parameters": [
+								{
+									"name": "name",
+									"type": "string",
+									"value": "Product"
+								}
+							]
+						}
+					]
+				},
+				{
 					"type": 6,
 					"useCaseName": "Deactivate",
 					"classificationKey": "Product",

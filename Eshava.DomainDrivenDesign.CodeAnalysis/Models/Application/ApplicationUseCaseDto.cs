@@ -27,6 +27,12 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models.Application
 		public string DataModelTypePropertyValue { get; set; }
 
 		/// <summary>
+		/// Overrides <see cref="Domain.DomainModel.AddGeneralPatchMethod"/> and <see cref="Domain.DomainModel.HasGeneralPatchMethod"/> generator behaviour
+		/// Generated code will call a self implemented method
+		/// </summary>
+		public bool HasUseCaseSpecificPatchMethod { get; set; }
+
+		/// <summary>
 		/// Optional
 		/// </summary>
 		public List<ApplicationUseCaseDtoProperty> Properties { get; set; }

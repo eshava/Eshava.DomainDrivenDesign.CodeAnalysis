@@ -9,7 +9,8 @@
 					"dataModelName": "ProductData",
 					"featureName": "ProductFeature",
 					"classificationKey": "Product",
-					"addGeneralPatchMethod": true,
+					"addGeneralPatchMethod": false,
+					"hasGeneralPatchMethod": true,
 					"properties": [
 						{
 							"type": "string",

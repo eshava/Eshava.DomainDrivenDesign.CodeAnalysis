@@ -35,7 +35,17 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models.Domain
 		/// </summary>
 		public string FeatureName { get; set; }
 		public List<DomainModelProperty> Properties { get; set; }
+		/// <summary>
+		/// If set to true, the general patch method will be generated
+		/// </summary>
 		public bool AddGeneralPatchMethod { get; set; }
+		/// <summary>
+		/// Only applied if <see cref="AddGeneralPatchMethod"/> is set to false
+		/// Use case generators behave as if there were a general patch method.
+		/// </summary>
+		public bool HasGeneralPatchMethod { get; set; }
+
+
 		public bool AddInfrastructureProviderServiceByPassMethod { get; set; }
 		public bool CustomCreatedOrChangedChildMethod { get; set; }
 		internal bool HasValidationRules => Properties.Count(p => p.ValidationRules.Count > 0) > 0;

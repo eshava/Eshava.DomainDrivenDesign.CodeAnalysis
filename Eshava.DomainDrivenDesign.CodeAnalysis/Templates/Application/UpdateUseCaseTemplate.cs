@@ -270,7 +270,10 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 
 			var agregatePatchStatements = new List<StatementSyntax>();
 
-			if (hasValidationRules && !domainModelMap.IsChildDomainModel)
+			if (hasValidationRules 
+				&& !domainModelMap.IsChildDomainModel 
+				&& !dtoMap.Dto.HasUseCaseSpecificPatchMethod
+			)
 			{
 				StatementHelpers.AddLocalAsyncMethodCallAndFaultyCheck(agregatePatchStatements, "CheckValidationConstraintsAsync", "constraintsResult", returnDataType, providerResult, "patchesResult".Access("Data"));
 			}
@@ -309,11 +312,17 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 					}
 				}
 
-				StatementHelpers.AddLocalAsyncMethodCallAndFaultyCheck(agregatePatchStatements, $"Update{domainModelMap.ClassificationKey}Async", "updateResult", returnDataType, methodArguments.ToArray());
+				if (domainModelMap.DomainModel.AddGeneralPatchMethod 
+					|| domainModelMap.DomainModel.HasGeneralPatchMethod 
+					|| dtoMap.Dto.HasUseCaseSpecificPatchMethod
+				)
+				{
+					StatementHelpers.AddLocalAsyncMethodCallAndFaultyCheck(agregatePatchStatements, $"Update{domainModelMap.ClassificationKey}Async", "updateResult", returnDataType, methodArguments.ToArray());
+				}
 			}
 			else
 			{
-				if (useCase.CheckForeignKeyReferencesAutomatically)
+				if (useCase.CheckForeignKeyReferencesAutomatically && !dtoMap.Dto.HasUseCaseSpecificPatchMethod)
 				{
 					var domainModelName = domainModelMap.GetDomainModelTypeName(domainProjectNamespace);
 					var dtoForeignKeyReferences = ApplicationTemplateMethods.CollectForeignKeysAndAddToMethodCall(
@@ -327,11 +336,20 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 
 					if (dtoForeignKeyReferences is not null && dtoForeignKeyReferences.Count > 0)
 					{
-						StatementHelpers.AddLocalAsyncMethodCallAndFaultyCheck(statements, "CheckForeignKeysAsync", "checkForeignKeyhResult", returnDataType, true, "patchesResult".ToIdentifierName());
+						StatementHelpers.AddLocalAsyncMethodCallAndFaultyCheck(agregatePatchStatements, "CheckForeignKeysAsync", "checkForeignKeyhResult", returnDataType, true, "patchesResult".Access("Data"));
 					}
 				}
 
-				StatementHelpers.AddMethodCallAndFaultyCheck(agregatePatchStatements, providerResult, "Patch", "entityPatchResult", returnDataType, "patchesResult".Access("Data"));
+				if (dtoMap.Dto.HasUseCaseSpecificPatchMethod)
+				{
+					StatementHelpers.AddLocalAsyncMethodCallAndFaultyCheck(agregatePatchStatements, $"Update{domainModelMap.ClassificationKey}Async", "entityPatchResult", returnDataType, true, providerResult, "patchesResult".Access("Data"));
+				}
+				else if (domainModelMap.DomainModel.AddGeneralPatchMethod 
+					|| domainModelMap.DomainModel.HasGeneralPatchMethod
+				)
+				{
+					StatementHelpers.AddMethodCallAndFaultyCheck(agregatePatchStatements, providerResult, "Patch", "entityPatchResult", returnDataType, "patchesResult".Access("Data"));
+				}
 			}
 
 			if (!domainModelMap.IsAggregate || domainModelMap.ChildDomainModels.Count == 0)
@@ -383,7 +401,13 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 
 			if (domainModelMap.IsChildDomainModel)
 			{
-				StatementHelpers.AddLocalAsyncMethodCallAndFaultyCheck(statements, "ExecuteAfter", null, returnDataType, "updateResult".Access("Data"), "request".Access(domainModelMap.ClassificationKey));
+				if (domainModelMap.DomainModel.AddGeneralPatchMethod 
+					|| domainModelMap.DomainModel.HasGeneralPatchMethod 
+					|| dtoMap.Dto.HasUseCaseSpecificPatchMethod
+				)
+				{
+					StatementHelpers.AddLocalAsyncMethodCallAndFaultyCheck(statements, "ExecuteAfter", null, returnDataType, "updateResult".Access("Data"), "request".Access(domainModelMap.ClassificationKey));
+				}
 			}
 			else
 			{
@@ -569,17 +593,56 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 
 				if (topLevelCall)
 				{
-					var topLevelDomainModel = domainModelMap.GetTopLevelDomainModel();
-					if (topLevelDomainModel.DomainModelName != domainModelMap.AggregateDomainModel.DomainModelName)
+					if (domainModelMap.DomainModel.AddGeneralPatchMethod 
+						|| domainModelMap.DomainModel.HasGeneralPatchMethod 
+						|| dtoMap.Dto.HasUseCaseSpecificPatchMethod
+					)
 					{
-						methodDeclarations.Add(ApplicationTemplateMethods.CreateCollectChildWrapperMethodForUpdate(domainModelMap, dtoMap, request.DomainProjectNamespace, request.UseCase.ReadAggregateByChildId));
-					}
+						var topLevelDomainModel = domainModelMap.GetTopLevelDomainModel();
+						if (topLevelDomainModel.DomainModelName != domainModelMap.AggregateDomainModel.DomainModelName)
+						{
+							methodDeclarations.Add(ApplicationTemplateMethods.CreateCollectChildWrapperMethodForUpdate(domainModelMap, dtoMap, request.DomainProjectNamespace, request.UseCase.ReadAggregateByChildId));
+						}
 
-					methodDeclarations.AddRange(CreateUpdateChildMethod(request, foreignKeyReferenceContainer, domainModelMap, dtoMap, aggregateParameterName, domainModelType, request.DomainProjectNamespace, dtoForeignKeyReferences, domainModelWithMappings, true, true));
+						methodDeclarations.AddRange(
+							CreateUpdateChildMethod(
+								request,
+								foreignKeyReferenceContainer,
+								domainModelMap,
+								dtoMap,
+								aggregateParameterName,
+								domainModelType,
+								request.DomainProjectNamespace,
+								dtoForeignKeyReferences,
+								domainModelWithMappings,
+								true,
+								true,
+								dtoMap.Dto.HasUseCaseSpecificPatchMethod
+							)
+						);
+					}
 				}
-				else if (!domainModelMap.IsAggregate)
+				else if (!domainModelMap.IsAggregate 
+					&& (domainModelMap.DomainModel.AddGeneralPatchMethod || domainModelMap.DomainModel.HasGeneralPatchMethod) 
+					&& !dtoMap.Dto.HasUseCaseSpecificPatchMethod
+				)
 				{
-					methodDeclarations.AddRange(CreateUpdateChildMethod(request, foreignKeyReferenceContainer, domainModelMap, dtoMap, aggregateParameterName, domainModelType, request.DomainProjectNamespace, dtoForeignKeyReferences, domainModelWithMappings, true, false));
+					methodDeclarations.AddRange(
+						CreateUpdateChildMethod(
+							request,
+							foreignKeyReferenceContainer,
+							domainModelMap,
+							dtoMap,
+							aggregateParameterName,
+							domainModelType,
+							request.DomainProjectNamespace,
+							dtoForeignKeyReferences,
+							domainModelWithMappings,
+							true,
+							false,
+							false
+						)
+					);
 				}
 
 				return methodDeclarations;
@@ -671,21 +734,6 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 					StatementHelpers.AddLocalAsyncMethodCallAndFaultyCheck(statements, $"Create{childDomainModel.ClassificationKey.ToPlural()}Async", "createResult", Eshava.CodeAnalysis.SyntaxConstants.Bool, createMethodArguments.ToArray());
 				}
 
-				var updateStatements = new List<StatementSyntax>
-					{
-						documentLayerVariableName
-						.ToVariableStatement(
-							patchDocumentName.Access("GetLayerForIdentifier".AsGeneric(dtoMap.DtoName, childDomainModel.IdentifierType))
-							.Call(
-								"p".ToPropertyExpression(childReferenceProperty.Property.Name).ToArgument(),
-								childVariableName.Access("Key").ToArgument()
-							)
-						)
-					};
-
-				StatementHelpers.AddLocalAsyncMethodCallAndFaultyCheck(updateStatements, $"Update{childDomainModel.ClassificationKey}Async", "updateResult", Eshava.CodeAnalysis.SyntaxConstants.Bool, updateMethodArguments.ToArray());
-				statements.Add(changeResultData.Access("ItemsToPatch").ForEach(childVariableName, updateStatements.ToArray()));
-
 				if (childReferenceProperty.Property.IsEnumerable)
 				{
 					var removeStatements = new List<StatementSyntax>();
@@ -697,7 +745,44 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 				{
 					methodDeclarations.AddRange(ApplicationTemplateMethods.CreateCreateChildsMethods(request, domainModelMap, foreignKeyReferenceContainer, domainModelWithMappings, false, false));
 				}
-				methodDeclarations.AddRange(CreateUpdateChildMethod(request, foreignKeyReferenceContainer, childDomainModel, childReferenceProperty.Dto, aggregateParameterName, domainModelType, request.DomainProjectNamespace, dtoForeignKeyReferences, domainModelWithMappings, false, false));
+
+				if (childDomainModel.DomainModel.AddGeneralPatchMethod 
+					|| childDomainModel.DomainModel.HasGeneralPatchMethod 
+					|| childReferenceProperty.Dto.Dto.HasUseCaseSpecificPatchMethod
+				)
+				{
+					var updateStatements = new List<StatementSyntax>
+					{
+						documentLayerVariableName
+						.ToVariableStatement(
+							patchDocumentName.Access("GetLayerForIdentifier".AsGeneric(dtoMap.DtoName, childDomainModel.IdentifierType))
+							.Call(
+								"p".ToPropertyExpression(childReferenceProperty.Property.Name).ToArgument(),
+								childVariableName.Access("Key").ToArgument()
+							)
+						)
+					};
+
+					StatementHelpers.AddLocalAsyncMethodCallAndFaultyCheck(updateStatements, $"Update{childDomainModel.ClassificationKey}Async", "updateResult", Eshava.CodeAnalysis.SyntaxConstants.Bool, updateMethodArguments.ToArray());
+					statements.Add(changeResultData.Access("ItemsToPatch").ForEach(childVariableName, updateStatements.ToArray()));
+
+					methodDeclarations.AddRange(
+						CreateUpdateChildMethod(
+							request,
+							foreignKeyReferenceContainer,
+							childDomainModel,
+							childReferenceProperty.Dto,
+							aggregateParameterName,
+							domainModelType,
+							request.DomainProjectNamespace,
+							dtoForeignKeyReferences,
+							domainModelWithMappings,
+							false,
+							false,
+							childReferenceProperty.Dto.Dto.HasUseCaseSpecificPatchMethod
+						)
+					);
+				}
 
 				if (childReferenceProperty.Property.IsEnumerable)
 				{
@@ -749,7 +834,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			List<(ForeignKeyCache ForeignKey, ApplicationUseCaseDtoProperty Property)> foreignKeyHashSets,
 			HashSet<string> domainModelWithMappings,
 			bool skipForeignKeyHashsetParameter,
-			bool pretentTopLevelCall
+			bool pretentTopLevelCall,
+			bool generateOnlySubMethods
 		)
 		{
 			var methodDeclarations = new List<(string Name, MemberDeclarationSyntax)>();
@@ -861,14 +947,16 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 				.Return()
 			);
 
-			var methodDeclarationname = $"Update{childDomainModel.ClassificationKey}Async";
-			var methodDeclaration = methodDeclarationname.ToMethod(
-				"Task".AsGeneric("ResponseData".AsGeneric(childDomainModelType)),
-				statements,
-				methodModifier.ToArray()
-			);
+			if (!generateOnlySubMethods)
+			{
+				var methodDeclarationname = $"Update{childDomainModel.ClassificationKey}Async";
+				var methodDeclaration = methodDeclarationname.ToMethod(
+					"Task".AsGeneric("ResponseData".AsGeneric(childDomainModelType)),
+					statements,
+					methodModifier.ToArray()
+				);
 
-			var methodParameter = new List<ParameterSyntax>
+				var methodParameter = new List<ParameterSyntax>
 			{
 				aggregateParameterName
 					.ToParameter()
@@ -881,27 +969,28 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 					.WithType("PartialPutDocumentLayer".ToType()),
 			};
 
-			if (!skipForeignKeyHashsetParameter && foreignKeyHashSets is not null)
-			{
-				foreach (var foreignKeyHashSet in foreignKeyHashSets)
+				if (!skipForeignKeyHashsetParameter && foreignKeyHashSets is not null)
 				{
-					var hashSetParameter = foreignKeyHashSet
-						.ForeignKey
-						.HashSetName
-						.ToParameter()
-						.WithType(foreignKeyHashSet.ForeignKey.HashSetType);
-
-					if (methodParameter.All(mp => !mp.IsEquivalentTo(hashSetParameter)))
+					foreach (var foreignKeyHashSet in foreignKeyHashSets)
 					{
-						methodParameter.Add(hashSetParameter);
+						var hashSetParameter = foreignKeyHashSet
+							.ForeignKey
+							.HashSetName
+							.ToParameter()
+							.WithType(foreignKeyHashSet.ForeignKey.HashSetType);
+
+						if (methodParameter.All(mp => !mp.IsEquivalentTo(hashSetParameter)))
+						{
+							methodParameter.Add(hashSetParameter);
+						}
 					}
 				}
+
+				methodDeclaration = methodDeclaration
+					.WithParameter(methodParameter.ToArray());
+
+				methodDeclarations.Add((methodDeclarationname, methodDeclaration));
 			}
-
-			methodDeclaration = methodDeclaration
-				.WithParameter(methodParameter.ToArray());
-
-			methodDeclarations.Add((methodDeclarationname, methodDeclaration));
 
 			return methodDeclarations;
 		}
@@ -1008,7 +1097,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 
 			var statements = new List<StatementSyntax>();
 
-			CreateForeignKeyCheckStatementsForPatches(domainModelMap, "patchesResult".ToIdentifierName(), "Data", dtoForeignKeyReferences, statements, Eshava.CodeAnalysis.SyntaxConstants.Bool, true);
+			CreateForeignKeyCheckStatementsForPatches(domainModelMap, "patches".ToIdentifierName(), null, dtoForeignKeyReferences, statements, Eshava.CodeAnalysis.SyntaxConstants.Bool, true);
 
 			statements.Add(
 				Eshava.CodeAnalysis.SyntaxConstants.True
@@ -1028,9 +1117,9 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			unitInformation.AddMethod((
 				methodDeclarationName,
 				methodDeclaration
-				.WithParameter("patchesResult"
+				.WithParameter("patches"
 					.ToParameter()
-					.WithType("ResponseData".AsGeneric("IList".AsGeneric("Patch".AsGeneric(domainModelName)))))
+					.WithType("IList".AsGeneric("Patch".AsGeneric(domainModelName))))
 			));
 		}
 
@@ -1051,7 +1140,14 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 
 				var patchName = $"{foreignKeyHashSet.Property.Name.ToVariableName()}Patch";
 
-				statements.Add(patchName.CreatePatchVariable(foreignKeyHashSet.Property.Name, dtoVariableName.Access(dtoVariableNameAccessProperty)));
+				statements.Add(patchName
+					.CreatePatchVariable(
+						foreignKeyHashSet.Property.Name,
+						dtoVariableNameAccessProperty.IsNullOrEmpty()
+							? dtoVariableName
+							: dtoVariableName.Access(dtoVariableNameAccessProperty)
+					)
+				);
 
 				var methodArguments = new List<ExpressionSyntax>
 				{

@@ -676,6 +676,7 @@
 						{
 							"name": "BuildingUpdate",
 							"referenceModelName": "BuildingDDD",
+							"hasUseCaseSpecificPatchMethod": true,
 							"properties": [
 								{
 									"name": "Name",
@@ -756,6 +757,7 @@
 						{
 							"name": "BuildingUpdate",
 							"referenceModelName": "BuildingDDD",
+							"hasUseCaseSpecificPatchMethod": true,
 							"properties": [
 								{
 									"name": "Name",
@@ -806,6 +808,7 @@
 						{
 							"name": "LocationUpdate",
 							"referenceModelName": "LocationDDD",
+							"hasUseCaseSpecificPatchMethod": true,
 							"properties": [
 								{
 									"name": "Name",
