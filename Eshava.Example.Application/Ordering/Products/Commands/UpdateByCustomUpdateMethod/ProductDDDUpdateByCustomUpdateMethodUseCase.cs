@@ -8,7 +8,7 @@ namespace Eshava.Example.Application.Ordering.Products.Commands.UpdateByCustomUp
 {
 	internal partial class ProductDDDUpdateByCustomUpdateMethodUseCase
 	{
-		private async Task<ResponseData<bool>> UpdateProductAsync(ProductDDD product, IList<Patch<ProductDDD>> patches)
+		private async Task<ResponseData<bool>> UpdateProductDDDAsync(ProductDDD product, IList<Patch<ProductDDD>> patches)
 		{
 			var constraintsResult = await CheckValidationConstraintsAsync(product, patches);
 			if (constraintsResult.IsFaulty)

@@ -110,7 +110,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 				unitInformation.AddMethod(ApplicationTemplateMethods.CreateValidationConfigurationMethod(request.UseCase));
 			}
 
-			var childCreateMethodsResult = ApplicationTemplateMethods.CreateCreateChildsMethods(request, domainModelMap, foreignKeyReferenceContainer, domainModelWithMappings, true, true);
+			var childCreateMethodsResult = ApplicationTemplateMethods.CreateCreateChildsMethods(request, domainModelMap, null, foreignKeyReferenceContainer, domainModelWithMappings, true, true);
 			foreach (var childCreateMethods in childCreateMethodsResult)
 			{
 				unitInformation.AddMethod(childCreateMethods);
@@ -252,7 +252,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 
 				StatementHelpers.AddLocalAsyncMethodCallAndFaultyCheck(
 					statements,
-					$"Create{domainModelMap.ClassificationKey}Async",
+					$"Create{domainModelMap.DomainModelName}Async",
 					$"create{domainModelMap.ClassificationKey}Result",
 					returnDataType,
 					methodArguments.ToArray()

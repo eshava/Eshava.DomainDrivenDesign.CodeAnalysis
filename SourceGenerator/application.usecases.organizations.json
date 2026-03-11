@@ -78,6 +78,11 @@
 									"name": "Locations",
 									"type": "LocationCreate",
 									"isEnumerable": true
+								},
+								{
+									"name": "OtherLocations",
+									"type": "OtherLocationCreate",
+									"isEnumerable": true
 								}
 							]
 						},
@@ -93,6 +98,16 @@
 									"name": "Buildings",
 									"type": "BuildingCreate",
 									"isEnumerable": true
+								}
+							]
+						},
+						{
+							"name": "OtherLocationCreate",
+							"referenceModelName": "OtherLocationDDD",
+							"properties": [
+								{
+									"name": "Name",
+									"type": "string"
 								}
 							]
 						},
@@ -424,6 +439,11 @@
 									"name": "Offices",
 									"type": "OfficeUpdate",
 									"isEnumerable": true
+								},
+								{
+									"name": "BillingOffices",
+									"type": "BillingOfficeUpdate",
+									"isEnumerable": true
 								}
 							]
 						},
@@ -453,12 +473,42 @@
 									"name": "Locations",
 									"type": "LocationUpdate",
 									"isEnumerable": true
+								},
+								{
+									"name": "OtherLocations",
+									"type": "OtherLocationUpdate",
+									"isEnumerable": true
 								}
 							]
 						},
 						{
 							"name": "LocationUpdate",
 							"referenceModelName": "LocationDDD",
+							"properties": [
+								{
+									"name": "Id",
+									"type": "int",
+									"attributes": [
+										{
+											"name": "JsonIgnore",
+											"usingForType": "System.Text.Json.Serialization"
+										}
+									]
+								},
+								{
+									"name": "Name",
+									"type": "string"
+								},
+								{
+									"name": "Buildings",
+									"type": "BuildingUpdate",
+									"isEnumerable": true
+								}
+							]
+						},
+						{
+							"name": "OtherLocationUpdate",
+							"referenceModelName": "OtherLocationDDD",
 							"properties": [
 								{
 									"name": "Id",
@@ -525,6 +575,26 @@
 								},
 								{
 									"name": "Country",
+									"type": "string"
+								}
+							]
+						},
+						{
+							"name": "BillingOfficeUpdate",
+							"referenceModelName": "BillingOfficeDDD",
+							"properties": [
+								{
+									"name": "Id",
+									"type": "int",
+									"attributes": [
+										{
+											"name": "JsonIgnore",
+											"usingForType": "System.Text.Json.Serialization"
+										}
+									]
+								},
+								{
+									"name": "Name",
 									"type": "string"
 								}
 							]

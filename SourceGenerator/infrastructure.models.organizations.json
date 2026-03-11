@@ -158,6 +158,10 @@
 						},
 						{
 							"type": "int",
+							"name": "TypeId"
+						},
+						{
+							"type": "int",
 							"name": "OfficeId",
 							"isReference": true,
 							"referenceType": "OfficeData",

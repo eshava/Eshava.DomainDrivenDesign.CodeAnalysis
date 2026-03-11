@@ -10,7 +10,7 @@ namespace Eshava.Example.Application.Organizations.CustomerFeature.Customers.Com
 {
 	internal partial class CustomerDDDUpdateWithSingleOfficeUseCase
 	{
-		private async Task<ResponseData<BuildingDDD>> UpdateBuildingAsync(LocationDDD location, KeyValuePair<int, IList<Patch<BuildingDDD>>> buildingPatches, PartialPutDocumentLayer buildingDocumentLayer)
+		private async Task<ResponseData<BuildingDDD>> UpdateBuildingDDDAsync(LocationDDD location, KeyValuePair<int, IList<Patch<BuildingDDD>>> buildingPatches, PartialPutDocumentLayer buildingDocumentLayer)
 		{
 			// Custom code to update the building
 

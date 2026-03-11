@@ -9,7 +9,7 @@ namespace Eshava.Example.Application.Organizations.CustomerFeature.Customers.Com
 {
 	internal partial class CustomerDDDUpdateOfficeWithSingleLocationOfficeDDDUseCase
 	{
-		private async Task<ResponseData<LocationDDD>> UpdateLocationAsync(OfficeDDD office, KeyValuePair<int, IList<Patch<LocationDDD>>> locationPatches, PartialPutDocumentLayer locationDocumentLayer)
+		private async Task<ResponseData<LocationDDD>> UpdateLocationDDDAsync(OfficeDDD office, KeyValuePair<int, IList<Patch<LocationDDD>>> locationPatches, PartialPutDocumentLayer locationDocumentLayer)
 		{
 			var locationResult = office.GetLocationDDD(locationPatches.Key);
 			if (locationResult.IsFaulty)

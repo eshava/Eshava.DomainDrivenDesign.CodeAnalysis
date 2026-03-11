@@ -168,7 +168,8 @@
 					"addGeneralPatchMethod": true,
 					"addInfrastructureProviderServiceByPassMethod": true,
 					"childDomainModels": [
-						"LocationDDD"
+						"LocationDDD",
+						"OtherLocationDDD"
 					],
 					"properties": [
 						{
@@ -256,6 +257,8 @@
 					"identifierType": "int",
 					"name": "LocationDDD",
 					"dataModelName": "LocationData",
+					"dataModelTypeProperty": "TypeId",
+					"dataModelTypePropertyValue": "20",
 					"featureName": "CustomerFeature",
 					"classificationKey": "Location",
 					"addGeneralPatchMethod": true,
@@ -263,6 +266,46 @@
 					"childDomainModels": [
 						"BuildingDDD"
 					],
+					"properties": [
+						{
+							"type": "string",
+							"name": "Name",
+							"attributes": [
+								{
+									"name": "Required",
+									"usingForType": "System.ComponentModel.DataAnnotations"
+								},
+								{
+									"name": "MaxLength",
+									"usingForType": "System.ComponentModel.DataAnnotations",
+									"parameters": [
+										{
+											"type": "int",
+											"value": "250"
+										}
+									]
+								}
+							],
+							"validationRules": [
+								{
+									"type": 1
+								}
+							]
+						}
+					]
+				},
+				{
+					"isAggregate": false,
+					"identifierType": "int",
+					"name": "OtherLocationDDD",
+					"dataModelName": "LocationData",
+					"dataModelTypeProperty": "TypeId",
+					"dataModelTypePropertyValue": "21",
+					"featureName": "CustomerFeature",
+					"classificationKey": "Location",
+					"addGeneralPatchMethod": true,
+					"addInfrastructureProviderServiceByPassMethod": false,
+					"childDomainModels": [],
 					"properties": [
 						{
 							"type": "string",

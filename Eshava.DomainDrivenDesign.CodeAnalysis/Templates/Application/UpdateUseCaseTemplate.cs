@@ -317,7 +317,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 					|| dtoMap.Dto.HasUseCaseSpecificPatchMethod
 				)
 				{
-					StatementHelpers.AddLocalAsyncMethodCallAndFaultyCheck(agregatePatchStatements, $"Update{domainModelMap.ClassificationKey}Async", "updateResult", returnDataType, methodArguments.ToArray());
+					StatementHelpers.AddLocalAsyncMethodCallAndFaultyCheck(agregatePatchStatements, $"Update{domainModelMap.DomainModelName}Async", "updateResult", returnDataType, methodArguments.ToArray());
 				}
 			}
 			else
@@ -342,7 +342,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 
 				if (dtoMap.Dto.HasUseCaseSpecificPatchMethod)
 				{
-					StatementHelpers.AddLocalAsyncMethodCallAndFaultyCheck(agregatePatchStatements, $"Update{domainModelMap.ClassificationKey}Async", "entityPatchResult", returnDataType, true, providerResult, "patchesResult".Access("Data"));
+					StatementHelpers.AddLocalAsyncMethodCallAndFaultyCheck(agregatePatchStatements, $"Update{domainModelMap.DomainModelName}Async", "entityPatchResult", returnDataType, true, providerResult, "patchesResult".Access("Data"));
 				}
 				else if (domainModelMap.DomainModel.AddGeneralPatchMethod 
 					|| domainModelMap.DomainModel.HasGeneralPatchMethod
@@ -731,19 +731,19 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 
 				if (childReferenceProperty.Property.IsEnumerable)
 				{
-					StatementHelpers.AddLocalAsyncMethodCallAndFaultyCheck(statements, $"Create{childDomainModel.ClassificationKey.ToPlural()}Async", "createResult", Eshava.CodeAnalysis.SyntaxConstants.Bool, createMethodArguments.ToArray());
+					StatementHelpers.AddLocalAsyncMethodCallAndFaultyCheck(statements, $"Create{childDomainModel.DomainModelName.ToPlural()}Async", "createResult", Eshava.CodeAnalysis.SyntaxConstants.Bool, createMethodArguments.ToArray());
 				}
 
 				if (childReferenceProperty.Property.IsEnumerable)
 				{
 					var removeStatements = new List<StatementSyntax>();
-					StatementHelpers.AddLocalAsyncMethodCallAndFaultyCheck(removeStatements, $"Deactivate{childDomainModel.ClassificationKey}Async", "deactivateResult", (TypeSyntax)null, updateMethodArguments.Take(2).ToArray());
+					StatementHelpers.AddLocalAsyncMethodCallAndFaultyCheck(removeStatements, $"Deactivate{childDomainModel.DomainModelName}Async", "deactivateResult", (TypeSyntax)null, updateMethodArguments.Take(2).ToArray());
 					statements.Add(changeResultData.Access("ItemsToRemove").ForEach(childVariableName, removeStatements.ToArray()));
 				}
 
 				if (topLevelCall || pretendTopLevelCall)
 				{
-					methodDeclarations.AddRange(ApplicationTemplateMethods.CreateCreateChildsMethods(request, domainModelMap, foreignKeyReferenceContainer, domainModelWithMappings, false, false));
+					methodDeclarations.AddRange(ApplicationTemplateMethods.CreateCreateChildsMethods(request, domainModelMap, childDomainModel.DomainModelName, foreignKeyReferenceContainer, domainModelWithMappings, false, false));
 				}
 
 				if (childDomainModel.DomainModel.AddGeneralPatchMethod 
@@ -763,7 +763,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 						)
 					};
 
-					StatementHelpers.AddLocalAsyncMethodCallAndFaultyCheck(updateStatements, $"Update{childDomainModel.ClassificationKey}Async", "updateResult", Eshava.CodeAnalysis.SyntaxConstants.Bool, updateMethodArguments.ToArray());
+					StatementHelpers.AddLocalAsyncMethodCallAndFaultyCheck(updateStatements, $"Update{childDomainModel.DomainModelName}Async", "updateResult", Eshava.CodeAnalysis.SyntaxConstants.Bool, updateMethodArguments.ToArray());
 					statements.Add(changeResultData.Access("ItemsToPatch").ForEach(childVariableName, updateStatements.ToArray()));
 
 					methodDeclarations.AddRange(
@@ -949,7 +949,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 
 			if (!generateOnlySubMethods)
 			{
-				var methodDeclarationname = $"Update{childDomainModel.ClassificationKey}Async";
+				var methodDeclarationname = $"Update{childDomainModel.DomainModelName}Async";
 				var methodDeclaration = methodDeclarationname.ToMethod(
 					"Task".AsGeneric("ResponseData".AsGeneric(childDomainModelType)),
 					statements,
@@ -1045,7 +1045,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 				.Return()
 			);
 
-			var methodDeclarationName = $"Deactivate{childDomainModel.ClassificationKey}Async";
+			var methodDeclarationName = $"Deactivate{childDomainModel.DomainModelName}Async";
 			var methodDeclaration = methodDeclarationName.ToMethod(
 				SyntaxConstants.TaskResponseDataBool,
 				statements,

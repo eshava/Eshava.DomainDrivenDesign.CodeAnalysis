@@ -198,7 +198,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			return dtoForeignKeyReferences;
 		}
 
-		
+
 
 		public static void CreateForeignKeyCheckStatements(
 			ReferenceDomainModelMap domainModelMap,
@@ -549,6 +549,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 		public static List<(string Name, MemberDeclarationSyntax Method)> CreateCreateChildsMethods(
 			UseCaseTemplateRequest request,
 			ReferenceDomainModelMap domainModelMap,
+			string childDomainModelName,
 			ForeignKeyReferenceContainer foreignKeyReferenceContainer,
 			HashSet<string> domainModelWithMappings,
 			bool skipForeignKeyHashsetParameter,
@@ -622,6 +623,12 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 
 			foreach (var childDomainModel in domainModelMap.ChildDomainModels)
 			{
+				if (!childDomainModelName.IsNullOrEmpty() 
+					&& childDomainModel.DomainModelName != childDomainModelName)
+				{
+					continue;
+				}
+
 				var childReferenceProperty = dtoMap.ChildReferenceProperties.FirstOrDefault(p => p.Dto.DomainModelName == childDomainModel.DomainModelName);
 				if (childReferenceProperty is null)
 				{
@@ -657,12 +664,12 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 
 
 					var createStatements = new List<StatementSyntax>();
-					StatementHelpers.AddLocalAsyncMethodCallAndFaultyCheck(createStatements, $"Create{childDomainModel.ClassificationKey}Async", "createResult", Eshava.CodeAnalysis.SyntaxConstants.Bool, methodArguments.ToArray());
+					StatementHelpers.AddLocalAsyncMethodCallAndFaultyCheck(createStatements, $"Create{childDomainModel.DomainModelName}Async", "createResult", Eshava.CodeAnalysis.SyntaxConstants.Bool, methodArguments.ToArray());
 					statements.Add(parameterName.ToIdentifierName().ForEach(childVariableName, createStatements.ToArray()));
 
 					StatementHelpers.AddResponseDataReturn(statements, true);
 
-					var methodDeclarationName = $"Create{childDomainModel.ClassificationKey.ToPlural()}Async";
+					var methodDeclarationName = $"Create{childDomainModel.DomainModelName.ToPlural()}Async";
 					var methodDeclaration = methodDeclarationName.ToMethod(
 						SyntaxConstants.TaskResponseDataBool,
 						statements,
@@ -780,8 +787,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 				}
 
 				var methodReference = childReferenceProperty.Property.IsEnumerable
-					? childDomainModel.ClassificationKey.ToPlural()
-					: childDomainModel.ClassificationKey;
+					? childDomainModel.DomainModelName.ToPlural()
+					: childDomainModel.DomainModelName;
 
 				StatementHelpers.AddLocalAsyncMethodCallAndFaultyCheck(
 					statements,
@@ -1315,13 +1322,13 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			methodCallArguments.AddRange(transferParameter.Select(p => p.Name.ToArgument()));
 
 			statements.Add(
-				$"{methodName}{childDomainModel.ClassificationKey}Async"
+				$"{methodName}{childDomainModel.DomainModelName}Async"
 				.ToIdentifierName()
 				.Call(methodCallArguments.ToArray())
 				.Return()
 			);
 
-			var methodDeclarationName = $"{methodName}{childDomainModel.ClassificationKey}Async";
+			var methodDeclarationName = $"{methodName}{childDomainModel.DomainModelName}Async";
 			var methodDeclaration = methodDeclarationName.ToMethod(
 				"Task".AsGeneric("ResponseData".AsGeneric(childDomainModelType)),
 				statements,
@@ -1497,7 +1504,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 
 			if (childDomainModel.IsAggregate && childDomainModel.ChildDomainModels.Count > 0)
 			{
-				methodDeclarations.AddRange(CreateCreateChildsMethods(request, childDomainModel, foreignKeyReferenceContainer, domainModelWithMappings, skipForeignKeyHashsetParameter, false));
+				methodDeclarations.AddRange(CreateCreateChildsMethods(request, childDomainModel, null, foreignKeyReferenceContainer, domainModelWithMappings, skipForeignKeyHashsetParameter, false));
 			}
 
 			return methodDeclarations;
@@ -1668,7 +1675,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 				accessModifier.Add(SyntaxKind.AsyncKeyword);
 			}
 
-			var methodName = $"Create{childDomainModel.ClassificationKey}Async";
+			var methodName = $"Create{childDomainModel.DomainModelName}Async";
 			var methodDeclaration = methodName.ToMethod(
 				"Task".AsGeneric("ResponseData".AsGeneric(childDomainModelType)),
 				statements,
