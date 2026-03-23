@@ -26,6 +26,11 @@ namespace Eshava.Example.Domain.Organizations.CustomerFeature
 			return Update(patches);
 		}
 
+		protected override void Init()
+		{
+			_officeDDDChanged = CreatedOrChangedOfficeDDD;
+		}
+
 		protected override ResponseData<bool> Validate()
 		{
 			// Check if the are multiple offices with the same name
