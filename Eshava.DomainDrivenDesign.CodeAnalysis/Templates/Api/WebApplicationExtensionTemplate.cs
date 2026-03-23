@@ -16,7 +16,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Api
 			var unitInformation = new UnitInformation("WebApplicationExtensions", $"{project.FullQualifiedNamespace}.Extensions", addConstructor: false, addAssemblyComment: project.AddAssemblyCommentToFiles);
 
 			unitInformation.AddUsing(CommonNames.Namespaces.AspNetCore.BUILDER);
-			unitInformation.AddClassModifier(SyntaxKind.PublicKeyword, SyntaxKind.StaticKeyword);
+			unitInformation.AddClassModifier(SyntaxKind.PublicKeyword, SyntaxKind.StaticKeyword, SyntaxKind.PartialKeyword);
 
 			foreach (var @using in dependencyInjections.SelectMany(di => di.GetUsings()).ToList())
 			{
