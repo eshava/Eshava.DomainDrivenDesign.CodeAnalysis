@@ -80,7 +80,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Extensions
 
 			var nameToLower = name.ToLower();
 
-			return _uncountable.Any(name.EndsWith);
+			return _uncountable.Any(nameToLower.EndsWith);
 		}
 
 		public static string ToPlural(this string name, string uncountableAppendix = null)
