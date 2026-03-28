@@ -1565,7 +1565,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 
 			var queryParameters = new List<(ExpressionSyntax Property, string Name)>();
 
-			var interpolatedStringParts = InfrastructureTemplateMethods.CreateSqlQueryWithoutWhereCondition(dataModel, domainModelMap.Domain, relatedDataModels, implementSoftDelete, false, queryParameters, metaData);
+			(var interpolatedStringParts, var _) = InfrastructureTemplateMethods.CreateSqlQueryWithoutWhereCondition(dataModel, domainModelMap.Domain, relatedDataModels, implementSoftDelete, false, queryParameters, metaData);
 			var modelItem = relatedDataModels.First(m => m.DataModel.Name == dataModel.Name && m.IsRootModel);
 
 			interpolatedStringParts.Add(@"

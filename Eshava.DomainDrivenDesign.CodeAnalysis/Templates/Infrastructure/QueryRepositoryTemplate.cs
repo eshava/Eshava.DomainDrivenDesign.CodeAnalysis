@@ -141,6 +141,11 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 						methodCreationResult = CreateSearchMethod(model, methodMap, childsForAllModels, infrastructureModelsConfig, metaData, project.ImplementSoftDelete);
 						addFieldsToMapping = true;
 
+						if (methodMap.AddGroupStatementToSqlQuery)
+						{
+							unitInformation.AddUsing(CommonNames.Namespaces.Eshava.DomainDrivenDesign.Infrastructure.SETTINGS);
+						}
+
 						break;
 					case MethodType.SearchCount:
 						methodCreationResult = CreateSearchCountMethod(model, methodMap, childsForAllModels, infrastructureModelsConfig, metaData, project.ImplementSoftDelete);
@@ -745,7 +750,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				(idParameter.Name.ToIdentifierName(), idParameter.Name.ToPropertyName())
 			};
 
-			var interpolatedStringParts = InfrastructureTemplateMethods.CreateSqlQueryWithoutWhereCondition(dataModel, methodMap.Domain, relatedDataModels, implementSoftDelete, false, parameterItems, methodMetaData);
+			(var interpolatedStringParts, var _) = InfrastructureTemplateMethods.CreateSqlQueryWithoutWhereCondition(dataModel, methodMap.Domain, relatedDataModels, implementSoftDelete, false, parameterItems, methodMetaData);
 			var dtoInitializerExpressions = new List<ExpressionSyntax>();
 			GetDtoInitializerExpressions(methodMap.Domain, dataModel.Name, null, null, relatedDataModels, dtoInitializerExpressions, new HashSet<string>());
 
@@ -919,7 +924,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 
 			var additionalQueryParameters = new List<(ExpressionSyntax Property, string Name)>();
 
-			var interpolatedStringParts = InfrastructureTemplateMethods.CreateSqlQueryWithoutWhereCondition(dataModel, methodMap.Domain, relatedDataModels, implementSoftDelete, false, additionalQueryParameters, methodMetaData);
+			(var interpolatedStringParts, var interpolatedColumnParts) = InfrastructureTemplateMethods.CreateSqlQueryWithoutWhereCondition(dataModel, methodMap.Domain, relatedDataModels, implementSoftDelete, false, additionalQueryParameters, methodMetaData);
 			var dtoInitializerExpressions = new List<ExpressionSyntax>();
 			GetDtoInitializerExpressions(methodMap.Domain, dataModel.Name, null, null, relatedDataModels, dtoInitializerExpressions, new HashSet<string>());
 
@@ -956,22 +961,46 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				.ToExpressionStatement()
 			);
 
+			var whereQuerySettingsType = "WhereQuerySettings";
+			var whereQuerySettingsProperties = new List<ExpressionSyntax>
+			{
+				"PropertyTypeMappings"
+					.ToIdentifierName()
+					.Assign("PropertyTypeMappings".ToIdentifierName()),
+				"QueryParameter"
+					.ToIdentifierName()
+					.Assign(
+						"Dictionary"
+						.AsGeneric("string", "object")
+						.ToInstance()
+					)
+			};
+
+			if (methodMap.AddGroupStatementToSqlQuery)
+			{
+				var interpolatedGroupByParts = new List<InterpolatedStringContentSyntax>
+				{
+					@"
+						GROUP BY".Interpolate(),
+				};
+
+				interpolatedGroupByParts.AddRange(interpolatedColumnParts);
+
+				whereQuerySettingsType = "SharedWhereQuerySettings";
+				whereQuerySettingsProperties.Add(
+					"QueryPartBetweenWhereAndOrderBy"
+						.ToIdentifierName()
+						.Assign(interpolatedGroupByParts.ToRawStringExpression())
+				);
+			}
+
 			tryBlockStatements.Add(
 				"settings"
 				.ToVariableStatement(
-					"WhereQuerySettings"
+					whereQuerySettingsType
 					.ToIdentifierName()
 					.ToInstanceWithInitializer(
-						"PropertyTypeMappings"
-						.ToIdentifierName()
-						.Assign("PropertyTypeMappings".ToIdentifierName()),
-						"QueryParameter"
-						.ToIdentifierName()
-						.Assign(
-							"Dictionary"
-							.AsGeneric("string", "object")
-							.ToInstance()
-						)
+						whereQuerySettingsProperties.ToArray()
 					)
 				)
 			);
@@ -1071,7 +1100,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 
 			var additionalQueryParameters = new List<(ExpressionSyntax Property, string Name)>();
 
-			var interpolatedStringParts = InfrastructureTemplateMethods.CreateSqlQueryWithoutWhereCondition(dataModel, methodMap.Domain, relatedDataModels, implementSoftDelete, true, additionalQueryParameters, methodMetaData);
+			(var interpolatedStringParts, var _) = InfrastructureTemplateMethods.CreateSqlQueryWithoutWhereCondition(dataModel, methodMap.Domain, relatedDataModels, implementSoftDelete, true, additionalQueryParameters, methodMetaData);
 
 			var tryBlockStatements = new List<StatementSyntax>
 			{

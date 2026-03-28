@@ -469,7 +469,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models
 						]
 					}
 				],
-				SkipRepositoryImplementation = useCaseMap.UseCase.SkipRepositoryMethod
+				SkipRepositoryImplementation = useCaseMap.UseCase.SkipRepositoryMethod,
+				AddGroupStatementToSqlQuery = useCaseMap.UseCase.Type == ApplicationUseCaseType.Suggestions
 			};
 
 			useCaseMap.QueryProviderMethodMaps.Add(method);
@@ -857,7 +858,10 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models
 		/// </summary>
 		public string Name { get; set; }
 		public MethodType Type { get; set; }
-
+		/// <summary>
+		/// Only for suggestion use cases
+		/// </summary>
+		public bool AddGroupStatementToSqlQuery { get; set; }
 		public bool UseCustomGroupDtoMethod { get; set; }
 		public bool SkipRepositoryImplementation { get; set; }
 		public UseCaseQueryProviderMethodParameterTypeMap ReturnType { get; set; }

@@ -108,6 +108,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Constants
 						public const string INTERFACES = "Eshava.DomainDrivenDesign.Infrastructure.Interfaces";
 						public const string INTERFACESREPOSITORIES = "Eshava.DomainDrivenDesign.Infrastructure.Interfaces.Repositories";
 						public const string PROVIDERS = "Eshava.DomainDrivenDesign.Infrastructure.Providers";
+						public const string SETTINGS = "Eshava.DomainDrivenDesign.Infrastructure.Settings";
 					}
 				}
 

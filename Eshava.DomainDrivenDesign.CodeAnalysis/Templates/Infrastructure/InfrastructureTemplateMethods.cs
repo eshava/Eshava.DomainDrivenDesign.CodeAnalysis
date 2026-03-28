@@ -12,7 +12,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 {
 	public static class InfrastructureTemplateMethods
 	{
-		public static List<InterpolatedStringContentSyntax> CreateSqlQueryWithoutWhereCondition(
+		public static (List<InterpolatedStringContentSyntax> Query, List<InterpolatedStringContentSyntax> Columns) CreateSqlQueryWithoutWhereCondition(
 			InfrastructureModel model,
 			string domain,
 			List<QueryAnalysisItem> relatedDataModels,
@@ -108,7 +108,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			interpolatedStringParts.Add(modelItem.TableAliasConstant.ToIdentifierName().Interpolate());
 			interpolatedStringParts.AddRange(interpolatedTableParts);
 
-			return interpolatedStringParts;
+			return (interpolatedStringParts, interpolatedColumnParts);
 		}
 
 		private static bool AddSelectStatement(List<InterpolatedStringContentSyntax> interpolatedColumnParts, bool isFirstColum, HashSet<string> addedSelectParts, QueryAnalysisItem item, string dataType, string propertyName)
