@@ -9,7 +9,7 @@
 		<PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.5" />
 		<PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.5" />
 		<PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.5" />
-		<PackageReference Include="Eshava.Core.Linq" Version="1.1.7" />
+		<PackageReference Include="Eshava.Core.Linq" Version="1.1.8" />
 	</ItemGroup>
 
 	<ItemGroup>
