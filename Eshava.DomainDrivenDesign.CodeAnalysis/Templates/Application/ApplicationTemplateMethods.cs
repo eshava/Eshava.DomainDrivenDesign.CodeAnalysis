@@ -623,7 +623,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 
 			foreach (var childDomainModel in domainModelMap.ChildDomainModels)
 			{
-				if (!childDomainModelName.IsNullOrEmpty() 
+				if (!childDomainModelName.IsNullOrEmpty()
 					&& childDomainModel.DomainModelName != childDomainModelName)
 				{
 					continue;
@@ -872,13 +872,17 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 
 			var validationMainDtoName = $"Validation{useCase.MainDto}";
 
-			var config = useCase.ValidationConfigurationAsTreeStructure
+			var treestructure = useCase.ValidationConfigurationAsTreeStructure
+				? Eshava.CodeAnalysis.SyntaxConstants.True.ToArgument()
+				: Eshava.CodeAnalysis.SyntaxConstants.False.ToArgument();
+
+			var capitalLetters = useCase.ValidationConfigurationKeepCapitalLettersTogether
 				? Eshava.CodeAnalysis.SyntaxConstants.True.ToArgument()
 				: Eshava.CodeAnalysis.SyntaxConstants.False.ToArgument();
 
 			var statements = new List<StatementSyntax>
 			{
-				"GetValidationConfiguration".AsGeneric(validationMainDtoName).Call(config).Return()
+				"GetValidationConfiguration".AsGeneric(validationMainDtoName).Call(treestructure,capitalLetters).Return()
 			};
 
 			var methodDeclarationName = "GetValidationConfiguration";

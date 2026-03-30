@@ -10,6 +10,7 @@
 					"featureName": "CustomerFeature",
 					"addValidationConfigurationMethod": true,
 					"validationConfigurationAsTreeStructure": true,
+					"validationConfigurationKeepCapitalLettersTogether": true,
 					"checkForeignKeyReferencesAutomatically": true,
 					"mainDto": "CustomerCreate",
 					"dtos": [
@@ -171,6 +172,7 @@
 					"featureName": "CustomerFeature",
 					"addValidationConfigurationMethod": true,
 					"validationConfigurationAsTreeStructure": true,
+					"validationConfigurationKeepCapitalLettersTogether": true,
 					"checkForeignKeyReferencesAutomatically": true,
 					"mainDto": "CustomerCreate",
 					"dtos": [
@@ -236,6 +238,7 @@
 					"featureName": "CustomerFeature",
 					"addValidationConfigurationMethod": true,
 					"validationConfigurationAsTreeStructure": true,
+					"validationConfigurationKeepCapitalLettersTogether": true,
 					"checkForeignKeyReferencesAutomatically": true,
 					"mainDto": "OfficeCreate",
 					"dtos": [
@@ -318,6 +321,7 @@
 					"featureName": "CustomerFeature",
 					"addValidationConfigurationMethod": true,
 					"validationConfigurationAsTreeStructure": true,
+					"validationConfigurationKeepCapitalLettersTogether": true,
 					"checkForeignKeyReferencesAutomatically": true,
 					"ReadAggregateByChildId": true,
 					"mainDto": "LocationCreate",
@@ -354,6 +358,7 @@
 					"featureName": "CustomerFeature",
 					"addValidationConfigurationMethod": true,
 					"validationConfigurationAsTreeStructure": true,
+					"validationConfigurationKeepCapitalLettersTogether": true,
 					"checkForeignKeyReferencesAutomatically": true,
 					"ReadAggregateByChildId": true,
 					"mainDto": "BuildingCreate",
@@ -390,6 +395,7 @@
 					"featureName": "CustomerFeature",
 					"addValidationConfigurationMethod": true,
 					"validationConfigurationAsTreeStructure": true,
+					"validationConfigurationKeepCapitalLettersTogether": true,
 					"checkForeignKeyReferencesAutomatically": true,
 					"mainDto": "CustomerUpdate",
 					"dtos": [
@@ -621,6 +627,7 @@
 					"featureName": "CustomerFeature",
 					"addValidationConfigurationMethod": true,
 					"validationConfigurationAsTreeStructure": true,
+					"validationConfigurationKeepCapitalLettersTogether": true,
 					"checkForeignKeyReferencesAutomatically": true,
 					"mainDto": "OfficeUpdate",
 					"dtos": [
@@ -704,6 +711,7 @@
 					"featureName": "CustomerFeature",
 					"addValidationConfigurationMethod": true,
 					"validationConfigurationAsTreeStructure": true,
+					"validationConfigurationKeepCapitalLettersTogether": true,
 					"checkForeignKeyReferencesAutomatically": true,
 					"mainDto": "LocationUpdate",
 					"dtos": [
@@ -739,6 +747,7 @@
 					"featureName": "CustomerFeature",
 					"addValidationConfigurationMethod": true,
 					"validationConfigurationAsTreeStructure": true,
+					"validationConfigurationKeepCapitalLettersTogether": true,
 					"checkForeignKeyReferencesAutomatically": true,
 					"readAggregateByChildId": true,
 					"mainDto": "BuildingUpdate",
@@ -776,6 +785,7 @@
 					"featureName": "CustomerFeature",
 					"addValidationConfigurationMethod": true,
 					"validationConfigurationAsTreeStructure": true,
+					"validationConfigurationKeepCapitalLettersTogether": true,
 					"checkForeignKeyReferencesAutomatically": true,
 					"mainDto": "CustomerUpdate",
 					"dtos": [
@@ -857,6 +867,7 @@
 					"featureName": "CustomerFeature",
 					"addValidationConfigurationMethod": true,
 					"validationConfigurationAsTreeStructure": true,
+					"validationConfigurationKeepCapitalLettersTogether": true,
 					"checkForeignKeyReferencesAutomatically": true,
 					"mainDto": "OfficeUpdate",
 					"dtos": [

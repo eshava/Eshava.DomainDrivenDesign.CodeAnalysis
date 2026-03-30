@@ -163,6 +163,7 @@
 					"classificationKey": "Product",
 					"addValidationConfigurationMethod": true,
 					"validationConfigurationAsTreeStructure": true,
+					"validationConfigurationKeepCapitalLettersTogether": false,
 					"checkForeignKeyReferencesAutomatically": true,
 					"dtos": [
 						{
@@ -204,6 +205,7 @@
 					"classificationKey": "Product",
 					"addValidationConfigurationMethod": true,
 					"validationConfigurationAsTreeStructure": true,
+					"validationConfigurationKeepCapitalLettersTogether": false,
 					"checkForeignKeyReferencesAutomatically": true,
 					"dtos": [
 						{
@@ -241,6 +243,7 @@
 					"classificationKey": "Product",
 					"addValidationConfigurationMethod": true,
 					"validationConfigurationAsTreeStructure": true,
+					"validationConfigurationKeepCapitalLettersTogether": false,
 					"checkForeignKeyReferencesAutomatically": true,
 					"dtos": [
 						{
@@ -474,6 +477,7 @@
 					"featureName": "OrderFeature",
 					"addValidationConfigurationMethod": true,
 					"validationConfigurationAsTreeStructure": true,
+					"validationConfigurationKeepCapitalLettersTogether": false,
 					"checkForeignKeyReferencesAutomatically": true,
 					"mainDto": "OrderCreate",
 					"dtos": [
@@ -556,6 +560,7 @@
 					"featureName": "OrderFeature",
 					"addValidationConfigurationMethod": true,
 					"validationConfigurationAsTreeStructure": true,
+					"validationConfigurationKeepCapitalLettersTogether": false,
 					"checkForeignKeyReferencesAutomatically": true,
 					"mainDto": "OrderCreate",
 					"dtos": [
@@ -630,6 +635,7 @@
 					"featureName": "OrderFeature",
 					"addValidationConfigurationMethod": true,
 					"validationConfigurationAsTreeStructure": true,
+					"validationConfigurationKeepCapitalLettersTogether": false,
 					"checkForeignKeyReferencesAutomatically": true,
 					"mainDto": "OrderPositionCreate",
 					"dtos": [
@@ -685,6 +691,7 @@
 					"featureName": "OrderFeature",
 					"addValidationConfigurationMethod": true,
 					"validationConfigurationAsTreeStructure": true,
+					"validationConfigurationKeepCapitalLettersTogether": false,
 					"checkForeignKeyReferencesAutomatically": true,
 					"mainDto": "OrderUpdate",
 					"dtos": [
@@ -759,6 +766,7 @@
 					"featureName": "OrderFeature",
 					"addValidationConfigurationMethod": true,
 					"validationConfigurationAsTreeStructure": true,
+					"validationConfigurationKeepCapitalLettersTogether": false,
 					"checkForeignKeyReferencesAutomatically": true,
 					"dtos": [
 						{

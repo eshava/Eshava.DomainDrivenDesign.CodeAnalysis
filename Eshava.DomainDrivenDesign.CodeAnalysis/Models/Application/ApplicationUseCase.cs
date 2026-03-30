@@ -63,6 +63,12 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models.Application
 		public bool AddValidationConfigurationMethod { get; set; }
 		public bool ValidationConfigurationAsTreeStructure { get; set; }
 		/// <summary>
+		/// Specifices the transformation of propery names to json property names for acronyms
+		/// true: NASA -> nasa
+		/// false: NASE -> nASA
+		/// </summary>
+		public bool ValidationConfigurationKeepCapitalLettersTogether { get; set; }
+		/// <summary>
 		/// Only for read and search use cases
 		/// If true, generates only the dto and the infrastructure components
 		/// </summary>
