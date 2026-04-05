@@ -295,9 +295,9 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Extensions
 		public static (string FieldName, FieldType Type, FieldDeclarationSyntax Declaration) CreateModelConstantField(this string modelName)
 		{
 			var aliasName = modelName.ToVariableName();
-			if (aliasName == "user" || aliasName == "permission")
+			if (Keywords.TSQLReserved.Contains(aliasName.ToLower()))
 			{
-				aliasName += "s";
+				aliasName = $"[{aliasName}]";
 			}
 
 			var constantName = GetModelConstantName(modelName);
