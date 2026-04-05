@@ -7,11 +7,13 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models.Infrastructure
 		public InfrastructureProject()
 		{
 			AlternativeClasses = [];
+			AlternativeAbstractDatabaseModelProperties = [];
 		}
 
 		public string FullQualifiedNamespace { get; set; }
 		public string AlternativeUsing { get; set; }
 		public string AlternativeAbstractDatabaseModel { get; set; }
+		public List<DatabaseModelProperty> AlternativeAbstractDatabaseModelProperties { get; set; }
 		public List<InfrastructureProjectAlternativeClass> AlternativeClasses { get; set; }
 
 		public string ScopedSettingsClass { get; set; }
@@ -22,5 +24,5 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models.Infrastructure
 		/// Configuration property for code compilation
 		/// </summary>
 		public bool AddAssemblyCommentToFiles { get; set; }
-	}
+	}	
 }

@@ -1036,6 +1036,11 @@
 									"type": "int"
 								},
 								{
+									"name": "CreatedAtUtc",
+									"type": "DateTime",
+									"usingForType": "System"
+								},
+								{
 									"name": "Name",
 									"type": "string",
 									"referenceProperty": "CompanyName"
@@ -1094,6 +1099,11 @@
 									"name": "PhoneNumbers",
 									"type": "CommunicationPhoneNumber",
 									"isEnumerable": true
+								},
+								{
+									"name": "UserEmailAddress",
+									"type": "string",
+									"referenceProperty": "User.EmailAddress"
 								}
 							]
 						},
@@ -1251,7 +1261,7 @@
 					"useCaseName": "ReadOffice",
 					"classificationKey": "Office",
 					"featureName": "CustomerFeature",
-					
+
 					"mainDto": "BillingOfficeRead",
 					"dtos": [
 						{
@@ -1474,6 +1484,12 @@
 									"isSearchable": false
 								},
 								{
+									"name": "CreatedAtUtc",
+									"type": "DateTime",
+									"usingForType": "System",
+									"isSearchable": true
+								},
+								{
 									"name": "Name",
 									"type": "string",
 									"isSortable": true,
@@ -1589,6 +1605,12 @@
 									"isSearchable": false
 								},
 								{
+									"name": "CreatedAtUtc",
+									"type": "DateTime",
+									"usingForType": "System",
+									"isSearchable": true
+								},
+								{
 									"name": "Name",
 									"type": "string",
 									"isSortable": true,
@@ -1603,6 +1625,13 @@
 									"type": "int",
 									"isSortable": false,
 									"isSearchable": false
+								},
+								{
+									"name": "CustomerCreatedAtUtc",
+									"referenceProperty": "Customer.CreatedAtUtc",
+									"type": "DateTime",
+									"usingForType": "System",
+									"isSearchable": true
 								},
 								{
 									"name": "CustomerName",

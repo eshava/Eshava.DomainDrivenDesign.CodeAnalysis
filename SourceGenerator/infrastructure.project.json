@@ -2,6 +2,13 @@
 	"fullQualifiedNamespace": "Eshava.Example.Infrastructure",
 	"alternativeUsing": null,
 	"alternativeAbstractDatabaseModel": "AbstractExampleDatabaseModel",
+	"alternativeAbstractDatabaseModelProperties": [
+		{
+			"name": "CreatedAtUtc",
+			"type": "DateTime",
+			"usingForType": "System"
+		}
+	],
 	"scopedSettingsClass": "ExampleScopedSettings",
 	"scopedSettingsUsing": "Eshava.Example.Application.Settings",
 	"implementSoftDelete": true,
