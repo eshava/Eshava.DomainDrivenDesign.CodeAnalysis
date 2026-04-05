@@ -291,14 +291,13 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 					.Access("Data")
 					.Not()
 					.If(
-						"MessageConstants"
-						.Access("INVALIDDATAERROR")
+						EshavaMessageConstant.InvalidData.Map()
 						.Access("ToFaultyResponse".AsGeneric(Eshava.CodeAnalysis.SyntaxConstants.Bool))
 						.Call()
 						.Access(CommonNames.Extensions.ADDVALIDATIONERROR)
 						.Call(
 							foreignKey.ClassificationKey.ToLiteralString().ToArgument(),
-							"MessageConstants".Access("NOTEXISTING").ToArgument(),
+							EshavaMessageConstant.NotExisting.Map().ToArgument(),
 							foreignKeyIdVariableName.ToArgument()
 						)
 						.Return()
@@ -1581,7 +1580,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			StatementHelpers.AddAsyncMethodCallAndFaultyCheck(statements, provider, $"IsUnique{property.Name}Async", resultName, (TypeSyntax)null, arguments.ToArray());
 
 			var uniqueFaultyResult = SyntaxConstants.ResponseDataBool.CreateFaultyResponse(
-				EshavaMessageConstant.InvalidDataError.Map(),
+				EshavaMessageConstant.InvalidData.Map(),
 				(property.Name, "Unique", dtoVariableName.Access(dtoProperty.Name))
 			);
 

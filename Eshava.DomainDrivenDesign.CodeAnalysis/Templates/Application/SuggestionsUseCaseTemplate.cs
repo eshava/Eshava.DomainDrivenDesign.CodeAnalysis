@@ -123,7 +123,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 				.Call()
 				.If(
 					"ResponseData".AsGeneric(returnDataType).CreateFaultyResponse(
-						EshavaMessageConstant.InvalidDataError.Map(),
+						EshavaMessageConstant.InvalidData.Map(),
 						("SearchTerm", "Required", null)
 					)
 					.Return()

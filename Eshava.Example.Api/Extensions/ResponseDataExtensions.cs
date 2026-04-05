@@ -21,7 +21,7 @@ namespace Eshava.Example.Api.Extensions
 		{
 			if (responseData.IsFaulty)
 			{
-				if (responseData.StatusCode == (int)HttpStatusCode.NotFound || responseData.Message == MessageConstants.NOTEXISTINGERROR)
+				if (responseData.StatusCode == (int)HttpStatusCode.NotFound || responseData.Message == MessageConstants.NOTEXISTING)
 				{
 					return Results.NotFound();
 				}

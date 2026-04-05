@@ -7,17 +7,16 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Enums
 	{
 		CreateDataError = 1,
 		DeleteDataError = 2,
-		ImmutableError = 3,
-		InvalidDataError = 4,
-		NoChangesError = 5,
-		NotExistingError = 6,
+		Immutable = 3,
+		InvalidData = 4,
+		NoChanges = 5,
+		NotExisting = 6,
 		UnexpectedError = 7,
 		ReadDataError = 8,
 		UpdateDataError = 9,
 		AlreadyExisting = 10,
 		AutoPatchBlocked = 11,
-		NotExisting = 12,
-		StillAssigned = 13
+		StillAssigned = 12
 	}
 
 	public static class EshavaMessageConstantExtensions
@@ -32,17 +31,17 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Enums
 				case EshavaMessageConstant.DeleteDataError:
 					return Constants.CommonNames.MESSAGECONSTANTS.Access("DELETEDATAERROR");
 
-				case EshavaMessageConstant.ImmutableError:
-					return Constants.CommonNames.MESSAGECONSTANTS.Access("IMMUTABLEERROR");
+				case EshavaMessageConstant.Immutable:
+					return Constants.CommonNames.MESSAGECONSTANTS.Access("IMMUTABLE");
 
-				case EshavaMessageConstant.InvalidDataError:
-					return Constants.CommonNames.MESSAGECONSTANTS.Access("INVALIDDATAERROR");
+				case EshavaMessageConstant.InvalidData:
+					return Constants.CommonNames.MESSAGECONSTANTS.Access("INVALIDDATA");
 
-				case EshavaMessageConstant.NoChangesError:
-					return Constants.CommonNames.MESSAGECONSTANTS.Access("NOCHANGESERROR");
+				case EshavaMessageConstant.NoChanges:
+					return Constants.CommonNames.MESSAGECONSTANTS.Access("NOCHANGES");
 
-				case EshavaMessageConstant.NotExistingError:
-					return Constants.CommonNames.MESSAGECONSTANTS.Access("NOTEXISTINGERROR");
+				case EshavaMessageConstant.NotExisting:
+					return Constants.CommonNames.MESSAGECONSTANTS.Access("NOTEXISTING");
 
 				case EshavaMessageConstant.UpdateDataError:
 					return Constants.CommonNames.MESSAGECONSTANTS.Access("UPDATEDATAERROR");
@@ -52,9 +51,6 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Enums
 
 				case EshavaMessageConstant.AutoPatchBlocked:
 					return Constants.CommonNames.MESSAGECONSTANTS.Access("AUTOPATCHBLOCKED");
-
-				case EshavaMessageConstant.NotExisting:
-					return Constants.CommonNames.MESSAGECONSTANTS.Access("NOTEXISTING");
 
 				case EshavaMessageConstant.StillAssigned:
 					return Constants.CommonNames.MESSAGECONSTANTS.Access("STILLASSIGNED");

@@ -519,7 +519,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			StatementHelpers.AddAsyncMethodCallAndFaultyCheck(ifStatements, provider, $"IsUnique{property.Name}Async", resultName, (TypeSyntax)null, arguments.ToArray());
 
 			var uniqueFaultyResult = SyntaxConstants.ResponseDataBool.CreateFaultyResponse(
-				EshavaMessageConstant.InvalidDataError.Map(),
+				EshavaMessageConstant.InvalidData.Map(),
 				(property.Name, "Unique", propertyPatchValue.ToIdentifierName())
 			);
 
