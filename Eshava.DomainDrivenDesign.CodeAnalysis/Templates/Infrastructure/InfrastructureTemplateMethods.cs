@@ -165,14 +165,18 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 
 				var snippetOperation = snippetExpression.Operation.Map();
 
+				var parameterName = snippetExpression.UseDefault
+					? dataModelProperty.Name
+					: dataModelProperty.Name + DateTime.UtcNow.Ticks.ToString();
+
 				interpolatedStringParts.Add(tableAliasConstant.Interpolate());
 				interpolatedStringParts.Add(".".Interpolate());
 				interpolatedStringParts.Add(Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(dataModelTypeForJoin.Access(dataModelProperty.Name).ToArgument()).Interpolate());
-				interpolatedStringParts.Add($@" {snippetOperation} @{dataModelProperty.Name}".Interpolate());
+				interpolatedStringParts.Add($@" {snippetOperation} @{parameterName}".Interpolate());
 
-				if (queryParameters.All(qp => qp.Name != dataModelProperty.Name))
+				if (queryParameters.All(qp => qp.Name != parameterName))
 				{
-					queryParameters.Add((snippetExpression.Expression, dataModelProperty.Name));
+					queryParameters.Add((snippetExpression.Expression, parameterName));
 				}
 			}
 		}
@@ -214,7 +218,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			return (true, false, null, OperationType.Equal);
 		}
 
-		public static (ExpressionSyntax Expression, OperationType Operation) GetCodeSnippet(
+		public static (ExpressionSyntax Expression, OperationType Operation, bool UseDefault) GetCodeSnippet(
 			InfrastructureModel model,
 			InfrastructureModelProperty property,
 			MethodMetaData metaData,
@@ -225,7 +229,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			var propertySnippet = GetCodeSnippet(model.Name, property.Name, metaData.CodeSnippets, isFilter, isMapping);
 			if (propertySnippet is null)
 			{
-				return (null, OperationType.Equal);
+				return (null, OperationType.Equal, true);
 			}
 
 			if (propertySnippet.Exceptions.Count > 0)
@@ -238,21 +242,21 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 
 				if (snippetException?.SkipUsage ?? false)
 				{
-					return (null, OperationType.Equal);
+					return (null, OperationType.Equal, true);
 				}
 
 				if (snippetException?.UseInstead ?? false && snippetException?.Expression is not null)
 				{
-					return (snippetException.Expression, snippetException.Operation);
+					return (snippetException.Expression, snippetException.Operation, false);
 				}
 
 				if (snippetException is not null)
 				{
-					return (propertySnippet.Expression, snippetException.Operation);
+					return (propertySnippet.Expression, snippetException.Operation, false);
 				}
 			}
 
-			return (propertySnippet.Expression, propertySnippet.Operation);
+			return (propertySnippet.Expression, propertySnippet.Operation, true);
 		}
 
 		public static void AddStatusWhereCondition(
@@ -271,7 +275,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 
 			var variableName = useDefault
 				? "Status"
-				: $"Status{DateTime.UtcNow.Ticks}";
+				: "Status" + DateTime.UtcNow.Ticks.ToString();
 
 			var operationType = useDefault
 				? "="

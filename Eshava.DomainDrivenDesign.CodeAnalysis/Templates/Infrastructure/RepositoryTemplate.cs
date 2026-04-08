@@ -1582,27 +1582,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			}
 
 			var appliedSnippets = new List<InfrastructureModelPropertyCodeSnippet>();
-			foreach (var codeSnippet in metaData.CodeSnippets)
-			{
-				foreach (var dataModelProperty in dataModel.Properties)
-				{
-					var propertySnippet = InfrastructureTemplateMethods.GetCodeSnippet(dataModel.Name, dataModelProperty.Name, metaData.CodeSnippets, true, false);
-					if (propertySnippet is null)
-					{
-						continue;
-					}
-
-					interpolatedStringParts.Add($@"
-					AND
-						".Interpolate());
-					interpolatedStringParts.Add(modelItem.TableAliasConstant.ToIdentifierName().Interpolate());
-					interpolatedStringParts.Add(".".Interpolate());
-					interpolatedStringParts.Add(Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(dataModel.Name.Access(dataModelProperty.Name).ToArgument()).Interpolate());
-					interpolatedStringParts.Add($@" = @{dataModelProperty.Name}".Interpolate());
-
-					appliedSnippets.Add(propertySnippet);
-				}
-			}
+			InfrastructureTemplateMethods.AddCodeSnippetReadConditions(interpolatedStringParts, queryParameters, dataModel, null, modelItem.TableAliasConstant.ToIdentifierName(), metaData);
 
 			interpolatedStringParts.Add($@"
 					".Interpolate());

@@ -82,7 +82,34 @@ namespace Eshava.Example.SourceGenerator.Generators
 						IsMapping = true,
 						IsFilter = true,
 						PropertyName = "UserId",
-						Expression = "ScopedSettings".ToIdentifierName().Access("UserId")
+						Expression = "ScopedSettings".ToIdentifierName().Access("UserId"),
+						Exceptions = [
+							new InfrastructureExceptionCodeSnippet
+							{
+								DataModelName = "CustomerData",
+								MethodName = "ReadAsync",
+								ClassName = "CustomerDDDRepository",
+								SkipUsage = true
+							},
+							new InfrastructureExceptionCodeSnippet
+							{
+								DataModelName = "CustomerData",
+								MethodName = "ReadByNameAsync",
+								ClassName = "CustomerDDDRepository",
+								UseInstead = true,
+								Operation = DomainDrivenDesign.CodeAnalysis.Enums.OperationType.NotEqual,
+								Expression = "0".ToLiteralInt()
+							},
+							new InfrastructureExceptionCodeSnippet
+							{
+								DataModelName = "OfficeData",
+								MethodName = "ReadAsync",
+								ClassName = "CustomerDDDRepository",
+								UseInstead = true,
+								Operation = DomainDrivenDesign.CodeAnalysis.Enums.OperationType.NotEqual,
+								Expression = "0".ToLiteralInt()
+							}
+						]
 					},
 					new InfrastructureModelPropertyCodeSnippet
 					{
