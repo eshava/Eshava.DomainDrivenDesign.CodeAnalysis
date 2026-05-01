@@ -11,6 +11,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models
 {
 	public static class UseCaseAnalysis
 	{
+		private static HashSet<ApplicationUseCaseType> _domainModelUseCaseTypes = [ApplicationUseCaseType.Create, ApplicationUseCaseType.Update, ApplicationUseCaseType.Delete];
+
 		public static UseCasesMap Analyse(
 			ApplicationProject project,
 			ReferenceMap referenceMap,
@@ -575,26 +577,27 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models
 			useCasesMap.AddQueryProviderMethod(method);
 		}
 
-		private static HashSet<ApplicationUseCaseType> _domainModelUseCaseTypes = [ApplicationUseCaseType.Create, ApplicationUseCaseType.Update, ApplicationUseCaseType.Delete];
-
-		private static Dictionary<string, Dictionary<string, string>> DetermineFeatureNameForClassificationKeys(ApplicationUseCases applicationUseCases, ReferenceMap referenceMap)
+		private static Dictionary<string, Dictionary<string, HashSet<string>>> DetermineFeatureNameForClassificationKeys(ApplicationUseCases applicationUseCases, ReferenceMap referenceMap)
 		{
-			var featureNames = new Dictionary<string, Dictionary<string, string>>();
+			var featureNames = new Dictionary<string, Dictionary<string, HashSet<string>>>();
 
 			foreach (var @namespace in applicationUseCases.Namespaces)
 			{
 				if (!featureNames.TryGetValue(@namespace.Domain, out var domainFeatureNames))
 				{
-					domainFeatureNames = new Dictionary<string, string>();
+					domainFeatureNames = [];
 					featureNames.Add(@namespace.Domain, domainFeatureNames);
 				}
 
-				foreach (var useCase in @namespace.UseCases.Where(uc => !uc.FeatureName.IsNullOrEmpty()))
+				foreach (var useCase in @namespace.UseCases)
 				{
+					var featureName = useCase.FeatureName.IsNullOrEmpty() ? null : useCase.FeatureName;
 					if (!domainFeatureNames.ContainsKey(useCase.ClassificationKey))
 					{
-						domainFeatureNames.Add(useCase.ClassificationKey, useCase.FeatureName);
+						domainFeatureNames.Add(useCase.ClassificationKey, []);
 					}
+
+					domainFeatureNames[useCase.ClassificationKey].Add(featureName);
 
 					if (!_domainModelUseCaseTypes.Contains(useCase.Type))
 					{
@@ -610,8 +613,10 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models
 
 						if (!domainFeatureNames.ContainsKey(domainModel.ClassificationKey))
 						{
-							domainFeatureNames.Add(domainModel.ClassificationKey, useCase.FeatureName);
+							domainFeatureNames.Add(domainModel.ClassificationKey, []);
 						}
+
+						domainFeatureNames[useCase.ClassificationKey].Add(featureName);
 
 						continue;
 					}
@@ -625,8 +630,10 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models
 
 						if (!domainFeatureNames.ContainsKey(domainModel.ClassificationKey))
 						{
-							domainFeatureNames.Add(domainModel.ClassificationKey, useCase.FeatureName);
+							domainFeatureNames.Add(domainModel.ClassificationKey, []);
 						}
+
+						domainFeatureNames[useCase.ClassificationKey].Add(featureName);
 					}
 				}
 			}
@@ -649,7 +656,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models
 		/// <summary>
 		/// Domain -> ClassificationKey
 		/// </summary>
-		private Dictionary<string, Dictionary<string, string>> _featureNames = [];
+		private Dictionary<string, Dictionary<string, HashSet<string>>> _featureNames = [];
 
 		public void AddQueryProviderMethod(UseCaseQueryProviderMethodMap method)
 		{
@@ -689,7 +696,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models
 			_useCases[useCase.Domain][useCase.UseCase.NamespaceClassificationKey][useCase.UseCase.UseCaseName].Add(useCase);
 		}
 
-		public void AddFeatureNames(Dictionary<string, Dictionary<string, string>> featureNames)
+		public void AddFeatureNames(Dictionary<string, Dictionary<string, HashSet<string>>> featureNames)
 		{
 			_featureNames = featureNames;
 		}
@@ -726,7 +733,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models
 			{
 				Domain = domain,
 				ClassificationKey = classificationKey,
-				FeatureName = _queryProviderMethods[domain][classificationKey].Values.FirstOrDefault()?.FeatureName,
+				FeatureName = GetFeatureName(domain, classificationKey),
 				Methods = _queryProviderMethods[domain][classificationKey].Values
 			};
 
@@ -770,7 +777,12 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models
 				return null;
 			}
 
-			return featureName;
+			if (featureName.Count == 0)
+			{
+				return null;
+			}
+
+			return featureName.Count > 1 ? null : featureName.First();
 		}
 
 		public IEnumerable<QueryProviderMap> GetUseCaseQueryProviderMethodMaps()
@@ -781,7 +793,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models
 					{
 						Domain = domainCollection.Key,
 						ClassificationKey = modelCollection.Key,
-						FeatureName = modelCollection.Value.Select(xx => xx.Value).FirstOrDefault()?.FeatureName,
+						FeatureName = GetFeatureName(domainCollection.Key, modelCollection.Key),
 						Methods = modelCollection.Value.Select(xx => xx.Value).ToList()
 					})
 				)

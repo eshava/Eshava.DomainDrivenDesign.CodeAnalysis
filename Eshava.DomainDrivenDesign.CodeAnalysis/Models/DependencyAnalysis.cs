@@ -386,14 +386,14 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models
 			return repositories;
 		}
 
-		public (string Using, string Name, IdentifierNameSyntax Type) GetProvider(string applicationProjectNamespace, string defaultFeatureName, GetFeatureName getFeatureName)
+		public (string Using, string Name, IdentifierNameSyntax Type) GetProvider(string applicationProjectNamespace, GetFeatureName getFeatureName)
 		{
 			if (IsChildDomainModel)
 			{
-				return AggregateDomainModel.GetProvider(applicationProjectNamespace, defaultFeatureName, getFeatureName);
+				return AggregateDomainModel.GetProvider(applicationProjectNamespace, getFeatureName);
 			}
 
-			var featureName = getFeatureName(Domain, ClassificationKey) ?? defaultFeatureName;
+			var featureName = getFeatureName(Domain, ClassificationKey);
 
 			var providerUsing = ClassificationKey.GetCommandsNamespace(Domain, featureName, applicationProjectNamespace);
 			var providerType = DomainModelName.ToProviderType();
@@ -402,9 +402,9 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models
 			return (providerUsing, providerName, providerType);
 		}
 
-		public (string Using, string Name, IdentifierNameSyntax Type) GetQueryProvider(string applicationProjectNamespace, string defaultFeatureName, GetFeatureName getFeatureName)
+		public (string Using, string Name, IdentifierNameSyntax Type) GetQueryProvider(string applicationProjectNamespace, GetFeatureName getFeatureName)
 		{
-			var featureName = getFeatureName(Domain, ClassificationKey) ?? defaultFeatureName;
+			var featureName = getFeatureName(Domain, ClassificationKey);
 
 			var queryProviderUsing = ClassificationKey.GetQueriesNamespace(Domain, featureName, applicationProjectNamespace);
 			var queryProviderType = ClassificationKey.ToQueryProviderType();
@@ -413,12 +413,12 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models
 			return (queryProviderUsing, queryProviderName, queryProviderType);
 		}
 
-		public IEnumerable<(string Using, string Name, IdentifierNameSyntax Type)> GetQueryProviders(ImmutableHashSet<string> relevantDomainModelNames, string applicationProjectNamespace, string defaultFeatureName, GetFeatureName getFeatureName)
+		public IEnumerable<(string Using, string Name, IdentifierNameSyntax Type)> GetQueryProviders(ImmutableHashSet<string> relevantDomainModelNames, string applicationProjectNamespace, GetFeatureName getFeatureName)
 		{
 			var queryProviders = new List<(string Using, string Name, IdentifierNameSyntax Type)>();
 			if (DomainModel.HasValidationRules)
 			{
-				queryProviders.Add(GetQueryProvider(applicationProjectNamespace, defaultFeatureName, getFeatureName));
+				queryProviders.Add(GetQueryProvider(applicationProjectNamespace, getFeatureName));
 			}
 
 			if (IsAggregate)
@@ -430,7 +430,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models
 						continue;
 					}
 
-					queryProviders.AddRange(childDomainModel.GetQueryProviders(relevantDomainModelNames, applicationProjectNamespace, defaultFeatureName, getFeatureName));
+					queryProviders.AddRange(childDomainModel.GetQueryProviders(relevantDomainModelNames, applicationProjectNamespace, getFeatureName));
 				}
 			}
 

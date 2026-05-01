@@ -26,11 +26,11 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 
 			var className = request.UseCase.ClassName;
 			var relevantDomainModelNames = request.UseCase.Dtos.Select(dto => dto.ReferenceModelName).Distinct().ToImmutableHashSet();
-			var provider = domainModelMap.GetProvider(request.ApplicationProjectNamespace, request.UseCase.FeatureName, request.UseCasesMap.GetFeatureName);
-			var queryProviders = domainModelMap.GetQueryProviders(relevantDomainModelNames, request.ApplicationProjectNamespace, request.UseCase.FeatureName, request.UseCasesMap.GetFeatureName).ToList();
+			var provider = domainModelMap.GetProvider(request.ApplicationProjectNamespace, request.UseCasesMap.GetFeatureName);
+			var queryProviders = domainModelMap.GetQueryProviders(relevantDomainModelNames, request.ApplicationProjectNamespace, request.UseCasesMap.GetFeatureName).ToList();
 			if (request.UseCase.ReadAggregateByChildId && domainModelMap.IsChildDomainModel)
 			{
-				queryProviders.Add(domainModelMap.AggregateDomainModel.GetQueryProvider(request.ApplicationProjectNamespace, request.UseCase.FeatureName, request.UseCasesMap.GetFeatureName));
+				queryProviders.Add(domainModelMap.AggregateDomainModel.GetQueryProvider(request.ApplicationProjectNamespace, request.UseCasesMap.GetFeatureName));
 			}
 
 			var domainModelTypeName = domainModelMap.GetDomainModelTypeName(request.DomainProjectNamespace);

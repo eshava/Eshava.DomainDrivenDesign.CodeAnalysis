@@ -28,11 +28,11 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 
 			var className = request.UseCase.ClassName;
 			var relevantDomainModelNames = request.UseCase.Dtos.Select(dto => dto.ReferenceModelName).Distinct().ToImmutableHashSet();
-			var provider = domainModelMap.GetProvider(request.ApplicationProjectNamespace, request.UseCase.FeatureName, request.UseCasesMap.GetFeatureName);
-			var queryProviders = domainModelMap.GetQueryProviders(relevantDomainModelNames, request.ApplicationProjectNamespace, request.UseCase.FeatureName, request.UseCasesMap.GetFeatureName).ToList();
+			var provider = domainModelMap.GetProvider(request.ApplicationProjectNamespace, request.UseCasesMap.GetFeatureName);
+			var queryProviders = domainModelMap.GetQueryProviders(relevantDomainModelNames, request.ApplicationProjectNamespace, request.UseCasesMap.GetFeatureName).ToList();
 			if (request.UseCase.ReadAggregateByChildId && domainModelMap.IsChildDomainModel)
 			{
-				queryProviders.Add(domainModelMap.AggregateDomainModel.GetQueryProvider(request.ApplicationProjectNamespace, request.UseCase.FeatureName, request.UseCasesMap.GetFeatureName));
+				queryProviders.Add(domainModelMap.AggregateDomainModel.GetQueryProvider(request.ApplicationProjectNamespace, request.UseCasesMap.GetFeatureName));
 			}
 
 			var domainModelTypeName = domainModelMap.GetDomainModelTypeName(request.DomainProjectNamespace);
@@ -270,8 +270,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 
 			var agregatePatchStatements = new List<StatementSyntax>();
 
-			if (hasValidationRules 
-				&& !domainModelMap.IsChildDomainModel 
+			if (hasValidationRules
+				&& !domainModelMap.IsChildDomainModel
 				&& !dtoMap.Dto.HasUseCaseSpecificPatchMethod
 			)
 			{
@@ -312,8 +312,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 					}
 				}
 
-				if (domainModelMap.DomainModel.AddGeneralPatchMethod 
-					|| domainModelMap.DomainModel.HasGeneralPatchMethod 
+				if (domainModelMap.DomainModel.AddGeneralPatchMethod
+					|| domainModelMap.DomainModel.HasGeneralPatchMethod
 					|| dtoMap.Dto.HasUseCaseSpecificPatchMethod
 				)
 				{
@@ -344,7 +344,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 				{
 					StatementHelpers.AddLocalAsyncMethodCallAndFaultyCheck(agregatePatchStatements, $"Update{domainModelMap.DomainModelName}Async", "entityPatchResult", returnDataType, true, providerResult, "patchesResult".Access("Data"));
 				}
-				else if (domainModelMap.DomainModel.AddGeneralPatchMethod 
+				else if (domainModelMap.DomainModel.AddGeneralPatchMethod
 					|| domainModelMap.DomainModel.HasGeneralPatchMethod
 				)
 				{
@@ -401,8 +401,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 
 			if (domainModelMap.IsChildDomainModel)
 			{
-				if (domainModelMap.DomainModel.AddGeneralPatchMethod 
-					|| domainModelMap.DomainModel.HasGeneralPatchMethod 
+				if (domainModelMap.DomainModel.AddGeneralPatchMethod
+					|| domainModelMap.DomainModel.HasGeneralPatchMethod
 					|| dtoMap.Dto.HasUseCaseSpecificPatchMethod
 				)
 				{
@@ -593,8 +593,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 
 				if (topLevelCall)
 				{
-					if (domainModelMap.DomainModel.AddGeneralPatchMethod 
-						|| domainModelMap.DomainModel.HasGeneralPatchMethod 
+					if (domainModelMap.DomainModel.AddGeneralPatchMethod
+						|| domainModelMap.DomainModel.HasGeneralPatchMethod
 						|| dtoMap.Dto.HasUseCaseSpecificPatchMethod
 					)
 					{
@@ -622,8 +622,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 						);
 					}
 				}
-				else if (!domainModelMap.IsAggregate 
-					&& (domainModelMap.DomainModel.AddGeneralPatchMethod || domainModelMap.DomainModel.HasGeneralPatchMethod) 
+				else if (!domainModelMap.IsAggregate
+					&& (domainModelMap.DomainModel.AddGeneralPatchMethod || domainModelMap.DomainModel.HasGeneralPatchMethod)
 					&& !dtoMap.Dto.HasUseCaseSpecificPatchMethod
 				)
 				{
@@ -746,8 +746,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 					methodDeclarations.AddRange(ApplicationTemplateMethods.CreateCreateChildsMethods(request, domainModelMap, childDomainModel.DomainModelName, foreignKeyReferenceContainer, domainModelWithMappings, false, false));
 				}
 
-				if (childDomainModel.DomainModel.AddGeneralPatchMethod 
-					|| childDomainModel.DomainModel.HasGeneralPatchMethod 
+				if (childDomainModel.DomainModel.AddGeneralPatchMethod
+					|| childDomainModel.DomainModel.HasGeneralPatchMethod
 					|| childReferenceProperty.Dto.Dto.HasUseCaseSpecificPatchMethod
 				)
 				{

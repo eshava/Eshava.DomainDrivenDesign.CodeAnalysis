@@ -7,6 +7,7 @@ using System.Text;
 using Eshava.CodeAnalysis.Extensions;
 using Eshava.DomainDrivenDesign.CodeAnalysis.Constants;
 using Eshava.DomainDrivenDesign.CodeAnalysis.Enums;
+using Eshava.DomainDrivenDesign.CodeAnalysis.Models;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 

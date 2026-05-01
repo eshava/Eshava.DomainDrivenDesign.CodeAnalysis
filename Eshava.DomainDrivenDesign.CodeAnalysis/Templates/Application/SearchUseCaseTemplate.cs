@@ -18,6 +18,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			var className = request.UseCase.ClassName;
 			var queryProviderType = request.UseCase.NamespaceClassificationKey.ToQueryProviderType();
 			var queryProviderName = request.UseCase.NamespaceClassificationKey.ToQueryProviderName();
+			var queryProviderUsing = request.UseCase.NamespaceClassificationKey.GetQueriesNamespace(request.Domain, request.UseCasesMap.GetFeatureName(request.Domain, request.UseCase.NamespaceClassificationKey), request.ApplicationProjectNamespace);
 			var alternativeClass = request.AlternativeClasses.FirstOrDefault(ac => ac.Type == ApplicationUseCaseType.Search);
 
 			var baseType = alternativeClass is null
@@ -30,6 +31,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			unitInformation.AddContructorModifier(SyntaxKind.PublicKeyword);
 			unitInformation.AddBaseType(baseType, useCaseInterface);
 			unitInformation.AddUsing(alternativeClass?.Using);
+			unitInformation.AddUsing(queryProviderUsing);
 
 			if ((request.UseCase.Attributes?.Count ?? 0) > 0)
 			{
