@@ -86,8 +86,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 
 				dependencyInjections.Add(new DependencyInjection
 				{
-					Class = routesClassName,
-					ClassUsing = apiNamespace
+					Class = $"{apiNamespace}.{routesClassName}",
+					ClassUsing = null
 				});
 			}
 		}
