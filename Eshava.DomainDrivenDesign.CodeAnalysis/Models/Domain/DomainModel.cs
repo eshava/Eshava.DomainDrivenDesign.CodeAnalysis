@@ -44,7 +44,12 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models.Domain
 		/// Use case generators behave as if there were a general patch method.
 		/// </summary>
 		public bool HasGeneralPatchMethod { get; set; }
-
+		/// <summary>
+		/// Only for aggregate models
+		/// If set to true, the deactivate method will not be generated in the aggregate model, 
+		/// instead the deactivate method of the base model will be used.
+		/// </summary>
+		public bool PreventOverrideDeactivateMethod { get; set; }
 
 		public bool AddInfrastructureProviderServiceByPassMethod { get; set; }
 		public bool CustomCreatedOrChangedChildMethod { get; set; }

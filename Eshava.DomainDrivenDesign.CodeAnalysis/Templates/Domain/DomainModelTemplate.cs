@@ -102,7 +102,9 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Domain
 			// aggregate root messages
 			if (domainModelMap.IsAggregate)
 			{
-				var deactivateMethodDeclaration = CreateDeactivateMethod(domainModelMap.ChildDomainModels);
+				var deactivateMethodDeclaration = domainModelMap.DomainModel.PreventOverrideDeactivateMethod
+					? (null, null)
+					: CreateDeactivateMethod(domainModelMap);
 				if (deactivateMethodDeclaration.Method is not null)
 				{
 					unitInformation.AddMethod(deactivateMethodDeclaration);
@@ -134,6 +136,10 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Domain
 			if (domainModelMap.IsChildDomainModel)
 			{
 				unitInformation.AddMethod(CreateSetActionCallbackMethod(domainModelMap));
+				if (!domainModelMap.DomainModel.PreventOverrideDeactivateMethod && !domainModelMap.IsAggregate)
+				{
+					unitInformation.AddMethod(CreateDeactivateForChildModelMethod());
+				}
 			}
 
 			return unitInformation.CreateCodeString();
@@ -696,16 +702,16 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Domain
 			return (methodDeclarationName, methodDeclaration);
 		}
 
-		private static (string Name, MemberDeclarationSyntax Method) CreateDeactivateMethod(IEnumerable<ReferenceDomainModelMap> childDomainModels)
+		private static (string Name, MemberDeclarationSyntax Method) CreateDeactivateMethod(ReferenceDomainModelMap domainModel)
 		{
-			if (!(childDomainModels?.Any() ?? false))
+			if (!(domainModel.ChildDomainModels?.Any() ?? false))
 			{
 				return (null, null);
 			}
 
 			var statements = new List<StatementSyntax>();
 
-			foreach (var childDomainModel in childDomainModels)
+			foreach (var childDomainModel in domainModel.ChildDomainModels)
 			{
 				var fieldName = childDomainModel.ChildEnumerableName.ToFieldName().ToPlural();
 				StatementHelpers.AddLocalMethodCallAndFaultyCheck(
@@ -718,11 +724,18 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Domain
 				);
 			}
 
-			statements.Add(
-				Eshava.CodeAnalysis.SyntaxConstants.Base
-				.Call("Deactivate".ToIdentifierName(), false)
-				.Return()
-			);
+			if (domainModel.IsChildDomainModel)
+			{
+				statements.AddRange(GetDeactivateStatementsForChildDomainModel());
+			}
+			else
+			{
+				statements.Add(
+					Eshava.CodeAnalysis.SyntaxConstants.Base
+					.Call("Deactivate".ToIdentifierName(), false)
+					.Return()
+				);
+			}
 
 			var methodName = "Deactivate";
 
@@ -732,6 +745,50 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Domain
 				SyntaxKind.PublicKeyword,
 				SyntaxKind.OverrideKeyword
 			));
+		}
+
+		private static (string Name, MemberDeclarationSyntax Method) CreateDeactivateForChildModelMethod()
+		{
+			var statements = GetDeactivateStatementsForChildDomainModel();
+
+			var methodName = "Deactivate";
+			return (methodName, methodName.ToMethod(
+				Constants.SyntaxConstants.ResponseDataBool,
+				statements,
+				SyntaxKind.PublicKeyword,
+				SyntaxKind.OverrideKeyword
+			));
+		}
+
+		private static List<StatementSyntax> GetDeactivateStatementsForChildDomainModel()
+		{
+			var statements = new List<StatementSyntax>
+			{
+				"result"
+					.ToVariableStatement(
+						Eshava.CodeAnalysis.SyntaxConstants.Base
+							.Call("Deactivate".ToIdentifierName(), false)
+					),
+				"result"
+					.ToIdentifierName()
+					.Access("IsFaulty")
+					.Or(
+						DomainNames.CALLBACKFIELD
+							.ToIdentifierName()
+							.IsNull()
+					)
+					.If(
+						"result"
+							.ToIdentifierName()
+							.Return()
+					),
+				DomainNames.CALLBACKFIELD
+					.ToIdentifierName()
+					.Call(Eshava.CodeAnalysis.SyntaxConstants.This.ToArgument())
+					.Return()
+			};
+
+			return statements;
 		}
 
 		private static ChildInitializerContainer CollectChildsForInitialization(ReferenceDomainModelMap domainModelMap)
