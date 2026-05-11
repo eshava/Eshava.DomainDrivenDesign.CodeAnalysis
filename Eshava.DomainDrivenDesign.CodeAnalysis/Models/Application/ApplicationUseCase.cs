@@ -171,7 +171,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models.Application
 											{
 												Name = ap.Name,
 												Type = ap.Type,
-												Value = ap.Value
+												Value = ap.Value,
+												IsNamedAttributeArgument = ap.IsNamedAttributeArgument
 											})
 											.ToList()
 									})
@@ -190,7 +191,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models.Application
 							{
 								Name = ap.Name,
 								Type = ap.Type,
-								Value = ap.Value
+								Value = ap.Value,
+								IsNamedAttributeArgument = ap.IsNamedAttributeArgument
 							})
 							.ToList()
 				})

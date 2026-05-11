@@ -3,6 +3,7 @@ using System.Linq;
 using Eshava.CodeAnalysis.Extensions;
 using Eshava.DomainDrivenDesign.CodeAnalysis.Extensions;
 using Eshava.DomainDrivenDesign.CodeAnalysis.Models;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates
@@ -57,7 +58,9 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates
 						{
 							if (!parameter.Name.IsNullOrEmpty())
 							{
-								argument = argument.WithNameColon(parameter.Name.ToColon());
+                                argument = parameter.IsNamedAttributeArgument
+									? argument.WithNameEquals(parameter.Name.ToNameEquals())
+									: argument.WithNameColon(parameter.Name.ToColon());
 							}
 
 							parameterList.Add(argument);
