@@ -9,21 +9,24 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 {
 	public static class RepositoryInterfaceTemplate
 	{
-		public static string GetInterface(InfrastructureModel model, ReferenceDomainModelMap domainModelMap, string domain, string fullQualifiedDomainNamespace, InfrastructureProject project)
+		public static string GetInterface(
+			InfrastructureModel model,
+			ReferenceDomainModelMap domainModelMap,
+			InfrastructureEnvironment environment
+		)
 		{
-			var @namespace = $"{fullQualifiedDomainNamespace}.{model.ClassificationKey.ToPlural()}";
+			var @namespace = $"{environment.InfrastructureNamespaceWithDomain}.{model.ClassificationKey.ToPlural()}";
 			var interfaceName = $"I{domainModelMap.DomainModelName}Repository";
 			string baseInterface;
 
-			var unitInformation = new UnitInformation(interfaceName, @namespace, isInterface: true, addAssemblyComment: project.AddAssemblyCommentToFiles);
-
+			var unitInformation = new UnitInformation(interfaceName, @namespace, isInterface: true, addAssemblyComment: environment.Project.AddAssemblyCommentToFiles);
 			unitInformation.AddClassModifier(SyntaxKind.InternalKeyword, SyntaxKind.PartialKeyword);
 
 			unitInformation.AddUsing(CommonNames.Namespaces.Eshava.DomainDrivenDesign.Infrastructure.INTERFACESREPOSITORIES);
 
 			if (domainModelMap.IsChildDomainModel)
 			{
-				unitInformation.AddUsing($"{project.FullQualifiedNamespace}.{domain}.{domainModelMap.AggregateDomainModel.ClassificationKey.ToPlural()}");
+				unitInformation.AddUsing($"{environment.InfrastructureNamespaceWithDomain}.{domainModelMap.AggregateDomainModel.ClassificationKey.ToPlural()}");
 				baseInterface = InfrastructureNames.INTERFACECHILDDOMAINMODELREPOSITORY;
 			}
 			else
@@ -31,7 +34,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				baseInterface = InfrastructureNames.INTERFACEDOMAINMODELREPOSITORY;
 			}
 
-			var fullDomainModelName = $"Domain.{domain}.{domainModelMap.DomainModel.NamespaceDirectory}.{domainModelMap.DomainModelName}";
+			var fullDomainModelName = environment.GetFullDomainModelName(domainModelMap);
 			var baseType = domainModelMap.IsChildDomainModel
 				? baseInterface.AsGeneric(fullDomainModelName, $"{domainModelMap.AggregateDomainModel.ClassificationKey.ToPlural()}.{domainModelMap.AggregateDomainModel.DomainModelName}CreationBag", model.IdentifierType).ToSimpleBaseType()
 				: baseInterface.AsGeneric(fullDomainModelName, model.IdentifierType).ToSimpleBaseType();

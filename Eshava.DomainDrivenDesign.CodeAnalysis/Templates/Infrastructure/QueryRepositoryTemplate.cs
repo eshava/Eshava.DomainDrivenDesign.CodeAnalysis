@@ -18,20 +18,16 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 	public static class QueryRepositoryTemplate
 	{
 		public static string GetRepository(
-			InfrastructureProject project,
 			InfrastructureModel model,
-			string domain,
 			Dictionary<string, List<InfrastructureModel>> childsForAllModels,
 			InfrastructureModels infrastructureModelsConfig,
 			QueryProviderMap queryProviderMap,
-			string fullQualifiedDomainNamespace,
-			string fullQualifiedApplicationNamespace,
 			string databaseSettingsInterface,
 			string databaseSettingsInterfaceUsing,
-			IEnumerable<InfrastructureCodeSnippet> codeSnippets
+			InfrastructureEnvironment environment
 		)
 		{
-			var repositoryCodeSnippet = codeSnippets
+			var repositoryCodeSnippet = environment.CodeSnippets
 				.FirstOrDefault(cs => cs.ApplyOnQueryRepository)
 				?? new InfrastructureCodeSnippet();
 
@@ -45,10 +41,10 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				databaseSettings = new NameAndType(CommonNames.DatabaseSettings.SETTINGS, databaseSettingsInterface.ToType());
 			}
 
-			var @namespace = $"{fullQualifiedDomainNamespace}.{model.ClassificationKey.ToPlural()}";
+			var @namespace = $"{environment.InfrastructureNamespaceWithDomain}.{model.ClassificationKey.ToPlural()}";
 			var className = $"{model.ClassificationKey}QueryRepository";
 
-			var unitInformation = new UnitInformation(className, @namespace, addAssemblyComment: project.AddAssemblyCommentToFiles);
+			var unitInformation = new UnitInformation(className, @namespace, addAssemblyComment: environment.Project.AddAssemblyCommentToFiles);
 			unitInformation.AddClassModifier(SyntaxKind.InternalKeyword, SyntaxKind.PartialKeyword);
 			unitInformation.AddContructorModifier(SyntaxKind.PublicKeyword);
 
@@ -70,10 +66,10 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			unitInformation.AddUsing(CommonNames.Namespaces.Eshava.DomainDrivenDesign.Infrastructure.INTERFACES);
 			unitInformation.AddUsing(CommonNames.Namespaces.Eshava.DomainDrivenDesign.Infrastructure.PROVIDERS);
 			unitInformation.AddUsing(CommonNames.Namespaces.Eshava.DomainDrivenDesign.Infrastructure.MODELS);
-			unitInformation.AddUsing(project.AlternativeUsing);
+			unitInformation.AddUsing(environment.Project.AlternativeUsing);
 			unitInformation.AddUsing(databaseSettingsInterfaceUsing);
 
-			var alternativeClass = project.AlternativeClasses.FirstOrDefault(ac => ac.Type == InfrastructureAlternativeClassType.QueryRepository);
+			var alternativeClass = environment.Project.AlternativeClasses.FirstOrDefault(ac => ac.Type == InfrastructureAlternativeClassType.QueryRepository);
 
 			var baseClass = alternativeClass?.ClassName;
 			if (baseClass.IsNullOrEmpty())
@@ -91,7 +87,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			var repositoryInterfaceType = repositoryInterface.ToType().ToSimpleBaseType();
 			unitInformation.AddBaseType(baseType, repositoryInterfaceType);
 
-			var allModelsForDomain = infrastructureModelsConfig.Namespaces.First(ns => ns.Domain == domain).Models.ToList();
+			var allModelsForDomain = infrastructureModelsConfig.Namespaces.First(ns => ns.Domain == environment.Domain).Models.ToList();
 			var allModelsForDomainByClassificationKey = allModelsForDomain.GroupBy(m => m.ClassificationKey).ToDictionary(m => m.Key, m => m.ToList());
 			var allModelsForDomainDic = allModelsForDomain.ToDictionary(m => m.Name, m => m);
 
@@ -100,7 +96,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				childsForModel = [];
 			}
 
-			var modelConstantNames = CreateModelConstantNames(model, childsForModel, allModelsForDomainDic, allModelsForDomainByClassificationKey, fullQualifiedDomainNamespace);
+			var modelConstantNames = CreateModelConstantNames(model, childsForModel, allModelsForDomainDic, allModelsForDomainByClassificationKey, environment);
 			foreach (var modelConstantName in modelConstantNames)
 			{
 				unitInformation.AddUsing(modelConstantName.Using);
@@ -108,12 +104,12 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			}
 
 			var scopedSettingsTargetType = ParameterTargetTypes.Field;
-			if (alternativeClass?.ConstructorParameters?.Any(cp => cp.Type == project.ScopedSettingsClass) ?? false)
+			if (alternativeClass?.ConstructorParameters?.Any(cp => cp.Type == environment.Project.ScopedSettingsClass) ?? false)
 			{
 				scopedSettingsTargetType |= ParameterTargetTypes.Argument;
 			}
 
-			unitInformation.AddScopedSettings(project.ScopedSettingsUsing, project.ScopedSettingsClass, scopedSettingsTargetType);
+			unitInformation.AddScopedSettings(environment.Project.ScopedSettingsUsing, environment.Project.ScopedSettingsClass, scopedSettingsTargetType);
 			unitInformation.AddConstructorParameter(databaseSettings, ParameterTargetTypes.Argument);
 			unitInformation.AddConstructorParameter(InfrastructureNames.Transform.Parameter, ParameterTargetTypes.Argument);
 			CheckAndAddProviderReferences(unitInformation, alternativeClass, repositoryCodeSnippet);
@@ -122,9 +118,9 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			var metaData = new MethodMetaData(className, repositoryInterface, repositoryCodeSnippet.PropertyStatements);
 
 			var alternativeAbstractDatabaseModelProperties =
-				project.AlternativeAbstractDatabaseModel.IsNullOrEmpty() || (project.AlternativeAbstractDatabaseModelProperties?.Count ?? 0) == 0
+				environment.Project.AlternativeAbstractDatabaseModel.IsNullOrEmpty() || (environment.Project.AlternativeAbstractDatabaseModelProperties?.Count ?? 0) == 0
 					? []
-					: project.AlternativeAbstractDatabaseModelProperties.GroupBy(p => p.Name).ToDictionary(p => p.Key, p => p.First());
+					: environment.Project.AlternativeAbstractDatabaseModelProperties.GroupBy(p => p.Name).ToDictionary(p => p.Key, p => p.First());
 
 			foreach (var methodMap in queryProviderMap.Methods)
 			{
@@ -139,11 +135,11 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				switch (methodMap.Type)
 				{
 					case MethodType.Read:
-						methodCreationResult = CreateReadMethod(model, methodMap, childsForAllModels, infrastructureModelsConfig, alternativeAbstractDatabaseModelProperties, metaData, project.ImplementSoftDelete);
+						methodCreationResult = CreateReadMethod(model, methodMap, childsForAllModels, infrastructureModelsConfig, alternativeAbstractDatabaseModelProperties, metaData, environment.Project.ImplementSoftDelete);
 
 						break;
 					case MethodType.Search:
-						methodCreationResult = CreateSearchMethod(model, methodMap, childsForAllModels, infrastructureModelsConfig, alternativeAbstractDatabaseModelProperties, metaData, project.ImplementSoftDelete);
+						methodCreationResult = CreateSearchMethod(model, methodMap, childsForAllModels, infrastructureModelsConfig, alternativeAbstractDatabaseModelProperties, metaData, environment.Project.ImplementSoftDelete);
 						addFieldsToMapping = true;
 
 						if (methodMap.AddGroupStatementToSqlQuery)
@@ -153,20 +149,19 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 
 						break;
 					case MethodType.SearchCount:
-						methodCreationResult = CreateSearchCountMethod(model, methodMap, childsForAllModels, infrastructureModelsConfig, alternativeAbstractDatabaseModelProperties, metaData, project.ImplementSoftDelete);
+						methodCreationResult = CreateSearchCountMethod(model, methodMap, childsForAllModels, infrastructureModelsConfig, alternativeAbstractDatabaseModelProperties, metaData, environment.Project.ImplementSoftDelete);
 						addFieldsToMapping = true;
 
 						break;
 					case MethodType.Exists:
-						methodCreationResult = CreateExistsMethod(model, methodMap, metaData, project.ImplementSoftDelete);
+						methodCreationResult = CreateExistsMethod(model, methodMap, metaData, environment.Project.ImplementSoftDelete);
 
 						break;
 					case MethodType.IsUnique:
-						methodCreationResult = CreateIsUniqueMethod(model, methodMap, metaData, project.ImplementSoftDelete);
-
+						methodCreationResult = CreateIsUniqueMethod(model, methodMap, metaData, environment.Project.ImplementSoftDelete);
 						break;
 					case MethodType.IsUsedForeignKey:
-						methodCreationResult = CreateIsUsedForeignKeyMethod(model, methodMap, metaData, project.ImplementSoftDelete);
+						methodCreationResult = CreateIsUsedForeignKeyMethod(model, methodMap, metaData, environment.Project.ImplementSoftDelete);
 
 						break;
 					case MethodType.ReadAggregateId:
@@ -184,7 +179,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 							}
 						}
 
-						methodCreationResult = CreateReadAggregateIdMethod(modelWithParentReference, methodMap, allModelsForDomainDic, metaData, project.ImplementSoftDelete);
+						methodCreationResult = CreateReadAggregateIdMethod(modelWithParentReference, methodMap, allModelsForDomainDic, metaData, environment.Project.ImplementSoftDelete);
 
 						break;
 				}
@@ -1267,7 +1262,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			IEnumerable<InfrastructureModel> childsForModel,
 			Dictionary<string, InfrastructureModel> allModelsForDomain,
 			Dictionary<string, List<InfrastructureModel>> allModelsForDomainByClassificationKey,
-			string fullQualifiedDomainNamespace
+			InfrastructureEnvironment environment
 		)
 		{
 			var fields = new List<(string Using, (string FieldName, FieldType Type, FieldDeclarationSyntax Declaration) Field)>();
@@ -1281,7 +1276,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 
 			foreach (var child in childsForModel)
 			{
-				var @using = $"{fullQualifiedDomainNamespace}.{child.ClassificationKey.ToPlural()}";
+				var @using = $"{environment.InfrastructureNamespaceWithDomain}.{child.ClassificationKey.ToPlural()}";
 				fields.Add((@using, child.Name.CreateModelConstantField()));
 			}
 
@@ -1293,7 +1288,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 					break;
 				}
 
-				var @using = $"{fullQualifiedDomainNamespace}.{parentModel.ClassificationKey.ToPlural()}";
+				var @using = $"{environment.InfrastructureNamespaceWithDomain}.{parentModel.ClassificationKey.ToPlural()}";
 				fields.Add((@using, parentModel.Name.CreateModelConstantField()));
 
 				loopModel = parentModel;

@@ -2106,6 +2106,270 @@
 						"propertyNameForContentType": null,
 						"propertyNameForFileName": null
 					}
+				},
+				{
+					"type": 4,
+					"useCaseName": "Create",
+					"classificationKey": "Application",
+					"featureName": "NamespaceFeature",
+					"addValidationConfigurationMethod": true,
+					"validationConfigurationAsTreeStructure": true,
+					"validationConfigurationKeepCapitalLettersTogether": true,
+					"checkForeignKeyReferencesAutomatically": true,
+					"mainDto": "Application",
+					"dtos": [
+						{
+							"name": "Application",
+							"referenceModelName": "Application",
+							"properties": [
+								{
+									"name": "Name",
+									"type": "string"
+								},
+								{
+									"name": "DomainId",
+									"type": "int?"
+								}
+							]
+						}
+					]
+				},
+				{
+					"type": 4,
+					"useCaseName": "Create",
+					"classificationKey": "Domain",
+					"featureName": "NamespaceFeature",
+					"addValidationConfigurationMethod": true,
+					"validationConfigurationAsTreeStructure": true,
+					"validationConfigurationKeepCapitalLettersTogether": true,
+					"checkForeignKeyReferencesAutomatically": true,
+					"mainDto": "Domain",
+					"dtos": [
+						{
+							"name": "Domain",
+							"referenceModelName": "Domain",
+							"properties": [
+								{
+									"name": "Name",
+									"type": "string"
+								},
+								{
+									"name": "InfrastructureId",
+									"type": "int?"
+								}
+							]
+						}
+					]
+				},
+				{
+					"type": 4,
+					"useCaseName": "Create",
+					"classificationKey": "Infrastructure",
+					"featureName": "NamespaceFeature",
+					"addValidationConfigurationMethod": true,
+					"validationConfigurationAsTreeStructure": true,
+					"validationConfigurationKeepCapitalLettersTogether": true,
+					"checkForeignKeyReferencesAutomatically": true,
+					"mainDto": "Infrastructure",
+					"dtos": [
+						{
+							"name": "Infrastructure",
+							"referenceModelName": "Infrastructure",
+							"properties": [
+								{
+									"name": "Name",
+									"type": "string"
+								},
+								{
+									"name": "ApplicationId",
+									"type": "int?"
+								}
+							]
+						}
+					]
+				},
+				{
+					"type": 5,
+					"useCaseName": "Update",
+					"classificationKey": "Application",
+					"featureName": "NamespaceFeature",
+					"addValidationConfigurationMethod": true,
+					"validationConfigurationAsTreeStructure": true,
+					"validationConfigurationKeepCapitalLettersTogether": true,
+					"checkForeignKeyReferencesAutomatically": true,
+					"mainDto": "Application",
+					"dtos": [
+						{
+							"name": "Application",
+							"referenceModelName": "Application",
+							"properties": [
+								{
+									"name": "Name",
+									"type": "string"
+								},
+								{
+									"name": "DomainId",
+									"type": "int?"
+								}
+							]
+						}
+					]
+				},
+				{
+					"type": 5,
+					"useCaseName": "Update",
+					"classificationKey": "Domain",
+					"featureName": "NamespaceFeature",
+					"addValidationConfigurationMethod": true,
+					"validationConfigurationAsTreeStructure": true,
+					"validationConfigurationKeepCapitalLettersTogether": true,
+					"checkForeignKeyReferencesAutomatically": true,
+					"mainDto": "Domain",
+					"dtos": [
+						{
+							"name": "Domain",
+							"referenceModelName": "Domain",
+							"properties": [
+								{
+									"name": "Name",
+									"type": "string"
+								},
+								{
+									"name": "InfrastructureId",
+									"type": "int?"
+								}
+							]
+						}
+					]
+				},
+				{
+					"type": 5,
+					"useCaseName": "Update",
+					"classificationKey": "Infrastructure",
+					"featureName": "NamespaceFeature",
+					"addValidationConfigurationMethod": true,
+					"validationConfigurationAsTreeStructure": true,
+					"validationConfigurationKeepCapitalLettersTogether": true,
+					"checkForeignKeyReferencesAutomatically": true,
+					"mainDto": "Infrastructure",
+					"dtos": [
+						{
+							"name": "Infrastructure",
+							"referenceModelName": "Infrastructure",
+							"properties": [
+								{
+									"name": "Name",
+									"type": "string"
+								},
+								{
+									"name": "ApplicationId",
+									"type": "int?"
+								}
+							]
+						}
+					]
+				},
+				{
+					"type": 6,
+					"useCaseName": "Deactivate",
+					"classificationKey": "Application",
+					"featureName": "NamespaceFeature",
+					"domainModelReference": "Application",
+					"checkForeignKeyReferencesAutomatically": true
+				},
+				{
+					"type": 6,
+					"useCaseName": "Deactivate",
+					"classificationKey": "Domain",
+					"featureName": "NamespaceFeature",
+					"domainModelReference": "Domain",
+					"checkForeignKeyReferencesAutomatically": true
+				},
+				{
+					"type": 6,
+					"useCaseName": "Deactivate",
+					"classificationKey": "Infrastructure",
+					"featureName": "NamespaceFeature",
+					"domainModelReference": "Infrastructure",
+					"checkForeignKeyReferencesAutomatically": true
+				},
+				{
+					"type": 1,
+					"useCaseName": "Read",
+					"classificationKey": "Application",
+					"additionalContructorParameter": [],
+					"dtos": [
+						{
+							"name": "Application",
+							"referenceModelName": "Application",
+							"properties": [
+								{
+									"name": "Id",
+									"type": "int"
+								},
+								{
+									"name": "Name",
+									"type": "string"
+								},
+								{
+									"name": "DomainId",
+									"type": "int"
+								}
+							]
+						}
+					]
+				},
+				{
+					"type": 1,
+					"useCaseName": "Read",
+					"classificationKey": "Domain",
+					"additionalContructorParameter": [],
+					"dtos": [
+						{
+							"name": "Domain",
+							"referenceModelName": "Domain",
+							"properties": [
+								{
+									"name": "Id",
+									"type": "int"
+								},
+								{
+									"name": "Name",
+									"type": "string"
+								},
+								{
+									"name": "InfrastructureId",
+									"type": "int"
+								}
+							]
+						}
+					]
+				},
+				{
+					"type": 1,
+					"useCaseName": "Read",
+					"classificationKey": "Infrastructure",
+					"additionalContructorParameter": [],
+					"dtos": [
+						{
+							"name": "Infrastructure",
+							"referenceModelName": "Infrastructure",
+							"properties": [
+								{
+									"name": "Id",
+									"type": "int"
+								},
+								{
+									"name": "Name",
+									"type": "string"
+								},
+								{
+									"name": "ApplicationId",
+									"type": "int"
+								}
+							]
+						}
+					]
 				}
 			]
 		}

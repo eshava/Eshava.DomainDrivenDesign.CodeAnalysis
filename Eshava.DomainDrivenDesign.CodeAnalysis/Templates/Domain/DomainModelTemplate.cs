@@ -78,7 +78,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Domain
 					var propertyName = childDomainModel.ChildEnumerableName.ToPlural();
 					var fieldName = propertyName.ToFieldName();
 
-					var propertyDeclaration = propertyName.ToProperty("IReadOnlyList".AsGeneric(childDomainModel.GetDomainModelTypeName(null)), SyntaxKind.PublicKeyword, false, false)
+					var propertyDeclaration = propertyName.ToProperty("IReadOnlyList".AsGeneric(childDomainModel.GetDomainModelTypeName(null, null)), SyntaxKind.PublicKeyword, false, false)
 						.WithExpressionBody(fieldName.Call("AsReadOnly"));
 
 					unitInformation.AddProperty(propertyDeclaration, propertyName);
@@ -177,7 +177,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Domain
 
 		private static (string FieldName, FieldType Type, FieldDeclarationSyntax Declaration) CreateChildListField(ReferenceDomainModelMap domainModelMap)
 		{
-			var type = "IList".AsGeneric(domainModelMap.GetDomainModelTypeName(null));
+			var type = "IList".AsGeneric(domainModelMap.GetDomainModelTypeName(null, null));
 			var fieldName = domainModelMap.ChildEnumerableName.ToFieldName().ToPlural();
 
 			return (fieldName, FieldType.Others, fieldName.ToField(type, Eshava.CodeAnalysis.SyntaxConstants.Default));
@@ -185,7 +185,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Domain
 
 		private static (string FieldName, FieldType Type, FieldDeclarationSyntax Declaration) CreateChildChangedField(ReferenceDomainModelMap domainModelMap)
 		{
-			var func = GetCallbackType(domainModelMap.GetDomainModelTypeName(null));
+			var func = GetCallbackType(domainModelMap.GetDomainModelTypeName(null, null));
 			var fieldName = GetCallbackFieldName(domainModelMap);
 			var responseDataExpression = StatementHelpers.GetResponseData(true);
 
@@ -207,7 +207,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Domain
 
 			foreach (var childDomainModel in childDomainModels)
 			{
-				var childType = childDomainModel.GetDomainModelTypeName(null);
+				var childType = childDomainModel.GetDomainModelTypeName(null, null);
 				var fieldName = childDomainModel.ChildEnumerableName.ToFieldName().ToPlural();
 				var parameterName = childDomainModel.ChildEnumerableName.ToVariableName().ToPlural();
 
@@ -246,7 +246,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Domain
 			{
 				foreach (var childDomainModel in childDomainModels)
 				{
-					var childType = childDomainModel.GetDomainModelTypeName(null);
+					var childType = childDomainModel.GetDomainModelTypeName(null, null);
 					var fieldName = childDomainModel.ChildEnumerableName.ToFieldName().ToPlural();
 
 					// Get child method
@@ -456,7 +456,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Domain
 			{
 				foreach (var childDomainModel in childDomainModels)
 				{
-					var childType = childDomainModel.GetDomainModelTypeName(null);
+					var childType = childDomainModel.GetDomainModelTypeName(null, null);
 					var methodName = $"CreatedOrChanged{childDomainModel.DomainModelName}";
 					var returnValue = CommonNames.RESPONSEDATA.AsGeneric(Eshava.CodeAnalysis.SyntaxConstants.Bool);
 					var statements = new List<StatementSyntax>();
@@ -717,7 +717,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Domain
 				StatementHelpers.AddLocalMethodCallAndFaultyCheck(
 					statements,
 					"DeactivateChilds",
-					[childDomainModel.GetDomainModelTypeName(null), childDomainModel.IdentifierType],
+					[childDomainModel.GetDomainModelTypeName(null, null), childDomainModel.IdentifierType],
 					childDomainModel.ChildEnumerableName.ToVariableName() + "Result",
 					(TypeSyntax)null,
 					fieldName.ToIdentifierName()
@@ -807,7 +807,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Domain
 					.WithType(
 						"IEnumerable"
 						.AsGeneric(
-							childDomainModel.GetDomainModelTypeName(null)
+							childDomainModel.GetDomainModelTypeName(null, null)
 						)
 					);
 

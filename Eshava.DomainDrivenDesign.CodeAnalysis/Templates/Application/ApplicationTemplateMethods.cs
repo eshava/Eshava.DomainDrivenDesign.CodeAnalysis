@@ -26,6 +26,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			string provider,
 			string domainModelId,
 			string domainProjectNamespace,
+			string applicationProjectNamespace,
 			bool hasValidationRules,
 			ForeignKeyReferenceContainer foreignKeyReferenceContainer,
 			HashSet<string> domainModelWithMappings,
@@ -429,6 +430,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			ReferenceDomainModelMap domainModel,
 			DtoReferenceMap dtoReferenceMap,
 			string domainProjectNamespace,
+			string applicationProjectNamespace,
 			ForeignKeyReferenceContainer foreignKeyReferenceContainer,
 			HashSet<string> domainModelWithMappings,
 			List<UseCaseCodeSnippet> codeSnippets,
@@ -461,6 +463,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 				provider,
 				domainModelId,
 				domainProjectNamespace,
+				applicationProjectNamespace,
 				domainModel.DomainModel.HasValidationRules,
 				foreignKeyReferenceContainer,
 				domainModelWithMappings,
@@ -567,7 +570,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			if ((topLevelCall || (!topLevelCall && !domainModelMap.IsAggregate)) && domainModelMap.IsChildDomainModel)
 			{
 				aggregateParameterName = domainModelMap.AggregateDomainModel.ClassificationKey.ToVariableName();
-				domainModelType = domainModelMap.AggregateDomainModel.GetDomainModelTypeName(request.DomainProjectNamespace).ToType();
+				domainModelType = domainModelMap.AggregateDomainModel.GetDomainModelTypeName(request.DomainProjectNamespace, request.ApplicationProjectNamespace).ToType();
 				var childVariableName = domainModelMap.ClassificationKey.ToVariableName();
 				var dtoForeignKeyReferences = request.UseCase.CheckForeignKeyReferencesAutomatically
 					? CollectForeignKeysAndAddToMethodCall(
@@ -585,7 +588,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 					var topLevelDomainModel = domainModelMap.GetTopLevelDomainModel();
 					if (topLevelDomainModel.DomainModelName != domainModelMap.AggregateDomainModel.DomainModelName)
 					{
-						methodDeclarations.Add(CreateCollectChildWrapperMethodForCreate(domainModelMap, dtoMap, request.DomainProjectNamespace, request.UseCase.ReadAggregateByChildId));
+						methodDeclarations.Add(CreateCollectChildWrapperMethodForCreate(domainModelMap, dtoMap, request.DomainProjectNamespace, request.ApplicationProjectNamespace, request.UseCase.ReadAggregateByChildId));
 					}
 
 					methodDeclarations.AddRange(CreateCreateChildAndSubChildMethods(request, domainModelMap, dtoMap, aggregateParameterName, domainModelType, dtoForeignKeyReferences, foreignKeyReferenceContainer, domainModelWithMappings, skipForeignKeyHashsetParameter, false));
@@ -600,6 +603,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 							domainModelType,
 							childVariableName,
 							request.DomainProjectNamespace,
+							request.ApplicationProjectNamespace,
 							dtoForeignKeyReferences,
 							domainModelWithMappings,
 							skipForeignKeyHashsetParameter,
@@ -617,7 +621,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 				return methodDeclarations;
 			}
 
-			domainModelType = domainModelMap.GetDomainModelTypeName(request.DomainProjectNamespace).ToType();
+			domainModelType = domainModelMap.GetDomainModelTypeName(request.DomainProjectNamespace, request.ApplicationProjectNamespace).ToType();
 			aggregateParameterName = domainModelMap.ClassificationKey.ToVariableName();
 
 			foreach (var childDomainModel in domainModelMap.ChildDomainModels)
@@ -897,6 +901,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 		public static IEnumerable<StatementSyntax> CreateCollectChildStatementsForDeactivate(
 			ReferenceDomainModelMap childDomainModel,
 			string domainProjectNamespace,
+			string applicationProjectNamespace,
 			TypeSyntax returnType,
 			bool readAggregateByChildId
 		)
@@ -920,18 +925,19 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 					loopDomainModel = loopDomainModel.AggregateDomainModel;
 				} while (loopDomainModel.IsChildDomainModel);
 
-				statements.AddRange(CreateCollectChildStatements(childDomainModel, new List<(TypeSyntax Type, string Name)>(), domainProjectNamespace, true, true, returnType, false).Statements);
+				statements.AddRange(CreateCollectChildStatements(childDomainModel, new List<(TypeSyntax Type, string Name)>(), domainProjectNamespace, applicationProjectNamespace, true, true, returnType, false).Statements);
 
 				return statements;
 			}
 
-			return CreateCollectChildStatementsForReadByChildId(childDomainModel, domainProjectNamespace, returnType, false, true, false, null);
+			return CreateCollectChildStatementsForReadByChildId(childDomainModel, domainProjectNamespace, applicationProjectNamespace, returnType, false, true, false, null);
 		}
 
 		public static (string Name, MemberDeclarationSyntax Method) CreateCollectChildWrapperMethodForUpdate(
 			ReferenceDomainModelMap childDomainModel,
 			ReferenceDtoMap dtoMap,
 			string domainProjectNamespace,
+			string applicationProjectNamespace,
 			bool readAggregateByChildId
 		)
 		{
@@ -940,14 +946,14 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			var childPatchStatement = "KeyValuePair"
 				.AsGeneric(
 					childDomainModel.IdentifierType.ToIdentifierName(),
-					"IList".AsGeneric("Patch".AsGeneric(childDomainModel.GetDomainModelTypeName(domainProjectNamespace)))
+					"IList".AsGeneric("Patch".AsGeneric(childDomainModel.GetDomainModelTypeName(domainProjectNamespace, applicationProjectNamespace)))
 				);
 
 			var childVariableName = childDomainModel.ClassificationKey.ToVariableName();
 			methodParameter.Add((Type: childPatchStatement, Name: $"{childVariableName}Patches"));
 			methodParameter.Add((Type: "PartialPutDocumentLayer".ToType(), Name: $"{childVariableName}DocumentLayer"));
 
-			return CreateCollectChildWrapperMethod(childDomainModel, "Update", methodParameter, domainProjectNamespace, true, readAggregateByChildId);
+			return CreateCollectChildWrapperMethod(childDomainModel, "Update", methodParameter, domainProjectNamespace, applicationProjectNamespace, true, readAggregateByChildId);
 		}
 
 		public static HashSet<string> CheckForPropertyMappings(UnitInformation unitInformation, string domain, IEnumerable<ApplicationUseCaseDto> useCaseDtos, ReferenceMap domainModelReferenceMap)
@@ -1094,6 +1100,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 		private static IEnumerable<StatementSyntax> CreateCollectChildStatementsForReadByChildId(
 			ReferenceDomainModelMap childDomainModel,
 			string domainProjectNamespace,
+			string applicationProjectNamespace,
 			TypeSyntax returnType,
 			bool returnAsTask,
 			bool addTopLevelAggregateVariable,
@@ -1106,9 +1113,9 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			var childDomainModelAggregateIsTopLevelAggregate = topLevelDomainModel.DomainModelName == childDomainModel.AggregateDomainModel.DomainModelName;
 			var aggregateParameterName = topLevelDomainModel.ClassificationKey.ToVariableName();
 			var childAggregateVariableName = childDomainModel.AggregateDomainModel.ClassificationKey.ToVariableName();
-			var childAggregateType = childDomainModel.AggregateDomainModel.GetDomainModelTypeName(domainProjectNamespace);
+			var childAggregateType = childDomainModel.AggregateDomainModel.GetDomainModelTypeName(domainProjectNamespace, applicationProjectNamespace);
 			var childVariableName = childDomainModel.ClassificationKey.ToVariableName();
-			var childType = childDomainModel.GetDomainModelTypeName(domainProjectNamespace);
+			var childType = childDomainModel.GetDomainModelTypeName(domainProjectNamespace, applicationProjectNamespace);
 			returnType ??= childType.ToType();
 
 			if (addTopLevelAggregateVariable)
@@ -1245,12 +1252,21 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			ReferenceDomainModelMap childDomainModel,
 			ReferenceDtoMap dtoMap,
 			string domainProjectNamespace,
+			string applicationProjectNamespace,
 			bool readAggregateByChildId
 		)
 		{
 			var childVariableName = childDomainModel.ClassificationKey.ToVariableName();
 
-			return CreateCollectChildWrapperMethod(childDomainModel, "Create", new List<(TypeSyntax Type, string Name)> { (Type: dtoMap.DtoName.ToType(), Name: childVariableName) }, domainProjectNamespace, true, readAggregateByChildId);
+			return CreateCollectChildWrapperMethod(
+				childDomainModel, 
+				"Create", 
+				new List<(TypeSyntax Type, string Name)> { (Type: dtoMap.DtoName.ToType(), Name: childVariableName) }, 
+				domainProjectNamespace, 
+				applicationProjectNamespace, 
+				true, 
+				readAggregateByChildId
+			);
 		}
 
 		/// <summary>
@@ -1266,11 +1282,12 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			string methodName,
 			IEnumerable<(TypeSyntax Type, string Name)> transferParameter,
 			string domainProjectNamespace,
+			string applicationProjectNamespace,
 			bool returnAsTask,
 			bool readAggregateByChildId
 		)
 		{
-			var childDomainModelType = childDomainModel.GetDomainModelTypeName(domainProjectNamespace);
+			var childDomainModelType = childDomainModel.GetDomainModelTypeName(domainProjectNamespace, applicationProjectNamespace);
 			List<StatementSyntax> statements = null;
 			List<ParameterSyntax> methodParameters = null;
 
@@ -1280,7 +1297,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 
 				var topLevelDomainModel = childDomainModel.GetTopLevelDomainModel();
 
-				var aggregateDomainModelType = topLevelDomainModel.GetDomainModelTypeName(domainProjectNamespace).ToType();
+				var aggregateDomainModelType = topLevelDomainModel.GetDomainModelTypeName(domainProjectNamespace, applicationProjectNamespace).ToType();
 				var aggregateParameterName = topLevelDomainModel.ClassificationKey.ToVariableName();
 
 				methodParameters = new List<ParameterSyntax>
@@ -1310,11 +1327,11 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 					addChildAggregateVariableInsteadOfChildVariable = true;
 				}
 
-				statements.AddRange(CreateCollectChildStatementsForReadByChildId(domainModelToTransfer, domainProjectNamespace, returnType, true, false, addChildAggregateVariableInsteadOfChildVariable, identifierVariableName.ToIdentifierName()));
+				statements.AddRange(CreateCollectChildStatementsForReadByChildId(domainModelToTransfer, domainProjectNamespace, applicationProjectNamespace, returnType, true, false, addChildAggregateVariableInsteadOfChildVariable, identifierVariableName.ToIdentifierName()));
 			}
 			else
 			{
-				(statements, methodParameters) = CreateCollectChildStatements(childDomainModel, transferParameter, domainProjectNamespace, false, false, null, returnAsTask);
+				(statements, methodParameters) = CreateCollectChildStatements(childDomainModel, transferParameter, domainProjectNamespace, applicationProjectNamespace, false, false, null, returnAsTask);
 			}
 
 			var methodCallArguments = new List<ArgumentSyntax>
@@ -1345,6 +1362,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			ReferenceDomainModelMap childDomainModel,
 			IEnumerable<(TypeSyntax Type, string Name)> transferParameter,
 			string domainProjectNamespace,
+			string applicationProjectNamespace,
 			bool addTopLevelDomainModelVariable,
 			bool addDomainModelVariable,
 			TypeSyntax returnType,
@@ -1354,10 +1372,10 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			var statements = new List<StatementSyntax>();
 			var topLevelDomainModel = childDomainModel.GetTopLevelDomainModel();
 
-			var aggregateDomainModelType = topLevelDomainModel.GetDomainModelTypeName(domainProjectNamespace).ToType();
+			var aggregateDomainModelType = topLevelDomainModel.GetDomainModelTypeName(domainProjectNamespace, applicationProjectNamespace).ToType();
 			var aggregateParameterName = topLevelDomainModel.ClassificationKey.ToVariableName();
 			var childVariableName = childDomainModel.ClassificationKey.ToVariableName();
-			returnType ??= childDomainModel.GetDomainModelTypeName(domainProjectNamespace).ToType();
+			returnType ??= childDomainModel.GetDomainModelTypeName(domainProjectNamespace, applicationProjectNamespace).ToType();
 
 			var baseStatementCount = 0;
 			if (addTopLevelDomainModelVariable)
@@ -1491,6 +1509,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 						aggregateParameterType,
 						childVariableName,
 						request.DomainProjectNamespace,
+						request.ApplicationProjectNamespace,
 						dtoForeignKeyReferences,
 						domainModelWithMappings,
 						skipForeignKeyHashsetParameter,
@@ -1524,7 +1543,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 					return additionalCreateChildStatements;
 				}
 
-				var childDomainModelType = childDomainModel.GetDomainModelTypeName(request.DomainProjectNamespace);
+				var childDomainModelType = childDomainModel.GetDomainModelTypeName(request.DomainProjectNamespace, request.ApplicationProjectNamespace);
 				AddCreateChildModelsStatements(childDomainModel, dtoMap, additionalCreateChildStatements, childDomainModelType, createChildResultVariable, childVariableName.ToIdentifierName());
 			}
 
@@ -1605,6 +1624,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			TypeSyntax aggregateDomainModelType,
 			string childDtoVariableName,
 			string domainProjectNamespace,
+			string applicationProjectNamespace,
 			List<(ForeignKeyCache ForeignKey, ApplicationUseCaseDtoProperty Property)> foreignKeyHashSets,
 			HashSet<string> domainModelWithMappings,
 			bool skipForeignKeyHashsetParameter,
@@ -1613,7 +1633,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 		)
 		{
 			var statements = new List<StatementSyntax>();
-			var childDomainModelType = childDomainModel.GetDomainModelTypeName(domainProjectNamespace);
+			var childDomainModelType = childDomainModel.GetDomainModelTypeName(domainProjectNamespace, applicationProjectNamespace);
 			var isAsync = false;
 
 			if (childDomainModel.DomainModel.HasValidationRules)

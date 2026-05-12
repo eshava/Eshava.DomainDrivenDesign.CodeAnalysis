@@ -92,7 +92,10 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			}
 
 			var referenceRelations = relatedDataModels
-				.Where(m => m.DataModel.Name != modelItem.DataModel.Name || (m.DataModel.Name == modelItem.DataModel.Name && m.TableAliasConstant != modelItem.TableAliasConstant) || (m.Domain != modelItem.Domain && m.DataModel.Name == modelItem.DataModel.Name))
+				.Where(m => m.DataModel.Name != modelItem.DataModel.Name 
+					|| (m.DataModel.Name == modelItem.DataModel.Name && m.TableAliasConstant != modelItem.TableAliasConstant) 
+					|| (m.Domain != modelItem.Domain && m.DataModel.Name == modelItem.DataModel.Name)
+				)
 				.GroupBy(m => new { m.Domain, Model = m.DataModel.Name, Property = m.Property.Name, m.TableAliasConstant })
 				.Select(g => g.First())
 				.ToList();

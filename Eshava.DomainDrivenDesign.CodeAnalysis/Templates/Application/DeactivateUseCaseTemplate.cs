@@ -33,7 +33,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 				queryProviders.Add(domainModelMap.AggregateDomainModel.GetQueryProvider(request.ApplicationProjectNamespace, request.UseCasesMap.GetFeatureName));
 			}
 
-			var domainModelTypeName = domainModelMap.GetDomainModelTypeName(request.DomainProjectNamespace);
+			var domainModelTypeName = domainModelMap.GetDomainModelTypeName(request.DomainProjectNamespace, request.ApplicationProjectNamespace);
 			var alternativeClass = request.AlternativeClasses.FirstOrDefault(ac => ac.Type == ApplicationUseCaseType.Delete);
 
 			var baseType = alternativeClass is null
@@ -90,6 +90,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 					request.UseCase,
 					null,
 					domainModelMap,
+					null,
 					null,
 					null,
 					null,
@@ -152,6 +153,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 		/// <param name="provider"></param>
 		/// <param name="domainModelId"></param>
 		/// <param name="domainProjectNamespace"></param>
+		/// <param name="applicationProjectNamespace"></param>
 		/// <param name="hasValidationRules"></param>
 		/// <param name="foreignKeyReferenceContainer"></param>
 		/// <returns></returns>
@@ -164,16 +166,25 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			string provider,
 			string domainModelId,
 			string domainProjectNamespace,
+			string applicationProjectNamespace,
 			bool hasValidationRules,
 			ForeignKeyReferenceContainer foreignKeyReferenceContainer,
 			HashSet<string> domainModelWithMappings,
 			List<UseCaseCodeSnippet> codeSnippets
 		)
 		{
-			return CreateDeactivateMethodActions(useCase, domainModelMap, returnDataType, provider, domainProjectNamespace, codeSnippets);
+			return CreateDeactivateMethodActions(useCase, domainModelMap, returnDataType, provider, domainProjectNamespace, applicationProjectNamespace, codeSnippets);
 		}
 
-		private static List<StatementSyntax> CreateDeactivateMethodActions(ApplicationUseCase useCase, ReferenceDomainModelMap domainModelMap, string returnDataType, string provider, string domainProjectNamespace, List<UseCaseCodeSnippet> codeSnippets)
+		private static List<StatementSyntax> CreateDeactivateMethodActions(
+			ApplicationUseCase useCase,
+			ReferenceDomainModelMap domainModelMap,
+			string returnDataType,
+			string provider,
+			string domainProjectNamespace,
+			string applicationProjectNamespace,
+			List<UseCaseCodeSnippet> codeSnippets
+		)
 		{
 			var statements = new List<StatementSyntax>();
 			var requestEntityId = "request".Access($"{useCase.ClassificationKey}Id");
@@ -187,7 +198,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 
 			if (domainModelMap.IsChildDomainModel)
 			{
-				statements.AddRange(ApplicationTemplateMethods.CreateCollectChildStatementsForDeactivate(domainModelMap, domainProjectNamespace, useCase.ResponseType.ToType(), useCase.ReadAggregateByChildId));
+				statements.AddRange(ApplicationTemplateMethods.CreateCollectChildStatementsForDeactivate(domainModelMap, domainProjectNamespace, applicationProjectNamespace, useCase.ResponseType.ToType(), useCase.ReadAggregateByChildId));
 			}
 
 			var modelReference = domainModelMap.IsChildDomainModel
@@ -261,7 +272,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 				.WithParameter(
 					domainModel.ClassificationKey.ToVariableName()
 					.ToParameter()
-					.WithType(domainModel.GetDomainModelTypeName(request.DomainProjectNamespace).ToType())
+					.WithType(domainModel.GetDomainModelTypeName(request.DomainProjectNamespace, request.ApplicationProjectNamespace).ToType())
 				);
 
 			return (methodDeclarationName, methodDeclaration);
@@ -316,7 +327,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 				.WithParameter(
 					domainModel.DomainModelName.ToVariableName()
 					.ToParameter()
-					.WithType(domainModel.GetDomainModelTypeName(request.DomainProjectNamespace).ToType())
+					.WithType(domainModel.GetDomainModelTypeName(request.DomainProjectNamespace, request.ApplicationProjectNamespace).ToType())
 				);
 
 			return (methodDeclarationName, methodDeclaration);

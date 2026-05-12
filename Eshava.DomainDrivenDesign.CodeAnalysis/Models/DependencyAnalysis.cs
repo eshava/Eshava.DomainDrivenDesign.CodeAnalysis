@@ -488,9 +488,9 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models
 			}
 		}
 
-		public string GetDomainModelTypeName(string domainProjectNamespace)
+		public string GetDomainModelTypeName(string domainProjectNamespace, string applicationProjectNamespace)
 		{
-			return DomainModelName.GetDomainModelTypeName(Domain, ClassificationKey, FeatureName, domainProjectNamespace);
+			return DomainModelName.GetDomainModelTypeName(Domain, ClassificationKey, FeatureName, domainProjectNamespace, applicationProjectNamespace);
 		}
 	}
 

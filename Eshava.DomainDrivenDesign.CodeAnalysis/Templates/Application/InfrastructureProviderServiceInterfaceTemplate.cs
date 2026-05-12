@@ -11,7 +11,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 		public static string GetInterface(ReferenceDomainModelMap domainModelMap, string domainModelNamespace, string applicationDomainModelNamespace, bool addAssemblyCommentToFiles)
 		{
 			var interfaceName = $"I{domainModelMap.DomainModelName}InfrastructureProviderService";
-			var fullDomainModelName = domainModelMap.DomainModelName.IsUncountable()
+			var fullDomainModelName = domainModelMap.DomainModelName.IsUncountable() || applicationDomainModelNamespace.Contains(domainModelMap.DomainModelName)
 				? $"{domainModelNamespace}.{domainModelMap.DomainModelName}"
 				: domainModelMap.DomainModelName;
 
@@ -62,7 +62,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 				var propertyType = unitInformation.ContainsUsing(property.UsingForType)
 					? property.Type
 					: property.TypeWithUsing;
-
+								
 				var methodDeclarationName = $"ReadBy{property.Name}Async";
 				var methodDeclaration = methodDeclarationName
 					.ToMethodDefinition(

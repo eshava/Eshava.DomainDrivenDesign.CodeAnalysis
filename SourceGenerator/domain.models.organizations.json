@@ -526,6 +526,115 @@
 							"name": "Timestamps"
 						}
 					]
+				},
+				{
+					"identifierType": "int",
+					"name": "Application",
+					"dataModelName": "Application",
+					"featureName": "NamespaceFeature",
+					"classificationKey": "Application",
+					"addGeneralPatchMethod": true,
+					"properties": [
+						{
+							"type": "string",
+							"name": "Name",
+							"attributes": [
+								{
+									"name": "Required",
+									"usingForType": "System.ComponentModel.DataAnnotations"
+								},
+								{
+									"name": "MaxLength",
+									"usingForType": "System.ComponentModel.DataAnnotations",
+									"parameters": [
+										{
+											"type": "int",
+											"value": "250"
+										}
+									]
+								}
+							]
+						},
+						{
+							"type": "int?",
+							"name": "DomainId",
+							"isReference": true,
+							"referenceType": "Domain"
+						}
+					]
+				},
+				{
+					"identifierType": "int",
+					"name": "Domain",
+					"dataModelName": "Domain",
+					"featureName": "NamespaceFeature",
+					"classificationKey": "Domain",
+					"addGeneralPatchMethod": true,
+					"properties": [
+						{
+							"type": "string",
+							"name": "Name",
+							"attributes": [
+								{
+									"name": "Required",
+									"usingForType": "System.ComponentModel.DataAnnotations"
+								},
+								{
+									"name": "MaxLength",
+									"usingForType": "System.ComponentModel.DataAnnotations",
+									"parameters": [
+										{
+											"type": "int",
+											"value": "250"
+										}
+									]
+								}
+							]
+						},
+						{
+							"type": "int?",
+							"name": "InfrastructureId",
+							"isReference": true,
+							"referenceType": "Infrastructure"
+						}
+					]
+				},
+
+				{
+					"identifierType": "int",
+					"name": "Infrastructure",
+					"dataModelName": "Infrastructure",
+					"featureName": "NamespaceFeature",
+					"classificationKey": "Infrastructure",
+					"addGeneralPatchMethod": true,
+					"properties": [
+						{
+							"type": "string",
+							"name": "Name",
+							"attributes": [
+								{
+									"name": "Required",
+									"usingForType": "System.ComponentModel.DataAnnotations"
+								},
+								{
+									"name": "MaxLength",
+									"usingForType": "System.ComponentModel.DataAnnotations",
+									"parameters": [
+										{
+											"type": "int",
+											"value": "250"
+										}
+									]
+								}
+							]
+						},
+						{
+							"type": "int?",
+							"name": "ApplicationId",
+							"isReference": true,
+							"referenceType": "Application"
+						}
+					]
 				}
 			]
 		}

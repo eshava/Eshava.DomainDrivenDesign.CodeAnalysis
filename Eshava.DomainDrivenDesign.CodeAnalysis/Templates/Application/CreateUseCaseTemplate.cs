@@ -33,7 +33,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 				queryProviders.Add(domainModelMap.AggregateDomainModel.GetQueryProvider(request.ApplicationProjectNamespace, request.UseCasesMap.GetFeatureName));
 			}
 
-			var domainModelTypeName = domainModelMap.GetDomainModelTypeName(request.DomainProjectNamespace);
+			var domainModelTypeName = domainModelMap.GetDomainModelTypeName(request.DomainProjectNamespace, request.ApplicationProjectNamespace);
 			var alternativeClass = request.AlternativeClasses.FirstOrDefault(ac => ac.Type == ApplicationUseCaseType.Create);
 
 			var baseType = alternativeClass is null
@@ -98,6 +98,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 					domainModelMap,
 					request.DtoReferenceMap,
 					request.DomainProjectNamespace,
+					request.ApplicationProjectNamespace,
 					foreignKeyReferenceContainer,
 					domainModelWithMappings,
 					codeSnippets,
@@ -147,6 +148,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 						domainModelMap,
 						request.DtoReferenceMap,
 						request.DomainProjectNamespace,
+						request.ApplicationProjectNamespace,
 						foreignKeyReferenceContainer
 					);
 				}
@@ -188,6 +190,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			string provider,
 			string domainModelId,
 			string domainProjectNamespace,
+			string applicationProjectNamespace,
 			bool hasValidationRules,
 			ForeignKeyReferenceContainer foreignKeyReferenceContainer,
 			HashSet<string> domainModelWithMappings,
@@ -260,7 +263,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			}
 			else
 			{
-				var domainModelName = domainModelMap.GetDomainModelTypeName(domainProjectNamespace);
+				var domainModelName = domainModelMap.GetDomainModelTypeName(domainProjectNamespace, applicationProjectNamespace);
 				if (useCase.CheckForeignKeyReferencesAutomatically)
 				{
 					var dtoForeignKeyReferences = ApplicationTemplateMethods.CollectForeignKeysAndAddToMethodCall(
@@ -327,6 +330,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			ReferenceDomainModelMap domainModelMap,
 			DtoReferenceMap dtoReferenceMap,
 			string domainProjectNamespace,
+			string applicationProjectNamespace,
 			ForeignKeyReferenceContainer foreignKeyReferenceContainer
 			)
 		{
@@ -335,7 +339,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 				throw new System.ArgumentException($"Dto {domainModelMap.DomainModelName} not found");
 			}
 
-			var domainModelName = domainModelMap.GetDomainModelTypeName(domainProjectNamespace);
+			var domainModelName = domainModelMap.GetDomainModelTypeName(domainProjectNamespace, applicationProjectNamespace);
 			var dtoForeignKeyReferences = ApplicationTemplateMethods.CollectForeignKeysAndAddToMethodCall(
 				foreignKeyReferenceContainer,
 				domainModelMap,

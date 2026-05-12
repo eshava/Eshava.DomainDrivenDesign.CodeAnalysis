@@ -213,16 +213,29 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Extensions
 			return $"{domainModelName.ToVariableName()}{Constants.CommonNames.Instrastructure.QUERYPROVIDER}";
 		}
 
-		public static string GetDomainModelTypeName(this string domainModelName, string domain, string classificationKey, string featureName, string domainProjectNamespace)
+		public static string GetDomainModelTypeName(this string domainModelName, string domain, string classificationKey, string featureName, string domainProjectNamespace, string additionalNamespace)
 		{
-			if (!Eshava.DomainDrivenDesign.CodeAnalysis.Models.Domain.DomainModel.CheckIsNamespaceDirectoryUncountable(featureName, classificationKey))
+			var isUncountable = Eshava.DomainDrivenDesign.CodeAnalysis.Models.Domain.DomainModel.CheckIsNamespaceDirectoryUncountable(featureName, classificationKey);
+			var hasNamespaceConflict = (!domainProjectNamespace.IsNullOrEmpty() && domainProjectNamespace.Contains(domainModelName))
+				|| (!additionalNamespace.IsNullOrEmpty() && additionalNamespace.Contains(domainModelName));
+
+			if (!isUncountable && !hasNamespaceConflict)
 			{
 				return domainModelName;
 			}
 
+			if (!isUncountable)
+			{
+				classificationKey = classificationKey.ToPlural();
+			}
+
+			var modelNamespace = featureName.IsNullOrEmpty()
+				? classificationKey
+				: featureName;
+
 			return domainProjectNamespace.IsNullOrEmpty()
-				? $"{domain}.{classificationKey}.{domainModelName}"
-				: $"{domainProjectNamespace}.{domain}.{classificationKey}.{domainModelName}";
+				? $"{domain}.{modelNamespace}.{domainModelName}"
+				: $"{domainProjectNamespace}.{domain}.{modelNamespace}.{domainModelName}";
 		}
 
 		public static string GetCommandsNamespace(this string classificationKey, string domain, string featureName, string applicationProjectNamespace)

@@ -13,12 +13,11 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 		public static string GetInterface(
 			InfrastructureModel model,
 			QueryProviderMap queryProvider,
-			string fullQualifiedDomainNamespace,
-			bool addAssemblyCommentToFiles
+			InfrastructureEnvironment environment
 		)
 		{
-			var @namespace = $"{fullQualifiedDomainNamespace}.{model.ClassificationKey.ToPlural()}";
-			var unitInformation = new UnitInformation($"I{model.ClassificationKey}QueryRepository", @namespace, isInterface: true, addAssemblyComment: addAssemblyCommentToFiles);
+			var @namespace = $"{environment.InfrastructureNamespaceWithDomain}.{model.ClassificationKey.ToPlural()}";
+			var unitInformation = new UnitInformation($"I{model.ClassificationKey}QueryRepository", @namespace, isInterface: true, addAssemblyComment: environment.Project.AddAssemblyCommentToFiles);
 			unitInformation.AddClassModifier(SyntaxKind.InternalKeyword, SyntaxKind.PartialKeyword);
 
 			unitInformation.AddUsing(CommonNames.Namespaces.GENERIC);

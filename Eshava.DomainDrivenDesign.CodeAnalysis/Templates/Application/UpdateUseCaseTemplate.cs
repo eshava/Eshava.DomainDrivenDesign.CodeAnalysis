@@ -35,7 +35,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 				queryProviders.Add(domainModelMap.AggregateDomainModel.GetQueryProvider(request.ApplicationProjectNamespace, request.UseCasesMap.GetFeatureName));
 			}
 
-			var domainModelTypeName = domainModelMap.GetDomainModelTypeName(request.DomainProjectNamespace);
+			var domainModelTypeName = domainModelMap.GetDomainModelTypeName(request.DomainProjectNamespace, request.ApplicationProjectNamespace);
 			var alternativeClass = request.AlternativeClasses.FirstOrDefault(ac => ac.Type == ApplicationUseCaseType.Update);
 
 			var baseType = alternativeClass is null
@@ -104,6 +104,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 					domainModelMap,
 					request.DtoReferenceMap,
 					request.DomainProjectNamespace,
+					request.ApplicationProjectNamespace,
 					foreignKeyReferenceContainer,
 					domainModelWithMappings,
 					codeSnippets,
@@ -130,7 +131,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 
 			if (domainModelMap.DomainModel.HasValidationRules && !domainModelMap.IsChildDomainModel)
 			{
-				unitInformation.AddMethod(CreateCheckValidationConstraintsMethod(domainModelMap, request.DomainProjectNamespace));
+				unitInformation.AddMethod(CreateCheckValidationConstraintsMethod(domainModelMap, request.DomainProjectNamespace, request.ApplicationProjectNamespace));
 			}
 
 			if (request.UseCase.CheckForeignKeyReferencesAutomatically)
@@ -154,6 +155,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 						domainModelMap,
 						request.DtoReferenceMap,
 						request.DomainProjectNamespace,
+						request.ApplicationProjectNamespace,
 						foreignKeyReferenceContainer
 					);
 				}
@@ -195,6 +197,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			string provider,
 			string domainModelId,
 			string domainProjectNamespace,
+			string applicationProjectNamespace,
 			bool hasValidationRules,
 			ForeignKeyReferenceContainer foreignKeyReferenceContainer,
 			HashSet<string> domainModelWithMappings,
@@ -202,7 +205,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 		)
 		{
 			var statements = new List<StatementSyntax>();
-			var domainModel = useCase.GetDomainModelReferenceName().GetDomainModelTypeName(domain, domainModelMap.ClassificationKey, domainModelMap.FeatureName, domainProjectNamespace);
+			var domainModel = useCase.GetDomainModelReferenceName().GetDomainModelTypeName(domain, domainModelMap.ClassificationKey, domainModelMap.FeatureName, domainProjectNamespace, applicationProjectNamespace);
 
 			CodeSnippetHelpers.AddStatements(statements, returnDataType, codeSnippets);
 
@@ -283,7 +286,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 				var childPatchStatement = "KeyValuePair"
 					.AsGeneric(
 						domainModelMap.IdentifierType.ToIdentifierName(),
-						"IList".AsGeneric("Patch".AsGeneric(domainModelMap.GetDomainModelTypeName(domainProjectNamespace)))
+						"IList".AsGeneric("Patch".AsGeneric(domainModelMap.GetDomainModelTypeName(domainProjectNamespace, applicationProjectNamespace)))
 					)
 					.ToInstance(
 						"request".Access($"{domainModelMap.ClassificationKey}Id").ToArgument(),
@@ -324,7 +327,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			{
 				if (useCase.CheckForeignKeyReferencesAutomatically && !dtoMap.Dto.HasUseCaseSpecificPatchMethod)
 				{
-					var domainModelName = domainModelMap.GetDomainModelTypeName(domainProjectNamespace);
+					var domainModelName = domainModelMap.GetDomainModelTypeName(domainProjectNamespace, applicationProjectNamespace);
 					var dtoForeignKeyReferences = ApplicationTemplateMethods.CollectForeignKeysAndAddToMethodCall(
 						foreignKeyReferenceContainer,
 						domainModelMap,
@@ -417,11 +420,11 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			return statements;
 		}
 
-		private static (string Name, MemberDeclarationSyntax) CreateCheckValidationConstraintsMethod(ReferenceDomainModelMap domainModelMap, string domainProjectNamespace)
+		private static (string Name, MemberDeclarationSyntax) CreateCheckValidationConstraintsMethod(ReferenceDomainModelMap domainModelMap, string domainProjectNamespace, string applicationProjectNamespace)
 		{
 			var provider = domainModelMap.ClassificationKey.ToQueryProviderName().ToFieldName();
 			var domainModelVariableName = domainModelMap.DomainModelName.ToVariableName();
-			var domainModelType = domainModelMap.DomainModelName.GetDomainModelTypeName(domainModelMap.Domain, domainModelMap.ClassificationKey, domainModelMap.FeatureName, domainProjectNamespace);
+			var domainModelType = domainModelMap.DomainModelName.GetDomainModelTypeName(domainModelMap.Domain, domainModelMap.ClassificationKey, domainModelMap.FeatureName, domainProjectNamespace, applicationProjectNamespace);
 
 			var statements = new List<StatementSyntax>();
 
@@ -565,7 +568,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			if ((topLevelCall || (!topLevelCall && !domainModelMap.IsAggregate)) && domainModelMap.IsChildDomainModel)
 			{
 				aggregateParameterName = domainModelMap.AggregateDomainModel.ClassificationKey.ToVariableName();
-				domainModelType = domainModelMap.AggregateDomainModel.GetDomainModelTypeName(request.DomainProjectNamespace).ToType();
+				domainModelType = domainModelMap.AggregateDomainModel.GetDomainModelTypeName(request.DomainProjectNamespace, request.ApplicationProjectNamespace).ToType();
 				var childDtoVariableName = $"{domainModelMap.ClassificationKey.ToVariableName()}Patches";
 
 				if (!topLevelCall && domainModelMap.IsAggregate)
@@ -601,7 +604,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 						var topLevelDomainModel = domainModelMap.GetTopLevelDomainModel();
 						if (topLevelDomainModel.DomainModelName != domainModelMap.AggregateDomainModel.DomainModelName)
 						{
-							methodDeclarations.Add(ApplicationTemplateMethods.CreateCollectChildWrapperMethodForUpdate(domainModelMap, dtoMap, request.DomainProjectNamespace, request.UseCase.ReadAggregateByChildId));
+							methodDeclarations.Add(ApplicationTemplateMethods.CreateCollectChildWrapperMethodForUpdate(domainModelMap, dtoMap, request.DomainProjectNamespace, request.ApplicationProjectNamespace, request.UseCase.ReadAggregateByChildId));
 						}
 
 						methodDeclarations.AddRange(
@@ -612,7 +615,6 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 								dtoMap,
 								aggregateParameterName,
 								domainModelType,
-								request.DomainProjectNamespace,
 								dtoForeignKeyReferences,
 								domainModelWithMappings,
 								true,
@@ -635,7 +637,6 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 							dtoMap,
 							aggregateParameterName,
 							domainModelType,
-							request.DomainProjectNamespace,
 							dtoForeignKeyReferences,
 							domainModelWithMappings,
 							true,
@@ -654,13 +655,13 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 				return methodDeclarations;
 			}
 
-			domainModelType = domainModelMap.GetDomainModelTypeName(request.DomainProjectNamespace).ToType();
+			domainModelType = domainModelMap.GetDomainModelTypeName(request.DomainProjectNamespace, request.ApplicationProjectNamespace).ToType();
 			aggregateParameterName = domainModelMap.ClassificationKey.ToVariableName();
 			var patchDocumentName = $"{aggregateParameterName}Document";
 
 			foreach (var childDomainModel in domainModelMap.ChildDomainModels)
 			{
-				var childDomainModelType = childDomainModel.GetDomainModelTypeName(request.DomainProjectNamespace);
+				var childDomainModelType = childDomainModel.GetDomainModelTypeName(request.DomainProjectNamespace, request.ApplicationProjectNamespace);
 				var childReferenceProperty = dtoMap.ChildReferenceProperties.FirstOrDefault(p => p.Dto.DomainModelName == childDomainModel.DomainModelName);
 				if (childReferenceProperty is null)
 				{
@@ -774,7 +775,6 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 							childReferenceProperty.Dto,
 							aggregateParameterName,
 							domainModelType,
-							request.DomainProjectNamespace,
 							dtoForeignKeyReferences,
 							domainModelWithMappings,
 							false,
@@ -830,7 +830,6 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			ReferenceDtoMap dtoMap,
 			string aggregateParameterName,
 			TypeSyntax aggregateDomainModelType,
-			string domainProjectNamespace,
 			List<(ForeignKeyCache ForeignKey, ApplicationUseCaseDtoProperty Property)> foreignKeyHashSets,
 			HashSet<string> domainModelWithMappings,
 			bool skipForeignKeyHashsetParameter,
@@ -842,7 +841,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 
 			var statements = new List<StatementSyntax>();
 			var createResultVariable = $"create{childDomainModel.ClassificationKey}Result";
-			var childDomainModelType = childDomainModel.GetDomainModelTypeName(domainProjectNamespace);
+			var childDomainModelType = childDomainModel.GetDomainModelTypeName(request.DomainProjectNamespace, request.ApplicationProjectNamespace);
 			var childDtoVariableName = $"{childDomainModel.ClassificationKey.ToVariableName()}Patches";
 			var childVariableName = $"{childDomainModel.ClassificationKey.ToVariableName()}Result";
 			var childVariablePatchName = $"{childDomainModel.ClassificationKey.ToVariableName()}PatchResult";
@@ -869,7 +868,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 				hasAsyncMethodCalls = true;
 				StatementHelpers.AddLocalAsyncMethodCallAndFaultyCheck(statements, "CheckValidationConstraintsAsync", "constraintsResult", childDomainModelType.ToType(), childVariableName.Access("Data"), childDtoVariableName.Access("Value"));
 
-				methodDeclarations.Add(CreateCheckValidationConstraintsMethod(childDomainModel, domainProjectNamespace));
+				methodDeclarations.Add(CreateCheckValidationConstraintsMethod(childDomainModel, request.DomainProjectNamespace, request.ApplicationProjectNamespace));
 			}
 			else if (subChildDomainModelsWithReferences.Count > 0 && !hasAsyncMethodCalls)
 			{
@@ -1007,7 +1006,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 		{
 			var statements = new List<StatementSyntax>();
 			var createResultVariable = $"create{childDomainModel.ClassificationKey}Result";
-			var childDomainModelType = childDomainModel.GetDomainModelTypeName(domainProjectNamespace);
+			var childDomainModelType = childDomainModel.GetDomainModelTypeName(domainProjectNamespace, applicationProjectNamespace);
 			var childDtoVariableName = $"{childDomainModel.ClassificationKey.ToVariableName()}Id";
 			var childVariableName = $"{childDomainModel.ClassificationKey.ToVariableName()}Result";
 			var hasAsyncMethodCalls = false;
@@ -1072,6 +1071,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			ReferenceDomainModelMap domainModelMap,
 			DtoReferenceMap dtoReferenceMap,
 			string domainProjectNamespace,
+			string applicationProjectNamespace,
 			ForeignKeyReferenceContainer foreignKeyReferenceContainer
 			)
 		{
@@ -1080,7 +1080,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 				throw new System.ArgumentException($"Dto {domainModelMap.DomainModelName} not found");
 			}
 
-			var domainModelName = domainModelMap.GetDomainModelTypeName(domainProjectNamespace);
+			var domainModelName = domainModelMap.GetDomainModelTypeName(domainProjectNamespace, applicationProjectNamespace);
 			var dtoForeignKeyReferences = ApplicationTemplateMethods.CollectForeignKeysAndAddToMethodCall(
 				foreignKeyReferenceContainer,
 				domainModelMap,

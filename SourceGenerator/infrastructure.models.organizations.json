@@ -351,6 +351,69 @@
 							"name": "EmailAddress"
 						}
 					]
+				},
+				{
+					"identifierType": "int",
+					"identifierGenerationOnAdd": true,
+					"tableName": "Applications",
+					"name": "Application",
+					"classificationKey": "Application",
+					"createRepository": true,
+					"createDbConfiguration": true,
+					"properties": [
+						{
+							"type": "string",
+							"name": "Name"
+						},
+						{
+							"type": "int?",
+							"name": "DomainId",
+							"isReference": true,
+							"referenceType": "Domain"
+						}
+					]
+				},
+				{
+					"identifierType": "int",
+					"identifierGenerationOnAdd": true,
+					"tableName": "Domains",
+					"name": "Domain",
+					"classificationKey": "Domain",
+					"createRepository": true,
+					"createDbConfiguration": true,
+					"properties": [
+						{
+							"type": "string",
+							"name": "Name"
+						},
+						{
+							"type": "int?",
+							"name": "InfrastructureId",
+							"isReference": true,
+							"referenceType": "Infrastructure"
+						}
+					]
+				},
+				{
+					"identifierType": "int",
+					"identifierGenerationOnAdd": true,
+					"tableName": "Infrastructure",
+					"name": "Infrastructure",
+					"classificationKey": "Infrastructure",
+					"createRepository": true,
+					"createDbConfiguration": true,
+					"properties": [
+						{
+							"type": "string",
+							"name": "Name"
+						},
+						{
+							"type": "int?",
+							"name": "ApplicationId",
+							"isReference": true,
+							"referenceType": "Application"
+						}
+					]
 				}
 			]
 		}

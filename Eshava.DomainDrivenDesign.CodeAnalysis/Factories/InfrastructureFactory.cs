@@ -61,6 +61,16 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 
 			foreach (var @namespace in infrastructureModelsConfig.Namespaces)
 			{
+				var environment = new InfrastructureEnvironment
+				{
+					Project = infrastructureProjectConfig,
+					InfrastructureNamespaceWithDomain = $"{infrastructureProjectConfig.FullQualifiedNamespace}.{@namespace.Domain}",
+					ApplicationNamespaceWithDomain = $"{applicationProjectConfig.FullQualifiedNamespace}.{@namespace.Domain}",
+					DomainProjectNamespace = domainProjectConfig.FullQualifiedNamespace,
+					Domain = @namespace.Domain,
+					CodeSnippets = codeSnippets
+				};
+
 				AddTransformProfiles(
 					factoryResult,
 					infrastructureProjectConfig.FullQualifiedNamespace,
@@ -71,9 +81,6 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 					dependencyInjectionsTransformationProfiles,
 					infrastructureProjectConfig.AddAssemblyCommentToFiles
 				);
-
-				var domainNamespace = $"{infrastructureProjectConfig.FullQualifiedNamespace}.{@namespace.Domain}";
-				var applicationNamespace = $"{applicationProjectConfig.FullQualifiedNamespace}.{@namespace.Domain}";
 
 				var childsForModel = @namespace.Models
 					.Where(m => !m.ReferencedParent.IsNullOrEmpty())
@@ -90,22 +97,22 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 
 				foreach (var model in @namespace.Models)
 				{
-					var databaseModel = DataModelTemplate.GetDatabaseModel(model, @namespace.Domain, domainNamespace, infrastructureProjectConfig.AlternativeAbstractDatabaseModel, infrastructureProjectConfig.AlternativeUsing, childsForModel, infrastructureModels, infrastructureProjectConfig.AddAssemblyCommentToFiles);
-					var databaseModelSourceName = $"{domainNamespace}.{model.ClassificationKey.ToPlural()}.{model.Name}.g.cs";
+					var databaseModel = DataModelTemplate.GetDatabaseModel(model, @namespace.Domain, environment.InfrastructureNamespaceWithDomain, infrastructureProjectConfig.AlternativeAbstractDatabaseModel, infrastructureProjectConfig.AlternativeUsing, childsForModel, infrastructureModels, infrastructureProjectConfig.AddAssemblyCommentToFiles);
+					var databaseModelSourceName = $"{environment.InfrastructureNamespaceWithDomain}.{model.ClassificationKey.ToPlural()}.{model.Name}.g.cs";
 
 					factoryResult.AddSource(databaseModelSourceName, databaseModel);
 
 					if (!model.TableName.IsNullOrEmpty() && model.CreateDbConfiguration)
 					{
-						var dbConfigModel = DbConfigurationTemplate.GetDbConfiguration(model, @namespace.DatabaseSchema, domainNamespace, infrastructureProjectConfig.AddAssemblyCommentToFiles);
-						var dbConfigModelSourceName = $"{domainNamespace}.{model.ClassificationKey.ToPlural()}.{model.Name}DbConfiguration.g.cs";
+						var dbConfigModel = DbConfigurationTemplate.GetDbConfiguration(model, @namespace.DatabaseSchema, environment.InfrastructureNamespaceWithDomain, infrastructureProjectConfig.AddAssemblyCommentToFiles);
+						var dbConfigModelSourceName = $"{environment.InfrastructureNamespaceWithDomain}.{model.ClassificationKey.ToPlural()}.{model.Name}DbConfiguration.g.cs";
 
 						factoryResult.AddSource(dbConfigModelSourceName, dbConfigModel);
 
 						dependencyInjectionsDbConfigurations.Add(new DependencyInjection
 						{
 							Class = $"{model.Name}DbConfiguration",
-							ClassUsing = $"{domainNamespace}.{model.ClassificationKey.ToPlural()}"
+							ClassUsing = $"{environment.InfrastructureNamespaceWithDomain}.{model.ClassificationKey.ToPlural()}"
 						});
 					}
 
@@ -114,17 +121,13 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 					AddCreationBag(
 						factoryResult,
 						model,
-						@namespace.Domain,
-						domainNamespace,
 						referenceMap,
-						infrastructureProjectConfig.AddAssemblyCommentToFiles
+						environment
 					);
 
 					AddRepository(
 						factoryResult,
 						model,
-						@namespace.Domain,
-						domainNamespace,
 						@namespace.DatabaseSettingsInterface,
 						@namespace.DatabaseSettingsInterfaceUsing,
 						infrastructureProjectConfig,
@@ -132,7 +135,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 						childsForModel,
 						referenceMap,
 						dependencyInjections,
-						codeSnippets
+						environment
 					);
 
 					if (model.CreateProviderService)
@@ -140,17 +143,13 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 						AddProviderService(
 							factoryResult,
 							model,
-							@namespace.Domain,
-							domainNamespace,
-							applicationNamespace,
 							@namespace.DatabaseSettingsInterface,
 							@namespace.DatabaseSettingsInterfaceUsing,
-							infrastructureProjectConfig,
 							childsForModel,
 							referenceMap,
 							useCasesMap,
 							dependencyInjections,
-							codeSnippets
+							environment
 						);
 					}
 
@@ -160,29 +159,22 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 
 						AddQueryProviderService(
 							factoryResult,
-							infrastructureProjectConfig,
 							model,
-							domainNamespace,
-							applicationNamespace,
 							queryProviderMap,
 							dependencyInjections,
-							infrastructureProjectConfig.AddAssemblyCommentToFiles
+							environment
 						);
 
 						AddQueryRepository(
 							factoryResult,
-							infrastructureProjectConfig,
 							infrastructureModelsConfig,
 							model,
-							@namespace.Domain,
 							childsForModel,
-							domainNamespace,
-							applicationNamespace,
 							@namespace.DatabaseSettingsInterface,
 							@namespace.DatabaseSettingsInterfaceUsing,
 							queryProviderMap,
 							dependencyInjections,
-							codeSnippets
+							environment
 						);
 					}
 				}
@@ -210,17 +202,13 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 		private static void AddProviderService(
 			FactoryResult factoryResult,
 			InfrastructureModel model,
-			string domain,
-			string domainNamespace,
-			string applicationNamespace,
 			string databaseSettingsInterface,
 			string databaseSettingsInterfaceUsing,
-			InfrastructureProject infrastructureProject,
 			Dictionary<string, List<InfrastructureModel>> childsForModel,
 			ReferenceMap domainModelReferenceMap,
 			UseCasesMap useCasesMap,
 			List<DependencyInjection> dependencyInjections,
-			IEnumerable<InfrastructureCodeSnippet> codeSnippets
+			InfrastructureEnvironment environment
 		)
 		{
 			if (!model.CreateProviderService)
@@ -228,7 +216,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 				return;
 			}
 
-			if (!domainModelReferenceMap.TryGetDomainModelByDataModel(domain, model.Name, out var domainModels))
+			if (!domainModelReferenceMap.TryGetDomainModelByDataModel(environment.Domain, model.Name, out var domainModels))
 			{
 				domainModels = Array.Empty<ReferenceDomainModelMap>();
 			}
@@ -240,17 +228,13 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 					AddProviderService(
 						factoryResult,
 						model,
-						domain,
-						domainNamespace,
-						applicationNamespace,
 						databaseSettingsInterface,
 						databaseSettingsInterfaceUsing,
-						infrastructureProject,
 						childsForModel,
 						domainModel,
 						useCasesMap,
 						dependencyInjections,
-						codeSnippets
+						environment
 					);
 				}
 			}
@@ -259,17 +243,13 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 				AddProviderService(
 					factoryResult,
 					model,
-					domain,
-					domainNamespace,
-					applicationNamespace,
 					databaseSettingsInterface,
 					databaseSettingsInterfaceUsing,
-					infrastructureProject,
 					childsForModel,
 					(ReferenceDomainModelMap)null,
 					useCasesMap,
 					dependencyInjections,
-					codeSnippets
+					environment
 				);
 			}
 		}
@@ -277,17 +257,13 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 		private static void AddProviderService(
 			FactoryResult factoryResult,
 			InfrastructureModel model,
-			string domain,
-			string domainNamespace,
-			string applicationNamespace,
 			string databaseSettingsInterface,
 			string databaseSettingsInterfaceUsing,
-			InfrastructureProject infrastructureProject,
 			Dictionary<string, List<InfrastructureModel>> childsForModel,
 			ReferenceDomainModelMap domainModel,
 			UseCasesMap useCasesMap,
 			List<DependencyInjection> dependencyInjections,
-			IEnumerable<InfrastructureCodeSnippet> codeSnippets
+			InfrastructureEnvironment environment
 		)
 		{
 			if (domainModel is null || domainModel.IsChildDomainModel)
@@ -295,7 +271,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 				return;
 			}
 
-			var featureName = useCasesMap.GetFeatureName(domain, model.ClassificationKey);
+			var featureName = useCasesMap.GetFeatureName(environment.Domain, model.ClassificationKey);
 			if (!featureName.IsNullOrEmpty())
 			{
 				featureName += ".";
@@ -304,69 +280,57 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 			var providerService = InfrastructureProviderServiceTemplate.GetProviderService(
 				model,
 				domainModel,
-				domain,
 				featureName,
-				domainNamespace,
-				applicationNamespace,
-				infrastructureProject,
 				databaseSettingsInterface,
 				databaseSettingsInterfaceUsing,
 				childsForModel,
-				codeSnippets
+				environment
 			);
 
-			var providerServiceSourceName = $"{domainNamespace}.{model.ClassificationKey.ToPlural()}.{domainModel.DomainModelName}InfrastructureProviderService.g.cs";
+			var providerServiceSourceName = $"{environment.InfrastructureNamespaceWithDomain}.{model.ClassificationKey.ToPlural()}.{domainModel.DomainModelName}InfrastructureProviderService.g.cs";
 
 			factoryResult.AddSource(providerServiceSourceName, providerService);
 
 			dependencyInjections.Add(new DependencyInjection
 			{
 				Interface = $"I{domainModel.DomainModelName}InfrastructureProviderService",
-				InterfaceUsing = $"{applicationNamespace}.{featureName}{model.ClassificationKey.ToPlural()}.Commands",
+				InterfaceUsing = $"{environment.ApplicationNamespaceWithDomain}.{featureName}{model.ClassificationKey.ToPlural()}.Commands",
 				Class = $"{domainModel.DomainModelName}InfrastructureProviderService",
-				ClassUsing = $"{domainNamespace}.{model.ClassificationKey.ToPlural()}"
+				ClassUsing = $"{environment.InfrastructureNamespaceWithDomain}.{model.ClassificationKey.ToPlural()}"
 			});
 		}
 
 		private static void AddQueryProviderService(
 			FactoryResult factoryResult,
-			InfrastructureProject infrastructureProject,
 			InfrastructureModel model,
-			string domainNamespace,
-			string applicationNamespace,
 			QueryProviderMap queryProviderMap,
 			List<DependencyInjection> dependencyInjections,
-			bool addAssemblyCommentToFiles
+			InfrastructureEnvironment environment
 		)
 		{
 			var providerService = QueryInfrastructureProviderServiceTemplate.GetProviderService(
-				infrastructureProject,
 				model,
 				queryProviderMap,
-				domainNamespace,
-				applicationNamespace,
-				addAssemblyCommentToFiles
+				environment
 			);
 
 			var featureNameNamespace = queryProviderMap.FeatureName.IsNullOrEmpty() ? "" : $"{queryProviderMap.FeatureName}.";
-			var providerServiceSourceName = $"{domainNamespace}.{model.ClassificationKey.ToPlural()}.{model.ClassificationKey}QueryInfrastructureProviderService.g.cs";
+			var providerServiceSourceName = $"{environment.InfrastructureNamespaceWithDomain}.{model.ClassificationKey.ToPlural()}.{model.ClassificationKey}QueryInfrastructureProviderService.g.cs";
 
 			factoryResult.AddSource(providerServiceSourceName, providerService);
 
 			dependencyInjections.Add(new DependencyInjection
 			{
 				Interface = $"I{model.ClassificationKey}QueryInfrastructureProviderService",
-				InterfaceUsing = $"{applicationNamespace}.{featureNameNamespace}{model.ClassificationKey.ToPlural()}.Queries",
+				InterfaceUsing = $"{environment.ApplicationNamespaceWithDomain}.{featureNameNamespace}{model.ClassificationKey.ToPlural()}.Queries",
 				Class = $"{model.ClassificationKey}QueryInfrastructureProviderService",
-				ClassUsing = $"{domainNamespace}.{model.ClassificationKey.ToPlural()}"
+				ClassUsing = $"{environment.InfrastructureNamespaceWithDomain}.{model.ClassificationKey.ToPlural()}"
 			});
 		}
 
 		private static void AddRepository(
 			FactoryResult factoryResult,
 			InfrastructureModel model,
-			string domain,
-			string domainNamespace,
 			string databaseSettingsInterface,
 			string databaseSettingsInterfaceUsing,
 			InfrastructureProject infrastructureProject,
@@ -374,7 +338,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 			Dictionary<string, List<InfrastructureModel>> childsForModel,
 			ReferenceMap domainModelReferenceMap,
 			List<DependencyInjection> dependencyInjections,
-			IEnumerable<InfrastructureCodeSnippet> codeSnippets
+			InfrastructureEnvironment environment
 		)
 		{
 			if (!model.CreateRepository)
@@ -382,13 +346,13 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 				return;
 			}
 
-			if (!domainModelReferenceMap.TryGetDomainModelByDataModel(domain, model.Name, out var domainModels))
+			if (!domainModelReferenceMap.TryGetDomainModelByDataModel(environment.Domain, model.Name, out var domainModels))
 			{
 				domainModels = Array.Empty<ReferenceDomainModelMap>();
 			}
 
 			InfrastructureModel parent = null;
-			if (domainModels.Any(dm =>dm.IsChildDomainModel))
+			if (domainModels.Any(dm => dm.IsChildDomainModel))
 			{
 				parent = modelsFromNamespace.Values.FirstOrDefault(m => m.Name == model.ReferencedParent);
 			}
@@ -401,8 +365,6 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 					factoryResult,
 					parent,
 					model,
-					domain,
-					domainNamespace,
 					databaseSettingsInterface,
 					databaseSettingsInterfaceUsing,
 					infrastructureProject,
@@ -411,7 +373,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 					domainModel,
 					domainModelReferenceMap,
 					dependencyInjections,
-					codeSnippets
+					environment
 				);
 				}
 			}
@@ -421,8 +383,6 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 					factoryResult,
 					parent,
 					model,
-					domain,
-					domainNamespace,
 					databaseSettingsInterface,
 					databaseSettingsInterfaceUsing,
 					infrastructureProject,
@@ -431,7 +391,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 					null,
 					domainModelReferenceMap,
 					dependencyInjections,
-					codeSnippets
+					environment
 				);
 			}
 		}
@@ -440,8 +400,6 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 			FactoryResult factoryResult,
 			InfrastructureModel parent,
 			InfrastructureModel model,
-			string domain,
-			string domainNamespace,
 			string databaseSettingsInterface,
 			string databaseSettingsInterfaceUsing,
 			InfrastructureProject infrastructureProject,
@@ -450,7 +408,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 			ReferenceDomainModelMap domainModel,
 			ReferenceMap domainModelReferenceMap,
 			List<DependencyInjection> dependencyInjections,
-			IEnumerable<InfrastructureCodeSnippet> codeSnippets
+			InfrastructureEnvironment environment
 		)
 		{
 			if (domainModel is null)
@@ -461,94 +419,75 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 			var repositoryInterface = RepositoryInterfaceTemplate.GetInterface(
 				model,
 				domainModel,
-				domain,
-				domainNamespace,
-				infrastructureProject
+				environment
 			);
 
-			var repositoryInterfaceSourceName = $"{domainNamespace}.{model.ClassificationKey.ToPlural()}.I{domainModel.DomainModelName}Repository.g.cs";
+			var repositoryInterfaceSourceName = $"{environment.InfrastructureNamespaceWithDomain}.{model.ClassificationKey.ToPlural()}.I{domainModel.DomainModelName}Repository.g.cs";
 
 			factoryResult.AddSource(repositoryInterfaceSourceName, repositoryInterface);
 
 			var repository = RepositoryTemplate.GetRepository(
 				model,
 				domainModel,
-				domain,
-				domainNamespace,
-				infrastructureProject,
 				databaseSettingsInterface,
 				databaseSettingsInterfaceUsing,
 				parent,
 				childsForModel,
 				modelsFromNamespace,
 				domainModelReferenceMap,
-				codeSnippets
+				environment
 			);
 
-			var repositorySourceName = $"{domainNamespace}.{model.ClassificationKey.ToPlural()}.{domainModel.DomainModelName}Repository.g.cs";
+			var repositorySourceName = $"{environment.InfrastructureNamespaceWithDomain}.{model.ClassificationKey.ToPlural()}.{domainModel.DomainModelName}Repository.g.cs";
 
 			factoryResult.AddSource(repositorySourceName, repository);
 
 			dependencyInjections.Add(new DependencyInjection
 			{
 				Interface = $"I{domainModel.DomainModelName}Repository",
-				InterfaceUsing = $"{domainNamespace}.{model.ClassificationKey.ToPlural()}",
+				InterfaceUsing = $"{environment.InfrastructureNamespaceWithDomain}.{model.ClassificationKey.ToPlural()}",
 				Class = $"{domainModel.DomainModelName}Repository",
-				ClassUsing = $"{domainNamespace}.{model.ClassificationKey.ToPlural()}"
+				ClassUsing = $"{environment.InfrastructureNamespaceWithDomain}.{model.ClassificationKey.ToPlural()}"
 			});
 		}
 
 		private static void AddQueryRepository(
 			FactoryResult factoryResult,
-			InfrastructureProject infrastructureProject,
 			InfrastructureModels infrastructureModelsConfig,
 			InfrastructureModel model,
-			string domain,
 			Dictionary<string, List<InfrastructureModel>> childsForModel,
-			string domainNamespace,
-			string applicationNamespace,
 			string databaseSettingsInterface,
 			string databaseSettingsInterfaceUsing,
 			QueryProviderMap queryProviderMap,
 			List<DependencyInjection> dependencyInjections,
-			IEnumerable<InfrastructureCodeSnippet> codeSnippets
+			InfrastructureEnvironment environment
 		)
 		{
-			var @interface = QueryRepositoryInterfaceTemplate.GetInterface(
-				model,
-				queryProviderMap,
-				domainNamespace,
-				infrastructureProject.AddAssemblyCommentToFiles
-			);
-
-			var interfaceSourceName = $"{domainNamespace}.{model.ClassificationKey.ToPlural()}.I{model.ClassificationKey}QueryRepository.g.cs";
+			var @interface = QueryRepositoryInterfaceTemplate.GetInterface(model, queryProviderMap, environment);
+			var interfaceSourceName = $"{environment.InfrastructureNamespaceWithDomain}.{model.ClassificationKey.ToPlural()}.I{model.ClassificationKey}QueryRepository.g.cs";
 
 			factoryResult.AddSource(interfaceSourceName, @interface);
 
 			var repository = QueryRepositoryTemplate.GetRepository(
-				infrastructureProject,
 				model,
-				domain,
 				childsForModel,
 				infrastructureModelsConfig,
 				queryProviderMap,
-				domainNamespace,
-				applicationNamespace,
 				databaseSettingsInterface,
 				databaseSettingsInterfaceUsing,
-				codeSnippets
+				environment
 			);
 
-			var repositorySourceName = $"{domainNamespace}.{model.ClassificationKey.ToPlural()}.{model.ClassificationKey}QueryRepository.g.cs";
+			var repositorySourceName = $"{environment.InfrastructureNamespaceWithDomain}.{model.ClassificationKey.ToPlural()}.{model.ClassificationKey}QueryRepository.g.cs";
 
 			factoryResult.AddSource(repositorySourceName, repository);
 
 			dependencyInjections.Add(new DependencyInjection
 			{
 				Interface = $"I{model.ClassificationKey}QueryRepository",
-				InterfaceUsing = $"{domainNamespace}.{model.ClassificationKey.ToPlural()}",
+				InterfaceUsing = $"{environment.InfrastructureNamespaceWithDomain}.{model.ClassificationKey.ToPlural()}",
 				Class = $"{model.ClassificationKey}QueryRepository",
-				ClassUsing = $"{domainNamespace}.{model.ClassificationKey.ToPlural()}"
+				ClassUsing = $"{environment.InfrastructureNamespaceWithDomain}.{model.ClassificationKey.ToPlural()}"
 			});
 		}
 
@@ -591,10 +530,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 		private static void AddCreationBag(
 			FactoryResult factoryResult,
 			InfrastructureModel model,
-			string domain,
-			string domainNamespace,
 			ReferenceMap domainModelReferenceMap,
-			bool addAssemblyCommentToFiles
+			InfrastructureEnvironment environment
 		)
 		{
 			if (!model.CreateCreationBag)
@@ -602,7 +539,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 				return;
 			}
 
-			if (!domainModelReferenceMap.TryGetDomainModelByDataModel(domain, model.Name, out var domainModels))
+			if (!domainModelReferenceMap.TryGetDomainModelByDataModel(environment.Domain, model.Name, out var domainModels))
 			{
 				domainModels = Array.Empty<ReferenceDomainModelMap>();
 			}
@@ -614,10 +551,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 					AddCreationBag(
 						factoryResult,
 						model,
-						domain,
-						domainNamespace,
 						domainModel,
-						addAssemblyCommentToFiles
+						environment
 					);
 				}
 			}
@@ -626,14 +561,12 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 		private static void AddCreationBag(
 			FactoryResult factoryResult,
 			InfrastructureModel model,
-			string domain,
-			string domainNamespace,
 			ReferenceDomainModelMap domainModel,
-			bool addAssemblyCommentToFiles
+			InfrastructureEnvironment environment
 		)
 		{
-			var creationBag = CreationBagTemplate.GetCreationBag(model, domainModel, domainNamespace, addAssemblyCommentToFiles);
-			var creationBagSourceName = $"{domainNamespace}.{model.ClassificationKey.ToPlural()}.{domainModel.DomainModelName}CreationBag.g.cs";
+			var creationBag = CreationBagTemplate.GetCreationBag(model, domainModel, environment);
+			var creationBagSourceName = $"{environment.InfrastructureNamespaceWithDomain}.{model.ClassificationKey.ToPlural()}.{domainModel.DomainModelName}CreationBag.g.cs";
 
 			factoryResult.AddSource(creationBagSourceName, creationBag);
 		}

@@ -20,23 +20,20 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 		public static string GetRepository(
 			InfrastructureModel model,
 			ReferenceDomainModelMap domainModelMap,
-			string domain,
-			string fullQualifiedDomainNamespace,
-			InfrastructureProject project,
 			string databaseSettingsInterface,
 			string databaseSettingsInterfaceUsing,
 			InfrastructureModel parentModel,
 			Dictionary<string, List<InfrastructureModel>> childsForModel,
 			Dictionary<string, InfrastructureModel> modelsForDomain,
 			ReferenceMap domainModelReferenceMap,
-			IEnumerable<InfrastructureCodeSnippet> codeSnippets
+			InfrastructureEnvironment environment
 		)
 		{
-			var repositoryCodeSnippet = codeSnippets
+			var repositoryCodeSnippet = environment.CodeSnippets
 				.FirstOrDefault(cs => cs.ApplyOnRepository)
 				?? new InfrastructureCodeSnippet();
 
-			var scopedSettings = new NameAndType(CommonNames.SCOPEDSETTINGS, project.ScopedSettingsClass.ToType());
+			var scopedSettings = new NameAndType(CommonNames.SCOPEDSETTINGS, environment.Project.ScopedSettingsClass.ToType());
 			NameAndType databaseSettings;
 			if (databaseSettingsInterface.IsNullOrEmpty())
 			{
@@ -47,14 +44,14 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				databaseSettings = new NameAndType(CommonNames.DatabaseSettings.SETTINGS, databaseSettingsInterface.ToType());
 			}
 
-			var @namespace = $"{fullQualifiedDomainNamespace}.{model.ClassificationKey.ToPlural()}";
+			var @namespace = $"{environment.InfrastructureNamespaceWithDomain}.{model.ClassificationKey.ToPlural()}";
 			var className = $"{domainModelMap.DomainModelName}Repository";
 			var repositoryInterface = $"I{className}";
 			var metaData = new MethodMetaData(className, repositoryInterface, repositoryCodeSnippet.PropertyStatements);
 			string baseClass;
 			InfrastructureProjectAlternativeClass alternativeClass;
 
-			var unitInformation = new UnitInformation(className, @namespace, addAssemblyComment: project.AddAssemblyCommentToFiles);
+			var unitInformation = new UnitInformation(className, @namespace, addAssemblyComment: environment.Project.AddAssemblyCommentToFiles);
 			unitInformation.AddClassModifier(SyntaxKind.InternalKeyword, SyntaxKind.PartialKeyword);
 			unitInformation.AddContructorModifier(SyntaxKind.PublicKeyword);
 
@@ -70,26 +67,26 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			unitInformation.AddUsing(CommonNames.Namespaces.Eshava.DomainDrivenDesign.Domain.EXTENSIONS);
 			unitInformation.AddUsing(CommonNames.Namespaces.Eshava.DomainDrivenDesign.Domain.MODELS);
 			unitInformation.AddUsing(CommonNames.Namespaces.Eshava.DomainDrivenDesign.Infrastructure.INTERFACES);
-			unitInformation.AddUsing(project.ScopedSettingsUsing);
-			unitInformation.AddUsing(project.AlternativeUsing);
+			unitInformation.AddUsing(environment.Project.ScopedSettingsUsing);
+			unitInformation.AddUsing(environment.Project.AlternativeUsing);
 			unitInformation.AddUsing(databaseSettingsInterfaceUsing);
 
 			unitInformation.AddConstructorParameter(databaseSettings, ParameterTargetTypes.Argument);
 			unitInformation.AddConstructorParameter(scopedSettings, ParameterTargetTypes.Argument);
 			unitInformation.AddConstructorParameter(InfrastructureNames.Transform.Parameter, ParameterTargetTypes.Argument);
 
-			var fullDomainModelName = $"Domain.{domain}.{domainModelMap.DomainModel.NamespaceDirectory}.{domainModelMap.DomainModelName}";
+			var fullDomainModelName = environment.GetFullDomainModelName(domainModelMap);
 
 			var relatedDataModels = CollectDataModelsForReferenceProperties(model, domainModelMap, childsForModel, true);
 			relatedDataModels.ForEach(relation => unitInformation.AddField((relation.TableAliasConstant, FieldType.Const, relation.TableAliasField)));
 
-			var collectPropertyMappings = CollectDataToDomainPropertyMappings(domainModelMap);
+			var collectPropertyMappings = CollectDataToDomainPropertyMappings(domainModelMap, environment);
 			collectPropertyMappings.ForEach(mapping => unitInformation.AddField((mapping.FieldName, FieldType.Static, mapping.Declaration)));
 
 			if (domainModelMap.IsChildDomainModel)
 			{
-				unitInformation.AddUsing($"{project.FullQualifiedNamespace}.{domain}.{domainModelMap.AggregateDomainModel.ClassificationKey.ToPlural()}");
-				alternativeClass = project.AlternativeClasses.FirstOrDefault(ac => ac.Type == InfrastructureAlternativeClassType.ChildDomainModelRepository);
+				unitInformation.AddUsing($"{environment.Project.FullQualifiedNamespace}.{domainModelMap.Domain}.{domainModelMap.AggregateDomainModel.ClassificationKey.ToPlural()}");
+				alternativeClass = environment.Project.AlternativeClasses.FirstOrDefault(ac => ac.Type == InfrastructureAlternativeClassType.ChildDomainModelRepository);
 
 				if (alternativeClass is null)
 				{
@@ -116,7 +113,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 
 				unitInformation.AddConstructorParameter(DomainNames.VALIDATION.Parameter);
 
-				alternativeClass = project.AlternativeClasses.FirstOrDefault(ac => ac.Type == InfrastructureAlternativeClassType.DomainModelRepository);
+				alternativeClass = environment.Project.AlternativeClasses.FirstOrDefault(ac => ac.Type == InfrastructureAlternativeClassType.DomainModelRepository);
 
 				if (alternativeClass is null)
 				{
@@ -128,7 +125,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 					baseClass = alternativeClass.ClassName;
 				}
 
-				unitInformation.AddMethod(CreateReadMethod(model, domainModelMap, fullDomainModelName, childsForModel, relatedDataModels, metaData, project.ImplementSoftDelete));
+				unitInformation.AddMethod(CreateReadMethod(model, domainModelMap, fullDomainModelName, childsForModel, relatedDataModels, metaData, environment.Project.ImplementSoftDelete, environment));
 				var valueObjectCreateMethods = CreateValueObjectCreateMethods(model, domainModelMap, domainModelReferenceMap, childsForModel, modelsForDomain, true);
 				foreach (var valueObjectCreateMethod in valueObjectCreateMethods)
 				{
@@ -137,8 +134,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			}
 
 			var baseType = domainModelMap.IsChildDomainModel
-				? baseClass.AsGeneric(fullDomainModelName, $"{domainModelMap.AggregateDomainModel.ClassificationKey.ToPlural()}.{domainModelMap.AggregateDomainModel.DomainModelName}CreationBag", model.Name, model.IdentifierType, project.ScopedSettingsClass).ToSimpleBaseType()
-				: baseClass.AsGeneric(fullDomainModelName, model.Name, model.IdentifierType, project.ScopedSettingsClass).ToSimpleBaseType();
+				? baseClass.AsGeneric(fullDomainModelName, $"{domainModelMap.AggregateDomainModel.ClassificationKey.ToPlural()}.{domainModelMap.AggregateDomainModel.DomainModelName}CreationBag", model.Name, model.IdentifierType, environment.Project.ScopedSettingsClass).ToSimpleBaseType()
+				: baseClass.AsGeneric(fullDomainModelName, model.Name, model.IdentifierType, environment.Project.ScopedSettingsClass).ToSimpleBaseType();
 			var repositoryInterfaceType = repositoryInterface.ToType().ToSimpleBaseType();
 			unitInformation.AddBaseType(baseType, repositoryInterfaceType);
 			unitInformation.AddUsing(alternativeClass?.Using);
@@ -164,7 +161,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 
 					unitInformation.AddUsing(CommonNames.Namespaces.GENERIC);
 					unitInformation.AddUsing(CommonNames.Namespaces.TASKS);
-					unitInformation.AddMethod(CreateReadForMethod(model, childsForModel, domainModelMap, foreignKeyReference, relatedDataModels, fullDomainModelName, metaData, project.ImplementSoftDelete));
+					unitInformation.AddMethod(CreateReadForMethod(model, childsForModel, domainModelMap, foreignKeyReference, relatedDataModels, fullDomainModelName, metaData, environment.Project.ImplementSoftDelete, environment));
 				}
 
 				foreach (var property in domainModelMap.DomainModel.Properties)
@@ -177,16 +174,16 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 					unitInformation.AddUsing(CommonNames.Namespaces.GENERIC);
 					unitInformation.AddUsing(CommonNames.Namespaces.TASKS);
 					unitInformation.AddUsing(CommonNames.Namespaces.Eshava.Core.MODELS);
-					unitInformation.AddMethod(CreateReadByMethod(model, childsForModel, domainModelMap, property, relatedDataModels, fullDomainModelName, metaData, project.ImplementSoftDelete, unitInformation.ContainsUsing));
+					unitInformation.AddMethod(CreateReadByMethod(model, childsForModel, domainModelMap, property, relatedDataModels, fullDomainModelName, metaData, environment.Project.ImplementSoftDelete, unitInformation.ContainsUsing, environment));
 				}
 			}
 
 			unitInformation.AddLogger(className, true);
 
-			unitInformation.AddMethod(CreateFromDomainModelMethod(model, fullDomainModelName, parentModel, domainModelMap, domain, modelsForDomain, domainModelReferenceMap, repositoryCodeSnippet.PropertyStatements));
-			unitInformation.AddMethod(CreateGetPropertyNameMethod(domainModelMap, model, modelsForDomain));
+			unitInformation.AddMethod(CreateFromDomainModelMethod(model, fullDomainModelName, parentModel, domainModelMap, modelsForDomain, domainModelReferenceMap, repositoryCodeSnippet.PropertyStatements));
+			unitInformation.AddMethod(CreateGetPropertyNameMethod(domainModelMap, model, modelsForDomain, environment));
 
-			var valueObjectPatchMethod = CreateMapPatchesForValueObjectsMethod(model, domainModelMap, modelsForDomain);
+			var valueObjectPatchMethod = CreateMapPatchesForValueObjectsMethod(model, domainModelMap, modelsForDomain, environment);
 			if (!valueObjectPatchMethod.Name.IsNullOrEmpty())
 			{
 				unitInformation.AddMethod(valueObjectPatchMethod);
@@ -227,7 +224,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			Dictionary<string, List<InfrastructureModel>> childsForModel,
 			List<QueryAnalysisItem> relatedDataModels,
 			MethodMetaData metaData,
-			bool implementSoftDelete
+			bool implementSoftDelete,
+			InfrastructureEnvironment environment
 		)
 		{
 			var readByPropertyName = "Id";
@@ -244,7 +242,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				implementSoftDelete,
 				readByPropertyName,
 				readByVariableName,
-				readByPropertyType
+				readByPropertyType,
+				environment
 			);
 		}
 
@@ -259,6 +258,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			string readByPropertyName,
 			string readByVariableName,
 			TypeSyntax readByPropertyType,
+			InfrastructureEnvironment environment,
 			string methodName = "Read"
 		)
 		{
@@ -275,7 +275,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				GetReadByQueryResult(domainModelMap, model, childsForModel, readByVariableName, queryParameters, implementSoftDelete)
 			};
 
-			usingInnerStatments.AddRange(GetCreateDomainModelCode(model, childsForModel, domainModelMap, "result", fullDomainModelName, true));
+			usingInnerStatments.AddRange(GetCreateDomainModelCode(model, childsForModel, domainModelMap, "result", fullDomainModelName, true, environment));
 
 			var domainModelListName = $"{domainModelMap.DomainModelName.ToVariableName()}Models";
 
@@ -302,7 +302,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 
 			var methodDeclaration = methodDeclarationName
 				.ToMethod(
-					"Task".AsGeneric("ResponseData".AsGeneric($"Domain.{domainModelMap.Domain}.{domainModelMap.DomainModel.NamespaceDirectory}.{domainModelMap.DomainModelName}")),
+					"Task".AsGeneric("ResponseData".AsGeneric(fullDomainModelName)),
 					statements,
 					SyntaxKind.PublicKeyword,
 					SyntaxKind.AsyncKeyword
@@ -584,7 +584,6 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			string fullDomainModelName,
 			InfrastructureModel parentDataModel,
 			ReferenceDomainModelMap domainModelMap,
-			string domain,
 			Dictionary<string, InfrastructureModel> modelsForDomain,
 			ReferenceMap domainModelReferenceMap,
 			IEnumerable<InfrastructureModelPropertyCodeSnippet> codeSnippets
@@ -711,7 +710,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 					// Check if property is value object
 					if (domainModelProperty.ProcessAsUnit)
 					{
-						domainModelReferenceMap.TryGetDomainModel(domain, domainModelProperty.Type.Replace("?", ""), out var valueObjectMap);
+						domainModelReferenceMap.TryGetDomainModel(domainModelMap.Domain, domainModelProperty.Type.Replace("?", ""), out var valueObjectMap);
 						modelsForDomain.TryGetValue(dataModelProperty.Type.Replace("?", ""), out var valueObjectDataModel);
 
 						if (valueObjectMap is null)
@@ -1008,7 +1007,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			List<QueryAnalysisItem> relatedDataModels,
 			string fullDomainModelName,
 			MethodMetaData metaData,
-			bool implementSoftDelete
+			bool implementSoftDelete,
+			InfrastructureEnvironment environment
 		)
 		{
 			var readByPropertyName = foreignKeyReference.PropertyName;
@@ -1026,7 +1026,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				implementSoftDelete,
 				readByPropertyName,
 				readByVariableName,
-				readByPropertyType
+				readByPropertyType,
+				environment
 			);
 		}
 
@@ -1041,6 +1042,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			string readByPropertyName,
 			string readByVariableName,
 			TypeSyntax readByPropertyType,
+			InfrastructureEnvironment environment,
 			string methodName = "ReadFor"
 		)
 		{
@@ -1059,7 +1061,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				GetReadByQueryResult(domainModelMap, model, childsForModel, readByVariableName, queryParameters, implementSoftDelete),
 			};
 
-			usingInnerStatments.AddRange(GetCreateDomainModelCode(model, childsForModel, domainModelMap, "result", fullDomainModelName, false));
+			usingInnerStatments.AddRange(GetCreateDomainModelCode(model, childsForModel, domainModelMap, "result", fullDomainModelName, false, environment));
 			usingInnerStatments.Add(
 				returnListName
 				.Access(CommonNames.Extensions.TOIENUMERABLERESPONSEDATA)
@@ -1107,7 +1109,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			string fullDomainModelName,
 			MethodMetaData metaData,
 			bool implementSoftDelete,
-			Func<string, bool> isDeclaredUsing
+			Func<string, bool> isDeclaredUsing,
+			InfrastructureEnvironment environment
 		)
 		{
 			var propertyType = isDeclaredUsing(domainModelProperty.UsingForType)
@@ -1129,6 +1132,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 						: domainModelProperty.DataModelPropertyName,
 					domainModelProperty.Name,
 					propertyType.ToType(),
+					environment,
 					$"ReadBy{domainModelProperty.Name}"
 				);
 			}
@@ -1147,6 +1151,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 						: domainModelProperty.DataModelPropertyName,
 				domainModelProperty.Name,
 				propertyType.ToType(),
+				environment,
 				$"ReadBy"
 			);
 		}
@@ -1154,7 +1159,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 		private static (string Name, MemberDeclarationSyntax) CreateMapPatchesForValueObjectsMethod(
 			InfrastructureModel dataModel,
 			ReferenceDomainModelMap domainModelMap,
-			Dictionary<string, InfrastructureModel> modelsForDomain
+			Dictionary<string, InfrastructureModel> modelsForDomain,
+			InfrastructureEnvironment environment
 		)
 		{
 			var valueObjectReferences = domainModelMap.ForeignKeyReferences
@@ -1166,7 +1172,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				return (null, null);
 			}
 
-			var fullDomainModelName = $"Domain.{domainModelMap.Domain}.{domainModelMap.DomainModel.NamespaceDirectory}.{domainModelMap.DomainModelName}";
+			var fullDomainModelName = environment.GetFullDomainModelName(domainModelMap);
 			var loopStatements = new List<StatementSyntax>();
 			var dataModelProperties = dataModel.Properties.ToDictionary(p => p.Name, p => p);
 			var domainModelProperties = domainModelMap.DomainModel.Properties.ToDictionary(p => p.Name, p => p);
@@ -1459,10 +1465,11 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 		private static (string Name, MemberDeclarationSyntax) CreateGetPropertyNameMethod(
 			ReferenceDomainModelMap domainModelMap,
 			InfrastructureModel dataModel,
-			Dictionary<string, InfrastructureModel> modelsForDomain
+			Dictionary<string, InfrastructureModel> modelsForDomain,
+			InfrastructureEnvironment environment
 		)
 		{
-			var fullDomainModelName = $"Domain.{domainModelMap.Domain}.{domainModelMap.DomainModel.NamespaceDirectory}.{domainModelMap.DomainModelName}";
+			var fullDomainModelName = environment.GetFullDomainModelName(domainModelMap);
 			var dataToDomainName = GetMappingName(domainModelMap.DataModelName, domainModelMap.DomainModelName, true);
 
 			var valueObjectReferences = domainModelMap.ForeignKeyReferences
@@ -1776,10 +1783,10 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			ReferenceDomainModelMap domainModelMap,
 			string resultVariableName,
 			string fullDomainModelName,
-			bool processAsSingleModel
+			bool processAsSingleModel,
+			InfrastructureEnvironment environment
 		)
 		{
-
 			var statements = new List<StatementSyntax>();
 
 			if (processAsSingleModel)
@@ -1798,7 +1805,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			}
 
 			statements.AddRange(GetGroupDataModelStatements(model, domainModelMap, childsForModel));
-			statements.AddRange(GetCreateDomainModelStatements(null, model, domainModelMap, childsForModel));
+			statements.AddRange(GetCreateDomainModelStatements(null, model, domainModelMap, childsForModel, environment));
 
 			return statements;
 		}
@@ -1807,12 +1814,13 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			InfrastructureModel parentModel,
 			InfrastructureModel model,
 			ReferenceDomainModelMap domainModelMap,
-			Dictionary<string, List<InfrastructureModel>> childsForModel
+			Dictionary<string, List<InfrastructureModel>> childsForModel,
+			InfrastructureEnvironment environment
 		)
 		{
 			var statements = new List<StatementSyntax>();
 			var isTopLevelCall = parentModel is null;
-			var fullDomainModelName = $"Domain.{domainModelMap.Domain}.{domainModelMap.DomainModel.NamespaceDirectory}.{domainModelMap.DomainModelName}";
+			var fullDomainModelName = environment.GetFullDomainModelName(domainModelMap);
 
 			var modelType = isTopLevelCall
 				? model.Name
@@ -1855,7 +1863,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 					continue;
 				}
 
-				var childStatements = GetCreateDomainModelStatements(model, child, childDomainModel, childsForModel);
+				var childStatements = GetCreateDomainModelStatements(model, child, childDomainModel, childsForModel, environment);
 				loopStatements.AddRange(childStatements);
 				loopParameters.Add($"{childDomainModel.DomainModelName.ToVariableName()}Models".ToArgument());
 			}
@@ -2168,14 +2176,17 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				;
 		}
 
-		private static List<(string FieldName, FieldDeclarationSyntax Declaration)> CollectDataToDomainPropertyMappings(ReferenceDomainModelMap domainModelMap)
+		private static List<(string FieldName, FieldDeclarationSyntax Declaration)> CollectDataToDomainPropertyMappings(
+			ReferenceDomainModelMap domainModelMap,
+			InfrastructureEnvironment environment
+		)
 		{
 			var dataModelType = domainModelMap.IsChildDomainModel
 				? $"{domainModelMap.ClassificationKey.ToPlural()}.{domainModelMap.DataModelName}"
 				: domainModelMap.DataModelName;
 
 			var fieldDeclarations = new List<(string FieldName, FieldDeclarationSyntax Declaration)>();
-			var fullDomainModelName = $"Domain.{domainModelMap.Domain}.{domainModelMap.DomainModel.NamespaceDirectory}.{domainModelMap.DomainModelName}";
+			var fullDomainModelName = environment.GetFullDomainModelName(domainModelMap);
 
 			// Property name mappings
 			var domainModelProperties = domainModelMap.DomainModel.Properties.Where(p => !p.DataModelPropertyName.IsNullOrEmpty()).ToList();
@@ -2212,7 +2223,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 
 			foreach (var childDomainModel in domainModelMap.ChildDomainModels)
 			{
-				fieldDeclarations.AddRange(CollectDataToDomainPropertyMappings(childDomainModel));
+				fieldDeclarations.AddRange(CollectDataToDomainPropertyMappings(childDomainModel, environment));
 			}
 
 			return fieldDeclarations;

@@ -14,19 +14,16 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 	public static class QueryInfrastructureProviderServiceTemplate
 	{
 		public static string GetProviderService(
-			InfrastructureProject project,
 			InfrastructureModel model,
 			QueryProviderMap queryProviderMap,
-			string fullQualifiedDomainNamespace,
-			string fullQualifiedApplicationNamespace,
-			bool addAssemblyCommentToFiles
+			InfrastructureEnvironment environment
 		)
 		{
-			var @namespace = $"{fullQualifiedDomainNamespace}.{model.ClassificationKey.ToPlural()}";
+			var @namespace = $"{environment.InfrastructureNamespaceWithDomain}.{model.ClassificationKey.ToPlural()}";
 			var className = $"{model.ClassificationKey}QueryInfrastructureProviderService";
 			var featureNameNamespace = queryProviderMap.FeatureName.IsNullOrEmpty() ? "" : $"{queryProviderMap.FeatureName}.";
 
-			var unitInformation = new UnitInformation(className, @namespace, addAssemblyComment: addAssemblyCommentToFiles);
+			var unitInformation = new UnitInformation(className, @namespace, addAssemblyComment: environment.Project.AddAssemblyCommentToFiles);
 			unitInformation.AddClassModifier(SyntaxKind.InternalKeyword, SyntaxKind.PartialKeyword);
 			unitInformation.AddContructorModifier(SyntaxKind.PublicKeyword);
 
@@ -39,9 +36,9 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 
 			unitInformation.AddUsing(CommonNames.Namespaces.Eshava.DomainDrivenDesign.Infrastructure.INTERFACES);
 			unitInformation.AddUsing(CommonNames.Namespaces.Eshava.DomainDrivenDesign.Infrastructure.PROVIDERS);
-			unitInformation.AddUsing($"{fullQualifiedApplicationNamespace}.{featureNameNamespace}{model.ClassificationKey.ToPlural()}.Queries");
+			unitInformation.AddUsing($"{environment.ApplicationNamespaceWithDomain}.{featureNameNamespace}{model.ClassificationKey.ToPlural()}.Queries");
 
-			var alternativeClass = project.AlternativeClasses.FirstOrDefault(ac => ac.Type == InfrastructureAlternativeClassType.QueryProviderService);
+			var alternativeClass = environment.Project.AlternativeClasses.FirstOrDefault(ac => ac.Type == InfrastructureAlternativeClassType.QueryProviderService);
 
 			var providerServiceBaseTypes = new List<SimpleBaseTypeSyntax>();
 			if (alternativeClass is not null)
