@@ -252,9 +252,12 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Domain
 					// Get child method
 					methodDeclarations.Add(CreateGetChildMethod(childDomainModel, childType, fieldName));
 
-					// Add child method
-					methodDeclarations.Add(CreateAddChildMethod(childDomainModel, childType, fieldName, true, @namespace, isDeclaredUsing));
-					methodDeclarations.Add(CreateAddChildMethod(childDomainModel, childType, fieldName, false, @namespace, isDeclaredUsing));
+					if (!childDomainModel.DomainModel.CustomAddMethodOnAggregate)
+					{
+						// Add child method
+						methodDeclarations.Add(CreateAddChildMethod(childDomainModel, childType, fieldName, true, @namespace, isDeclaredUsing));
+						methodDeclarations.Add(CreateAddChildMethod(childDomainModel, childType, fieldName, false, @namespace, isDeclaredUsing));
+					}
 				}
 			}
 
