@@ -622,6 +622,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 
 			foreach (var dataModelProperty in dataModel.Properties)
 			{
+				InfrastructureModelPropertyCodeSnippet propertySnippet = null;
 				if (dataModelProperty.SkipFromDomainModel)
 				{
 					if (domainModelMap.IsChildDomainModel)
@@ -639,12 +640,25 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 						continue;
 					}
 
-					var propertySnippet = InfrastructureTemplateMethods.GetCodeSnippet(dataModel.Name, dataModelProperty.Name, codeSnippets, false, true);
+					propertySnippet = InfrastructureTemplateMethods.GetCodeSnippet(dataModel.Name, dataModelProperty.Name, codeSnippets, false, true);
 					if (propertySnippet is null)
 					{
 						continue;
 					}
 
+					statements.Add(
+						instanceVar
+						.Access(dataModelProperty.Name)
+						.Assign(propertySnippet.Expression)
+						.ToExpressionStatement()
+					);
+
+					continue;
+				}
+
+				propertySnippet = InfrastructureTemplateMethods.GetCodeSnippet(dataModel.Name, dataModelProperty.Name, codeSnippets, false, true);
+				if (propertySnippet is not null)
+				{
 					statements.Add(
 						instanceVar
 						.Access(dataModelProperty.Name)
@@ -956,10 +970,26 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 
 			var dataModelPropertyType = dataModelProperty.Type.Replace("?", "");
 			var domainModelPropertyType = domainModelProperty.Type.Replace("?", "");
+			var addNullableFallback = !dataModelProperty.Type.EndsWith("?") && domainModelProperty.Type.EndsWith("?");
 
-			var domainModelPropertyValueExpression = dataModelPropertyType != domainModelPropertyType && !domainModelProperty.ProcessAsUnit
-				? domainModelPropertyAccessor.Cast(dataModelProperty.Type.ToType())
-				: domainModelPropertyAccessor;
+
+			ExpressionSyntax domainModelPropertyValueExpression = null;
+			if (domainModelProperty.ProcessAsUnit)
+			{
+				domainModelPropertyValueExpression = domainModelPropertyAccessor;
+			}
+			else if (dataModelPropertyType == domainModelPropertyType)
+			{
+				domainModelPropertyValueExpression = addNullableFallback
+					? domainModelPropertyAccessor.AddNullFallback(dataModelPropertyType.DefaultOf())
+					: domainModelPropertyAccessor;
+			}
+			else
+			{
+				domainModelPropertyValueExpression = domainModelProperty.UseDefaultInsteadOfCastForDataProperty
+					? dataModelPropertyType.DefaultOf()
+					: domainModelPropertyAccessor.Cast(dataModelProperty.Type.ToType());
+			}
 
 			if (!withValueMapping)
 			{
@@ -990,7 +1020,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 					.Access("TryGetValue")
 					.Call(dataModelPropertyName.ToLiteralArgument(), $"out var {dataModelPropertyMapped}".ToArgument())
 					.ShortIf(
-						dataModelPropertyMapped.ToIdentifierName().Call(domainModelPropertyValueExpression.ToArgument()).Cast(dataModelProperty.Type.ToType()),
+						dataModelPropertyMapped.ToIdentifierName().Call(domainModelPropertyAccessor.ToArgument()).Cast(dataModelProperty.Type.ToType()),
 						(domainModelProperty.ProcessAsUnit && dataModelPropertyType != domainModelPropertyType)
 							? Eshava.CodeAnalysis.SyntaxConstants.Default
 							: domainModelPropertyValueExpression

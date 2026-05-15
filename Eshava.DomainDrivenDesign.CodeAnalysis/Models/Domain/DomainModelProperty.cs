@@ -48,6 +48,10 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models.Domain
 		/// Value object will be automatically mapped to an data model (if configured) or mapped by custom code
 		/// </summary>
 		public bool ProcessAsUnit { get; set; }
+		/// <summary>
+		/// Used in FromDomainModel method
+		/// </summary>
+		public bool UseDefaultInsteadOfCastForDataProperty { get; set; }
 
 		public List<DomainModelPropertyValidationRule> ValidationRules { get; set; }
 		public List<AttributeDefinition> Attributes { get; set; }

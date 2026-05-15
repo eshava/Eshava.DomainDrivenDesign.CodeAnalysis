@@ -92,8 +92,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			}
 
 			var referenceRelations = relatedDataModels
-				.Where(m => m.DataModel.Name != modelItem.DataModel.Name 
-					|| (m.DataModel.Name == modelItem.DataModel.Name && m.TableAliasConstant != modelItem.TableAliasConstant) 
+				.Where(m => m.DataModel.Name != modelItem.DataModel.Name
+					|| (m.DataModel.Name == modelItem.DataModel.Name && m.TableAliasConstant != modelItem.TableAliasConstant)
 					|| (m.Domain != modelItem.Domain && m.DataModel.Name == modelItem.DataModel.Name)
 				)
 				.GroupBy(m => new { m.Domain, Model = m.DataModel.Name, Property = m.Property.Name, m.TableAliasConstant })
@@ -306,6 +306,11 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			bool isMapping
 		)
 		{
+			if (!codeSnippets.Any())
+			{
+				return null;
+			}
+
 			Func<InfrastructureModelPropertyCodeSnippet, bool> usage = cs => (isMapping && cs.IsMapping) || (isFilter && cs.IsFilter);
 			var propertySnippet = codeSnippets.FirstOrDefault(cs => cs.CodeSnippeKey == $"{dataModelName}.{dataModelPropertyName}" && usage(cs))
 				?? codeSnippets.FirstOrDefault(cs => cs.CodeSnippeKey == dataModelPropertyName && usage(cs));
