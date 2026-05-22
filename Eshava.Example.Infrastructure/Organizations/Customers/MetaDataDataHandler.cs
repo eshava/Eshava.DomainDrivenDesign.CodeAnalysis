@@ -31,7 +31,7 @@ namespace Eshava.Example.Infrastructure.Organizations.Customers
 			((SqlParameter)parameter).SqlDbType = SqlDbType.NVarChar;
 
 			parameter.Value = value is null
-				? null
+				? DBNull.Value
 				: JsonSerializer.Serialize<MetaDataData>(value);
 		}
 	}

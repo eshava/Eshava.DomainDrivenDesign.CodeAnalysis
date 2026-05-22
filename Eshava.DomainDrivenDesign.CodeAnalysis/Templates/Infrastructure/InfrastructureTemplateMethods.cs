@@ -433,6 +433,10 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				{
 					var dataType = item.GetDataType(referenceDomain, referenceDataModel);
 					var parentDataType = parentItem.GetDataType(referenceDomain, referenceDataModel);
+
+					var codeSnippetTableParts = new List<InterpolatedStringContentSyntax>();
+					AddCodeSnippetReadConditions(codeSnippetTableParts, queryParameters, item.DataModel, dataType, item.TableAliasConstant.ToIdentifierName(), metaData, true);
+
 					interpolatedTableParts.AddRange(
 						GetJoinsQueryParts(
 							item.TableAliasConstant,
@@ -444,13 +448,17 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 							"Id",
 							implementSoftDelete,
 							queryParameters,
-							metaData
+							metaData,
+							codeSnippetTableParts.Count > 0 ? SqlJoinType.Join : SqlJoinType.LeftJoin
 						)
 					);
 					match = true;
 
 					CheckAndAddTypePropertyJoinCondition(item, interpolatedTableParts, queryParameters, dataType);
-					AddCodeSnippetReadConditions(interpolatedTableParts, queryParameters, item.DataModel, dataType, item.TableAliasConstant.ToIdentifierName(), metaData, true);
+					if (codeSnippetTableParts.Count > 0)
+					{
+						interpolatedTableParts.AddRange(codeSnippetTableParts);
+					}
 				}
 				else
 				{
@@ -467,6 +475,10 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 					{
 						var dataType = item.GetDataType(referenceDomain, referenceDataModel);
 						var parentDataType = parentItem.GetDataType(referenceDomain, referenceDataModel);
+
+						var codeSnippetTableParts = new List<InterpolatedStringContentSyntax>();
+						AddCodeSnippetReadConditions(codeSnippetTableParts, queryParameters, item.DataModel, dataType, item.TableAliasConstant.ToIdentifierName(), metaData, true);
+
 						interpolatedTableParts.AddRange(
 							GetJoinsQueryParts(
 								item.TableAliasConstant,
@@ -478,18 +490,25 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 								"Id",
 								implementSoftDelete,
 								queryParameters,
-								metaData
+								metaData,
+								codeSnippetTableParts.Count > 0 ? SqlJoinType.Join : SqlJoinType.LeftJoin
 							)
 						);
 						match = true;
 
-						AddCodeSnippetReadConditions(interpolatedTableParts, queryParameters, item.DataModel, dataType, item.TableAliasConstant.ToIdentifierName(), metaData, true);
+						if (codeSnippetTableParts.Count > 0)
+						{
+							interpolatedTableParts.AddRange(codeSnippetTableParts);
+						}
 					}
 				}
 				else
 				{
 					var dataType = item.GetDataType(referenceDomain, referenceDataModel);
 					var parentDataType = parentItem.GetDataType(referenceDomain, referenceDataModel);
+
+					var codeSnippetTableParts = new List<InterpolatedStringContentSyntax>();
+					AddCodeSnippetReadConditions(codeSnippetTableParts, queryParameters, item.DataModel, dataType, item.TableAliasConstant.ToIdentifierName(), metaData, true);
 
 					// current models has a foreign key for this domain model
 					interpolatedTableParts.AddRange(
@@ -503,12 +522,16 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 							referenceProperty.Name,
 							implementSoftDelete,
 							queryParameters,
-							metaData
+							metaData,
+							codeSnippetTableParts.Count > 0 ? SqlJoinType.Join : SqlJoinType.LeftJoin
 						)
 					);
 					match = true;
 
-					AddCodeSnippetReadConditions(interpolatedTableParts, queryParameters, item.DataModel, dataType, item.TableAliasConstant.ToIdentifierName(), metaData, true);
+					if (codeSnippetTableParts.Count > 0)
+					{
+						interpolatedTableParts.AddRange(codeSnippetTableParts);
+					}
 				}
 			}
 
@@ -591,13 +614,22 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			string propertyParent,
 			bool implementSoftDelete,
 			List<(ExpressionSyntax Property, string Name)> queryParameters,
-			MethodMetaData metaData
+			MethodMetaData metaData,
+			SqlJoinType joinType = SqlJoinType.LeftJoin
 		)
 		{
+			var joinTypeString = joinType switch
+			{
+				SqlJoinType.Join => "JOIN",
+				SqlJoinType.LeftJoin => "LEFT JOIN",
+				SqlJoinType.RightJoin => "RIGHT JOIN",
+				_ => "LEFT JOIN"
+			};
+
 			var interpolatedTableParts = new List<InterpolatedStringContentSyntax>
 			{
-				@"
-					LEFT JOIN
+				$@"
+					{joinTypeString}
 						".Interpolate(),
 				"TypeAnalyzer".Access("GetTableName".AsGeneric(dataTypeJoin)).Call().Interpolate(),
 				" ".Interpolate(),

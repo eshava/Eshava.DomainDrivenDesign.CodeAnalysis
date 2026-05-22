@@ -2,6 +2,7 @@
 using Eshava.DomainDrivenDesign.CodeAnalysis.Factories;
 using Eshava.DomainDrivenDesign.CodeAnalysis.Extensions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Eshava.Example.SourceGenerator.Generators;
 
 namespace Eshava.Example.SourceGenerator.Tests
 {
@@ -121,7 +122,7 @@ namespace Eshava.Example.SourceGenerator.Tests
 					data.DomainModels,
 					data.InfrastructureProject,
 					data.InfrastructureModels,
-					[]
+					CodeSnippets.GetInfrastructureCodeSnippets()
 				);
 
 				result.SourceCode = result.SourceCode
