@@ -1166,7 +1166,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Domain
 			var propertyName = "EventDomain";
 			var property = propertyName
 				.ToProperty(Eshava.CodeAnalysis.SyntaxConstants.String, [SyntaxKind.PublicKeyword, SyntaxKind.OverrideKeyword], false, false)
-				.WithExpressionBody(domain.ToLiteralString());
+				.WithExpressionBody(domain.ToLowerInvariant().ToLiteralString());
 
 			unitInformation.AddProperty(property, propertyName);
 		}
