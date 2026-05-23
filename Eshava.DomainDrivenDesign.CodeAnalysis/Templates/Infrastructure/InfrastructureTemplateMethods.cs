@@ -12,6 +12,105 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 {
 	public static class InfrastructureTemplateMethods
 	{
+		public static void AddMissingQueryAnalysisItemsForApplicableCodeSnippets(
+			List<QueryAnalysisItem> items,
+			string rootDomain,
+			List<ApplicableWhereConditionCodeSnippet> applicableWhereConditionCodeSnippets,
+			bool isForDomainModelRepository
+		)
+		{
+			if (applicableWhereConditionCodeSnippets is null || applicableWhereConditionCodeSnippets.Count == 0)
+			{
+				return;
+			}
+
+			foreach (var applicableCodeSnippet in applicableWhereConditionCodeSnippets)
+			{
+				var modelChain = applicableCodeSnippet.ModelChain
+					.GetItemsFromRoot()
+					.ToList();
+
+				if (modelChain.Count < 2)
+				{
+					continue;
+				}
+
+				for (var i = 1; i < modelChain.Count; i++)
+				{
+					var parentChainItem = modelChain[i - 1];
+					var currentChainItem = modelChain[i];
+					var parentModel = parentChainItem.Model;
+					var parentDomain = parentChainItem.Domain;
+					var currentModel = currentChainItem.Model;
+					var currentDomain = currentChainItem.Domain;
+
+					if (items.Any(item => item.ParentDomain == parentDomain
+						&& item.Domain == currentDomain
+						&& item.ParentDataModel?.Name == parentModel.Name
+						&& item.DataModel.Name == currentModel.Name))
+					{
+						continue;
+					}
+
+					var parentNavigationProperty = parentModel.Properties.FirstOrDefault(p => p.ReferenceType == currentModel.Name && !p.ReferencePropertyName.IsNullOrEmpty() && (p.ReferenceDomain.IsNullOrEmpty() || p.ReferenceDomain == currentDomain));
+					var parentReferenceProperty = parentModel.Properties.FirstOrDefault(p => p.IsReference && p.ReferenceType == currentModel.Name && (p.ReferenceDomain.IsNullOrEmpty() || p.ReferenceDomain == currentDomain));
+					var property = currentModel.Properties.FirstOrDefault(p => p.IsReference && p.ReferenceType == parentModel.Name && (p.ReferenceDomain.IsNullOrEmpty() || p.ReferenceDomain == parentDomain));
+					var parentProperty = parentNavigationProperty;
+					var isEnumerable = false;
+					Models.Application.ApplicationUseCaseDtoProperty dtoProperty = null;
+
+					if (parentReferenceProperty is null && property is null)
+					{
+						continue;
+					}
+
+					if (parentReferenceProperty is not null)
+					{
+						parentProperty ??= new InfrastructureModelProperty
+						{
+							Name = currentModel.Name,
+							Type = currentModel.Name,
+							ReferenceType = currentModel.Name,
+							ReferencePropertyName = parentReferenceProperty.Name,
+							ReferenceDomain = parentReferenceProperty.ReferenceDomain
+						};
+
+						property = new InfrastructureModelProperty
+						{
+							Name = "Id",
+							Type = currentModel.IdentifierType
+						};
+					}
+					else
+					{
+						isEnumerable = true;
+						dtoProperty = new Models.Application.ApplicationUseCaseDtoProperty { Name = "*" };
+					}
+
+					var tableAlis = currentModel.Name.CreateModelConstantField();
+					items.Add(new QueryAnalysisItem
+					{
+						ParentDomain = parentDomain,
+						Domain = currentDomain,
+						ParentDataModel = parentModel,
+						DataModel = currentModel,
+						ParentProperty = parentProperty,
+						Property = property,
+						ParentDtoName = null,
+						ParentDtoPropertyName = null,
+						Dto = null,
+						DtoProperty = isForDomainModelRepository ? dtoProperty : null,
+						IsEnumerable = isEnumerable,
+						IsGroupBy = isEnumerable,
+						IsRootModel = currentDomain == rootDomain && i == 0,
+						IsOnlyForSqlJoinCalculation = true,
+						TableAliasConstant = tableAlis.FieldName,
+						TableAliasField = tableAlis.Declaration
+					});
+				}
+			}
+		}
+
 		public static (List<InterpolatedStringContentSyntax> Query, List<InterpolatedStringContentSyntax> Columns) CreateSqlQueryWithoutWhereCondition(
 			InfrastructureModel model,
 			string domain,
@@ -114,6 +213,39 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			return (interpolatedStringParts, interpolatedColumnParts);
 		}
 
+		public static List<InterpolatedStringContentSyntax> CreateSqlJoinQueryParts(
+			InfrastructureModel model,
+			string domain,
+			string tableAliasConstant,
+			List<QueryAnalysisItem> relatedDataModels,
+			bool implementSoftDelete,
+			List<(ExpressionSyntax Property, string Name)> queryParameters,
+			MethodMetaData metaData
+		)
+		{
+			var interpolatedTableParts = new List<InterpolatedStringContentSyntax>();
+			var modelItem = new QueryAnalysisItem
+			{
+				Domain = domain,
+				DataModel = model,
+				TableAliasConstant = tableAliasConstant,
+				IsRootModel = true
+			};
+
+			var referenceRelations = relatedDataModels
+				.Where(m => m.DataModel.Name != modelItem.DataModel.Name
+					|| (m.DataModel.Name == modelItem.DataModel.Name && m.TableAliasConstant != modelItem.TableAliasConstant)
+					|| (m.Domain != modelItem.Domain && m.DataModel.Name == modelItem.DataModel.Name)
+				)
+				.GroupBy(m => new { m.Domain, Model = m.DataModel.Name, Property = m.Property.Name, m.TableAliasConstant })
+				.Select(g => g.First())
+				.ToList();
+
+			CreateJoinQueryParts(modelItem, referenceRelations, interpolatedTableParts, implementSoftDelete, queryParameters, metaData);
+
+			return interpolatedTableParts;
+		}
+
 		private static bool AddSelectStatement(List<InterpolatedStringContentSyntax> interpolatedColumnParts, bool isFirstColum, HashSet<string> addedSelectParts, QueryAnalysisItem item, string dataType, string propertyName)
 		{
 			var selectPart = $"{item.TableAliasConstant}.{propertyName}";
@@ -138,7 +270,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			string dataModelTypeForJoin,
 			IdentifierNameSyntax tableAliasConstant,
 			MethodMetaData metaData,
-			bool isJoinCondition = false
+			bool isForJoinCondition = false
 		)
 		{
 			if (dataModelTypeForJoin.IsNullOrEmpty())
@@ -148,13 +280,13 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 
 			foreach (var dataModelProperty in dataModel.Properties)
 			{
-				var snippetExpression = GetCodeSnippet(dataModel, dataModelProperty, metaData, true, false);
+				var snippetExpression = GetCodeSnippet(dataModel, dataModelProperty, metaData, true, false, isForJoinCondition);
 				if (snippetExpression.Expression is null)
 				{
 					continue;
 				}
 
-				if (isJoinCondition)
+				if (isForJoinCondition)
 				{
 					interpolatedStringParts.Add(@"
 							AND ".Interpolate());
@@ -197,11 +329,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				return (true, false, null, OperationType.Equal);
 			}
 
-			var snippetException = propertySnippet.Exceptions.FirstOrDefault(e =>
-				e.ClassName == metaData.ClassName
-				&& e.MethodName == metaData.MethodName
-				&& e.DataModelName == dataModelName
-			);
+			var snippetException = GetCodeSnippetException(propertySnippet, dataModelName, metaData);
 
 			if (snippetException is null)
 			{
@@ -226,7 +354,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			InfrastructureModelProperty property,
 			MethodMetaData metaData,
 			bool isFilter,
-			bool isMapping
+			bool isMapping,
+			bool isForJoinCondition
 		)
 		{
 			var propertySnippet = GetCodeSnippet(model.Name, property.Name, metaData.CodeSnippets, isFilter, isMapping);
@@ -235,13 +364,14 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				return (null, OperationType.Equal, true);
 			}
 
+			if (propertySnippet.ForceAsWhereCondition && isForJoinCondition)
+			{
+				return (null, OperationType.Equal, true);
+			}
+
 			if (propertySnippet.Exceptions.Count > 0)
 			{
-				var snippetException = propertySnippet.Exceptions.FirstOrDefault(e =>
-					e.ClassName == metaData.ClassName
-					&& e.MethodName == metaData.MethodName
-					&& e.DataModelName == model.Name
-				);
+				var snippetException = GetCodeSnippetException(propertySnippet, model.Name, metaData);
 
 				if (snippetException?.SkipUsage ?? false)
 				{
@@ -260,6 +390,57 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			}
 
 			return (propertySnippet.Expression, propertySnippet.Operation, true);
+		}
+
+		public static List<ApplicableWhereConditionCodeSnippet> FilterApplicableWhereConditionCodeSnippets(
+			IEnumerable<ApplicableWhereConditionCodeSnippet> applicableWhereConditionCodeSnippets,
+			MethodMetaData metaData
+		)
+		{
+			if (applicableWhereConditionCodeSnippets is null)
+			{
+				return [];
+			}
+
+			return applicableWhereConditionCodeSnippets
+				.Where(snippet => !(GetCodeSnippetException(snippet.CodeSnippet, snippet.ModelChain.Model.Name, metaData)?.SkipUsage ?? false))
+				.ToList();
+		}
+
+		public static List<QueryAnalysisItem> FilterQueryAnalysisItemsForApplicableWhereConditionCodeSnippets(
+			IEnumerable<QueryAnalysisItem> relatedDataModels,
+			MethodMetaData metaData
+		)
+		{
+			if (relatedDataModels is null)
+			{
+				return [];
+			}
+
+			var queryAnalysisItems = relatedDataModels.ToList();
+
+			return queryAnalysisItems
+				.Where(item => !item.IsOnlyForSqlJoinCalculation
+					|| HasApplicableWhereConditionCodeSnippet(item, queryAnalysisItems, metaData, new HashSet<string>()))
+				.ToList();
+		}
+
+		public static List<ApplicableWhereConditionCodeSnippet> GetApplicableWhereConditionCodeSnippets(
+			InfrastructureModel model,
+			string modelDomain,
+			Dictionary<string, Dictionary<string, InfrastructureModel>> infratructureModelsByDomainAndName,
+			IEnumerable<InfrastructureModelPropertyCodeSnippet> whereConditionCodeSnippets
+		)
+		{
+			var applicableWhereConditionCodeSnippets = new List<ApplicableWhereConditionCodeSnippet>();
+			if (model is null || whereConditionCodeSnippets is null)
+			{
+				return applicableWhereConditionCodeSnippets;
+			}
+
+			CollectApplicableWhereConditionCodeSnippets(model, modelDomain, infratructureModelsByDomainAndName, whereConditionCodeSnippets.ToList(), applicableWhereConditionCodeSnippets, null, new HashSet<string>());
+
+			return applicableWhereConditionCodeSnippets;
 		}
 
 		public static void AddStatusWhereCondition(
@@ -339,6 +520,128 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 
 				item.TypeProperty = (typeProperty, typeValues);
 			}
+		}
+
+		private static void CollectApplicableWhereConditionCodeSnippets(
+			InfrastructureModel model,
+			string modelDomain,
+			Dictionary<string, Dictionary<string, InfrastructureModel>> infratructureModelsByDomainAndName,
+			IReadOnlyCollection<InfrastructureModelPropertyCodeSnippet> whereConditionCodeSnippets,
+			List<ApplicableWhereConditionCodeSnippet> applicableWhereConditionCodeSnippets,
+			ApplicableInfrastructureModelChainItem currentModelChain,
+			HashSet<string> processedModels
+		)
+		{
+			var processedModelKey = $"{modelDomain}.{model.Name}";
+			if (!processedModels.Add(processedModelKey))
+			{
+				return;
+			}
+
+			var modelChain = new ApplicableInfrastructureModelChainItem(modelDomain, model, currentModelChain);
+
+			foreach (var property in model.Properties)
+			{
+				foreach (var codeSnippet in whereConditionCodeSnippets.Where(cs => IsApplicableWhereConditionCodeSnippet(model, property, cs)))
+				{
+					applicableWhereConditionCodeSnippets.Add(new ApplicableWhereConditionCodeSnippet(codeSnippet, property, modelChain));
+				}
+
+				if (!property.IsReference || property.ReferenceType.IsNullOrEmpty())
+				{
+					continue;
+				}
+
+				var referenceDomain = property.ReferenceDomain.IsNullOrEmpty()
+					? modelDomain
+					: property.ReferenceDomain;
+
+				infratructureModelsByDomainAndName.TryGetValue(referenceDomain, out var modelsForReferenceDomain);
+				if (modelsForReferenceDomain is null || !modelsForReferenceDomain.TryGetValue(property.ReferenceType, out var referencedModel))
+				{
+					continue;
+				}
+
+				CollectApplicableWhereConditionCodeSnippets(referencedModel, referenceDomain, infratructureModelsByDomainAndName, whereConditionCodeSnippets, applicableWhereConditionCodeSnippets, modelChain, processedModels);
+			}
+
+			processedModels.Remove(processedModelKey);
+		}
+
+		private static bool IsApplicableWhereConditionCodeSnippet(
+			InfrastructureModel model,
+			InfrastructureModelProperty property,
+			InfrastructureModelPropertyCodeSnippet codeSnippet
+		)
+		{
+			var codeSnippetKey = codeSnippet.CodeSnippeKey;
+
+			return codeSnippetKey == $"{model.Name}.{property.Name}"
+				|| codeSnippetKey == property.Name;
+		}
+
+		private static InfrastructureExceptionCodeSnippet GetCodeSnippetException(
+			InfrastructureModelPropertyCodeSnippet propertySnippet,
+			string dataModelName,
+			MethodMetaData metaData
+		)
+		{
+			if (propertySnippet?.Exceptions is null || propertySnippet.Exceptions.Count == 0 || metaData is null)
+			{
+				return null;
+			}
+
+			return propertySnippet.Exceptions.FirstOrDefault(e =>
+				e.ClassName == metaData.ClassName
+				&& e.MethodName == metaData.MethodName
+				&& e.DataModelName == dataModelName
+			);
+		}
+		private static bool HasApplicableWhereConditionCodeSnippet(
+			QueryAnalysisItem item,
+			List<QueryAnalysisItem> relatedDataModels,
+			MethodMetaData metaData,
+			HashSet<string> processedItems
+		)
+		{
+			var itemKey = $"{item.Domain}.{item.DataModel?.Name}.{item.TableAliasConstant}";
+			if (!processedItems.Add(itemKey))
+			{
+				return false;
+			}
+
+			var whereConditionCodeSnippets = metaData.CodeSnippets.Where(cs => cs.ForceAsWhereCondition).ToList();
+			var hasApplicableSnippet = item.DataModel?.Properties.Any(property =>
+			{
+				var propertySnippet = GetCodeSnippet(item.DataModel.Name, property.Name, whereConditionCodeSnippets, true, false);
+				if (propertySnippet is null)
+				{
+					return false;
+				}
+
+				var snippetException = GetCodeSnippetException(propertySnippet, item.DataModel.Name, metaData);
+				if (snippetException?.SkipUsage ?? false)
+				{
+					return false;
+				}
+
+				return snippetException?.UseInstead != true || snippetException.Expression is not null || propertySnippet.Expression is not null;
+			}) ?? false;
+
+			if (hasApplicableSnippet)
+			{
+				return true;
+			}
+
+			foreach (var childItem in relatedDataModels.Where(child => child.IsOnlyForSqlJoinCalculation && child.ParentDomain == item.Domain && child.ParentDataModel?.Name == item.DataModel?.Name))
+			{
+				if (HasApplicableWhereConditionCodeSnippet(childItem, relatedDataModels, metaData, new HashSet<string>(processedItems)))
+				{
+					return true;
+				}
+			}
+
+			return false;
 		}
 
 		private static bool AddSelectColumnSeparator(List<InterpolatedStringContentSyntax> interpolatedColumnParts, bool isFirstColum)
@@ -544,12 +847,14 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 						continue;
 					}
 
-					if (newItem.DtoProperty is null)
+					if (newItem.DtoProperty is null && !newItem.IsOnlyForSqlJoinCalculation)
 					{
 						continue;
 					}
 
-					if (!(newItem.DtoProperty?.ReferenceProperty.IsNullOrEmpty() ?? true) && !(item.DtoProperty?.ReferenceProperty.IsNullOrEmpty() ?? true))
+					if (!newItem.IsOnlyForSqlJoinCalculation
+						&& !(newItem.DtoProperty?.ReferenceProperty.IsNullOrEmpty() ?? true)
+						&& !(item.DtoProperty?.ReferenceProperty.IsNullOrEmpty() ?? true))
 					{
 						var newDtoRefParts = newItem.DtoProperty.ReferenceProperty.Split('.');
 						var newDtoRef = String.Concat(newDtoRefParts.Take(newDtoRefParts.Length - 2));

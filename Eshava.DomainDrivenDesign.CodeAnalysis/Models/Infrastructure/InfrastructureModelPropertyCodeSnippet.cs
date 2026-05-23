@@ -26,9 +26,14 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models.Infrastructure
 		public string PropertyName { get; set; }
 		public ExpressionSyntax Expression { get; set; }
 		public OperationType Operation { get; set; } = OperationType.Equal;
-
+		
 		public bool IsMapping { get; set; }
 		public bool IsFilter { get; set; }
+		/// <summary>
+		/// Only if <see cref="IsFilter"/> is set true, 
+		/// this property forces the code snippet to be used as a where condition.
+		/// </summary>
+		public bool ForceAsWhereCondition { get; set; }
 
 		public List<InfrastructureExceptionCodeSnippet> Exceptions { get; set; }
 	}

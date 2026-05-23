@@ -20,7 +20,6 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 		public static string GetRepository(
 			InfrastructureModel model,
 			Dictionary<string, List<InfrastructureModel>> childsForAllModels,
-			InfrastructureModels infrastructureModelsConfig,
 			QueryProviderMap queryProviderMap,
 			string databaseSettingsInterface,
 			string databaseSettingsInterfaceUsing,
@@ -30,6 +29,17 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			var repositoryCodeSnippet = environment.CodeSnippets
 				.FirstOrDefault(cs => cs.ApplyOnQueryRepository)
 				?? new InfrastructureCodeSnippet();
+
+			var whereConditionCodeSnippets = repositoryCodeSnippet.PropertyStatements
+				.Where(ps => ps.IsFilter && ps.ForceAsWhereCondition)
+				.ToList();
+
+			var applicableWhereConditionCodeSnippets = InfrastructureTemplateMethods.GetApplicableWhereConditionCodeSnippets(
+				model,
+				environment.Domain,
+				environment.ModelsByDomainAndName,
+				whereConditionCodeSnippets
+			);
 
 			NameAndType databaseSettings;
 			if (databaseSettingsInterface.IsNullOrEmpty())
@@ -87,7 +97,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			var repositoryInterfaceType = repositoryInterface.ToType().ToSimpleBaseType();
 			unitInformation.AddBaseType(baseType, repositoryInterfaceType);
 
-			var allModelsForDomain = infrastructureModelsConfig.Namespaces.First(ns => ns.Domain == environment.Domain).Models.ToList();
+			var allModelsForDomain = environment.ModelsByDomainAndName[environment.Domain].Values.ToList();
 			var allModelsForDomainByClassificationKey = allModelsForDomain.GroupBy(m => m.ClassificationKey).ToDictionary(m => m.Key, m => m.ToList());
 			var allModelsForDomainDic = allModelsForDomain.ToDictionary(m => m.Name, m => m);
 
@@ -135,11 +145,11 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				switch (methodMap.Type)
 				{
 					case MethodType.Read:
-						methodCreationResult = CreateReadMethod(model, methodMap, childsForAllModels, infrastructureModelsConfig, alternativeAbstractDatabaseModelProperties, metaData, environment.Project.ImplementSoftDelete);
+						methodCreationResult = CreateReadMethod(model, methodMap, childsForAllModels, environment.ModelsByDomainAndName, alternativeAbstractDatabaseModelProperties, applicableWhereConditionCodeSnippets, metaData, environment.Project.ImplementSoftDelete);
 
 						break;
 					case MethodType.Search:
-						methodCreationResult = CreateSearchMethod(model, methodMap, childsForAllModels, infrastructureModelsConfig, alternativeAbstractDatabaseModelProperties, metaData, environment.Project.ImplementSoftDelete);
+						methodCreationResult = CreateSearchMethod(model, methodMap, childsForAllModels, environment.ModelsByDomainAndName, alternativeAbstractDatabaseModelProperties, applicableWhereConditionCodeSnippets, metaData, environment.Project.ImplementSoftDelete);
 						addFieldsToMapping = true;
 
 						if (methodMap.AddGroupStatementToSqlQuery)
@@ -149,19 +159,19 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 
 						break;
 					case MethodType.SearchCount:
-						methodCreationResult = CreateSearchCountMethod(model, methodMap, childsForAllModels, infrastructureModelsConfig, alternativeAbstractDatabaseModelProperties, metaData, environment.Project.ImplementSoftDelete);
+						methodCreationResult = CreateSearchCountMethod(model, methodMap, childsForAllModels, environment.ModelsByDomainAndName, alternativeAbstractDatabaseModelProperties, applicableWhereConditionCodeSnippets, metaData, environment.Project.ImplementSoftDelete);
 						addFieldsToMapping = true;
 
 						break;
 					case MethodType.Exists:
-						methodCreationResult = CreateExistsMethod(model, methodMap, metaData, environment.Project.ImplementSoftDelete);
+						methodCreationResult = CreateExistsMethod(model, methodMap, childsForAllModels, environment.ModelsByDomainAndName, alternativeAbstractDatabaseModelProperties, applicableWhereConditionCodeSnippets, metaData, environment.Project.ImplementSoftDelete);
 
 						break;
 					case MethodType.IsUnique:
-						methodCreationResult = CreateIsUniqueMethod(model, methodMap, metaData, environment.Project.ImplementSoftDelete);
+						methodCreationResult = CreateIsUniqueMethod(model, methodMap, childsForAllModels, environment.ModelsByDomainAndName, alternativeAbstractDatabaseModelProperties, applicableWhereConditionCodeSnippets, metaData, environment.Project.ImplementSoftDelete);
 						break;
 					case MethodType.IsUsedForeignKey:
-						methodCreationResult = CreateIsUsedForeignKeyMethod(model, methodMap, metaData, environment.Project.ImplementSoftDelete);
+						methodCreationResult = CreateIsUsedForeignKeyMethod(model, methodMap, childsForAllModels, environment.ModelsByDomainAndName, alternativeAbstractDatabaseModelProperties, applicableWhereConditionCodeSnippets, metaData, environment.Project.ImplementSoftDelete);
 
 						break;
 					case MethodType.ReadAggregateId:
@@ -179,7 +189,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 							}
 						}
 
-						methodCreationResult = CreateReadAggregateIdMethod(modelWithParentReference, methodMap, allModelsForDomainDic, metaData, environment.Project.ImplementSoftDelete);
+						methodCreationResult = CreateReadAggregateIdMethod(modelWithParentReference, methodMap, allModelsForDomainDic, childsForAllModels, environment.ModelsByDomainAndName, alternativeAbstractDatabaseModelProperties, applicableWhereConditionCodeSnippets, metaData, environment.Project.ImplementSoftDelete);
 
 						break;
 				}
@@ -241,13 +251,19 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 		private static MethodCreationResult CreateExistsMethod(
 			InfrastructureModel dataModel,
 			UseCaseQueryProviderMethodMap methodMap,
+			Dictionary<string, List<InfrastructureModel>> childsForAllModels,
+			Dictionary<string, Dictionary<string, InfrastructureModel>> infrastructureModelsByDomainAndName,
+			Dictionary<string, DatabaseModelProperty> alternativeAbstractDatabaseModelProperties,
+			List<ApplicableWhereConditionCodeSnippet> applicableWhereConditionCodeSnippets,
 			MethodMetaData metaData,
 			bool implementSoftDelete
 		)
 		{
 			var methodMetaData = metaData.Clone(methodMap.Name);
+			applicableWhereConditionCodeSnippets = InfrastructureTemplateMethods.FilterApplicableWhereConditionCodeSnippets(applicableWhereConditionCodeSnippets, methodMetaData);
 			var idParameter = methodMap.ParameterTypes.First();
 			var modelConstant = dataModel.Name.ToUpper();
+			var relatedDataModels = CreateRelatedDataModelsForApplicableCodeSnippets(methodMap.Domain, dataModel, childsForAllModels, infrastructureModelsByDomainAndName, alternativeAbstractDatabaseModelProperties, applicableWhereConditionCodeSnippets);
 
 			var interpolatedStringParts = new List<InterpolatedStringContentSyntax>
 			{
@@ -262,14 +278,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 						".Interpolate(),
 				"TypeAnalyzer".Access("GetTableName".AsGeneric(dataModel.Name)).Call().Interpolate(),
 				" ".Interpolate(),
-				modelConstant.ToIdentifierName().Interpolate(),
-				@"
-					WHERE
-						".Interpolate(),
-				modelConstant.ToIdentifierName().Interpolate(),
-				".".Interpolate(),
-				Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(dataModel.Name.Access("Id").ToArgument()).Interpolate(),
-				$@" = @{idParameter.Name.ToPropertyName()}".Interpolate()
+				modelConstant.ToIdentifierName().Interpolate()
 			};
 
 
@@ -277,6 +286,16 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			{
 				(idParameter.Name.ToIdentifierName(), idParameter.Name.ToPropertyName())
 			};
+			var joinParts = InfrastructureTemplateMethods.CreateSqlJoinQueryParts(dataModel, methodMap.Domain, modelConstant, relatedDataModels, implementSoftDelete, parameterItems, methodMetaData);
+
+			interpolatedStringParts.AddRange(joinParts);
+			interpolatedStringParts.Add(@"
+					WHERE
+						".Interpolate());
+			interpolatedStringParts.Add(modelConstant.ToIdentifierName().Interpolate());
+			interpolatedStringParts.Add(".".Interpolate());
+			interpolatedStringParts.Add(Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(dataModel.Name.Access("Id").ToArgument()).Interpolate());
+			interpolatedStringParts.Add($@" = @{idParameter.Name.ToPropertyName()}".Interpolate());
 
 			if (implementSoftDelete)
 			{
@@ -285,6 +304,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			}
 
 			InfrastructureTemplateMethods.AddCodeSnippetReadConditions(interpolatedStringParts, parameterItems, dataModel, null, modelConstant.ToIdentifierName(), methodMetaData);
+			AddCodeSnippetReadConditions(interpolatedStringParts, parameterItems, relatedDataModels, methodMap.Domain, dataModel.Name, methodMetaData);
 
 			interpolatedStringParts.Add($@"
 					".Interpolate());
@@ -333,18 +353,24 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			return new MethodCreationResult
 			{
 				Usings = methodUsings,
-				Method = method
+				Method = method,
+				Fields = GetConstantFields(methodMap.Domain, dataModel.Name, relatedDataModels)
 			};
 		}
 
 		private static MethodCreationResult CreateIsUniqueMethod(
 			InfrastructureModel dataModel,
 			UseCaseQueryProviderMethodMap methodMap,
+			Dictionary<string, List<InfrastructureModel>> childsForAllModels,
+			Dictionary<string, Dictionary<string, InfrastructureModel>> infrastructureModelsByDomainAndName,
+			Dictionary<string, DatabaseModelProperty> alternativeAbstractDatabaseModelProperties,
+			List<ApplicableWhereConditionCodeSnippet> applicableWhereConditionCodeSnippets,
 			MethodMetaData metaData,
 			bool implementSoftDelete
 		)
 		{
 			var methodMetaData = metaData.Clone(methodMap.Name);
+			applicableWhereConditionCodeSnippets = InfrastructureTemplateMethods.FilterApplicableWhereConditionCodeSnippets(applicableWhereConditionCodeSnippets, methodMetaData);
 			var idParameter = methodMap.ParameterTypes.First();
 			var checkParameter = methodMap.ParameterTypes.Skip(1).First();
 			var additionalParameters = methodMap.ParameterTypes.Count > 2
@@ -352,6 +378,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				: new List<UseCaseQueryProviderMethodParameterTypeMap>();
 
 			var modelConstant = dataModel.Name.ToUpper();
+			var relatedDataModels = CreateRelatedDataModelsForApplicableCodeSnippets(methodMap.Domain, dataModel, childsForAllModels, infrastructureModelsByDomainAndName, alternativeAbstractDatabaseModelProperties, applicableWhereConditionCodeSnippets);
 
 			var interpolatedStringParts = new List<InterpolatedStringContentSyntax>
 			{
@@ -366,14 +393,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 						".Interpolate(),
 				"TypeAnalyzer".Access("GetTableName".AsGeneric(dataModel.Name)).Call().Interpolate(),
 				" ".Interpolate(),
-				modelConstant.ToIdentifierName().Interpolate(),
-				@"
-					WHERE
-						".Interpolate(),
-				modelConstant.ToIdentifierName().Interpolate(),
-				".".Interpolate(),
-				Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(dataModel.Name.Access(checkParameter.PropertyName).ToArgument()).Interpolate(),
-				$@" = @{checkParameter.PropertyName}".Interpolate()
+				modelConstant.ToIdentifierName().Interpolate()
 			};
 
 			foreach (var parameter in additionalParameters)
@@ -391,6 +411,16 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			var parameterItems = methodMap.ParameterTypes
 			.Select(p => (Property: (ExpressionSyntax)p.Name.ToIdentifierName(), Name: p.PropertyName))
 			.ToList();
+			var joinParts = InfrastructureTemplateMethods.CreateSqlJoinQueryParts(dataModel, methodMap.Domain, modelConstant, relatedDataModels, implementSoftDelete, parameterItems, methodMetaData);
+
+			interpolatedStringParts.AddRange(joinParts);
+			interpolatedStringParts.Add(@"
+					WHERE
+						".Interpolate());
+			interpolatedStringParts.Add(modelConstant.ToIdentifierName().Interpolate());
+			interpolatedStringParts.Add(".".Interpolate());
+			interpolatedStringParts.Add(Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(dataModel.Name.Access(checkParameter.PropertyName).ToArgument()).Interpolate());
+			interpolatedStringParts.Add($@" = @{checkParameter.PropertyName}".Interpolate());
 
 			if (implementSoftDelete)
 			{
@@ -410,6 +440,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			};
 
 			InfrastructureTemplateMethods.AddCodeSnippetReadConditions(interpolatedStringParts, parameterItems, dataModel, null, modelConstant.ToIdentifierName(), methodMetaData);
+			AddCodeSnippetReadConditions(interpolatedStringParts, parameterItems, relatedDataModels, methodMap.Domain, dataModel.Name, methodMetaData);
 
 			interpolatedStringParts.Add($@"
 					".Interpolate());
@@ -462,7 +493,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			return new MethodCreationResult
 			{
 				Usings = methodUsings,
-				Method = method
+				Method = method,
+				Fields = GetConstantFields(methodMap.Domain, dataModel.Name, relatedDataModels)
 			};
 		}
 
@@ -470,11 +502,16 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			InfrastructureModel childDataModel,
 			UseCaseQueryProviderMethodMap methodMap,
 			Dictionary<string, InfrastructureModel> allModelsForDomain,
+			Dictionary<string, List<InfrastructureModel>> childsForAllModels,
+			Dictionary<string, Dictionary<string, InfrastructureModel>> infrastructureModelsByDomainAndName,
+			Dictionary<string, DatabaseModelProperty> alternativeAbstractDatabaseModelProperties,
+			List<ApplicableWhereConditionCodeSnippet> applicableWhereConditionCodeSnippets,
 			MethodMetaData metaData,
 			bool implementSoftDelete
 		)
 		{
 			var methodMetaData = metaData.Clone(methodMap.Name);
+			var relatedDataModels = CreateRelatedDataModelsForApplicableCodeSnippets(methodMap.Domain, childDataModel, childsForAllModels, infrastructureModelsByDomainAndName, alternativeAbstractDatabaseModelProperties, applicableWhereConditionCodeSnippets);
 			var parentQuery = new Queue<InfrastructureModel>();
 			var loopModel = childDataModel;
 			do
@@ -564,6 +601,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			} while (parentQuery.Count > 0);
 
 			interpolatedQueryParts.AddRange(interpolatedFromParts);
+			interpolatedQueryParts.AddRange(InfrastructureTemplateMethods.CreateSqlJoinQueryParts(childDataModel, methodMap.Domain, childModelConstant, relatedDataModels, implementSoftDelete, parameterItems, methodMetaData));
 
 			interpolatedQueryParts.Add(@"
 					WHERE
@@ -580,6 +618,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			}
 
 			InfrastructureTemplateMethods.AddCodeSnippetReadConditions(interpolatedQueryParts, parameterItems, childDataModel, null, childModelConstant.ToIdentifierName(), methodMetaData);
+			AddCodeSnippetReadConditions(interpolatedQueryParts, parameterItems, relatedDataModels, methodMap.Domain, childDataModel.Name, methodMetaData);
 
 			interpolatedQueryParts.Add($@"
 						".Interpolate());
@@ -626,21 +665,28 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			return new MethodCreationResult
 			{
 				Usings = methodUsings,
-				Method = method
+				Method = method,
+				Fields = GetConstantFields(methodMap.Domain, childDataModel.Name, relatedDataModels)
 			};
 		}
 
 		private static MethodCreationResult CreateIsUsedForeignKeyMethod(
 			InfrastructureModel dataModel,
 			UseCaseQueryProviderMethodMap methodMap,
+			Dictionary<string, List<InfrastructureModel>> childsForAllModels,
+			Dictionary<string, Dictionary<string, InfrastructureModel>> infrastructureModelsByDomainAndName,
+			Dictionary<string, DatabaseModelProperty> alternativeAbstractDatabaseModelProperties,
+			List<ApplicableWhereConditionCodeSnippet> applicableWhereConditionCodeSnippets,
 			MethodMetaData metaData,
 			bool implementSoftDelete
 		)
 		{
 			var methodMetaData = metaData.Clone(methodMap.Name);
+			applicableWhereConditionCodeSnippets = InfrastructureTemplateMethods.FilterApplicableWhereConditionCodeSnippets(applicableWhereConditionCodeSnippets, methodMetaData);
 			var idParameter = methodMap.ParameterTypes.First();
 			var modelConstant = dataModel.Name.ToUpper();
 			var foreignKeyProperty = dataModel.Properties.First(p => p.ReferenceType == idParameter.ReferenceType && TemplateMethods.GetDomain(p.ReferenceDomain, methodMap.Domain) == idParameter.ReferenceDomain);
+			var relatedDataModels = CreateRelatedDataModelsForApplicableCodeSnippets(methodMap.Domain, dataModel, childsForAllModels, infrastructureModelsByDomainAndName, alternativeAbstractDatabaseModelProperties, applicableWhereConditionCodeSnippets);
 
 			var interpolatedStringParts = new List<InterpolatedStringContentSyntax>
 			{
@@ -655,20 +701,23 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 						".Interpolate(),
 				"TypeAnalyzer".Access("GetTableName".AsGeneric(dataModel.Name)).Call().Interpolate(),
 				" ".Interpolate(),
-				modelConstant.ToIdentifierName().Interpolate(),
-				@"
-					WHERE
-						".Interpolate(),
-				modelConstant.ToIdentifierName().Interpolate(),
-				".".Interpolate(),
-				Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(dataModel.Name.Access(foreignKeyProperty.Name).ToArgument()).Interpolate(),
-				$@" = @{idParameter.Name.ToPropertyName()}".Interpolate()
+				modelConstant.ToIdentifierName().Interpolate()
 			};
 
 			var parameterItems = new List<(ExpressionSyntax Property, string Name)>
 			{
 				(idParameter.Name.ToIdentifierName(), idParameter.Name.ToPropertyName())
 			};
+			var joinParts = InfrastructureTemplateMethods.CreateSqlJoinQueryParts(dataModel, methodMap.Domain, modelConstant, relatedDataModels, implementSoftDelete, parameterItems, methodMetaData);
+
+			interpolatedStringParts.AddRange(joinParts);
+			interpolatedStringParts.Add(@"
+					WHERE
+						".Interpolate());
+			interpolatedStringParts.Add(modelConstant.ToIdentifierName().Interpolate());
+			interpolatedStringParts.Add(".".Interpolate());
+			interpolatedStringParts.Add(Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(dataModel.Name.Access(foreignKeyProperty.Name).ToArgument()).Interpolate());
+			interpolatedStringParts.Add($@" = @{idParameter.Name.ToPropertyName()}".Interpolate());
 
 			if (implementSoftDelete)
 			{
@@ -677,6 +726,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			}
 
 			InfrastructureTemplateMethods.AddCodeSnippetReadConditions(interpolatedStringParts, parameterItems, dataModel, null, modelConstant.ToIdentifierName(), methodMetaData);
+			AddCodeSnippetReadConditions(interpolatedStringParts, parameterItems, relatedDataModels, methodMap.Domain, dataModel.Name, methodMetaData);
 
 			interpolatedStringParts.Add($@"
 					".Interpolate());
@@ -725,7 +775,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			return new MethodCreationResult
 			{
 				Usings = methodUsings,
-				Method = method
+				Method = method,
+				Fields = GetConstantFields(methodMap.Domain, dataModel.Name, relatedDataModels)
 			};
 		}
 
@@ -733,15 +784,18 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			InfrastructureModel dataModel,
 			UseCaseQueryProviderMethodMap methodMap,
 			Dictionary<string, List<InfrastructureModel>> childsForAllModels,
-			InfrastructureModels infrastructureModelsConfig,
+			Dictionary<string, Dictionary<string, InfrastructureModel>> infrastructureModelsByDomainAndName,
 			Dictionary<string, DatabaseModelProperty> alternativeAbstractDatabaseModelProperties,
+			List<ApplicableWhereConditionCodeSnippet> applicableWhereConditionCodeSnippets,
 			MethodMetaData metaData,
 			bool implementSoftDelete
 		)
 		{
 			var methodMetaData = metaData.Clone(methodMap.Name);
+			applicableWhereConditionCodeSnippets = InfrastructureTemplateMethods.FilterApplicableWhereConditionCodeSnippets(applicableWhereConditionCodeSnippets, methodMetaData);
 			var returnDto = methodMap.ReturnType.DtoMap;
-			var relatedDataModels = CollectDataModelsForReferenceProperties(methodMap.Domain, returnDto, dataModel, childsForAllModels, infrastructureModelsConfig, alternativeAbstractDatabaseModelProperties, true, false);
+			var relatedDataModels = CollectDataModelsForReferenceProperties(methodMap.Domain, returnDto, dataModel, childsForAllModels, infrastructureModelsByDomainAndName, alternativeAbstractDatabaseModelProperties, true, false);
+			InfrastructureTemplateMethods.AddMissingQueryAnalysisItemsForApplicableCodeSnippets(relatedDataModels, methodMap.Domain, applicableWhereConditionCodeSnippets, false);
 
 			var modelItem = relatedDataModels.First(m => m.DataModel.Name == dataModel.Name && m.Domain == methodMap.Domain && m.IsRootModel);
 			var idParameter = methodMap.ParameterTypes.First();
@@ -779,6 +833,15 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			}
 
 			InfrastructureTemplateMethods.AddCodeSnippetReadConditions(interpolatedStringParts, parameterItems, dataModel, null, modelItem.TableAliasConstant.ToIdentifierName(), methodMetaData);
+
+			foreach (var relatedDataModel in relatedDataModels
+				.Where(rdm => rdm.IsOnlyForSqlJoinCalculation)
+				.GroupBy(rdm => rdm.TableAliasConstant)
+				.Select(group => group.First()))
+			{
+				var dataModelType = relatedDataModel.GetDataType(methodMap.Domain, dataModel.Name);
+				InfrastructureTemplateMethods.AddCodeSnippetReadConditions(interpolatedStringParts, parameterItems, relatedDataModel.DataModel, dataModelType, relatedDataModel.TableAliasConstant.ToIdentifierName(), methodMetaData);
+			}
 
 			interpolatedStringParts.Add($@"
 					".Interpolate());
@@ -911,15 +974,18 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			InfrastructureModel dataModel,
 			UseCaseQueryProviderMethodMap methodMap,
 			Dictionary<string, List<InfrastructureModel>> childsForAllModels,
-			InfrastructureModels infrastructureModelsConfig,
+			Dictionary<string, Dictionary<string, InfrastructureModel>> infrastructureModelsByDomainAndName,
 			Dictionary<string, DatabaseModelProperty> alternativeAbstractDatabaseModelProperties,
+			List<ApplicableWhereConditionCodeSnippet> applicableWhereConditionCodeSnippets,
 			MethodMetaData metaData,
 			bool implementSoftDelete
 		)
 		{
 			var methodMetaData = metaData.Clone(methodMap.Name);
+			applicableWhereConditionCodeSnippets = InfrastructureTemplateMethods.FilterApplicableWhereConditionCodeSnippets(applicableWhereConditionCodeSnippets, methodMetaData);
 			var returnDto = methodMap.ParameterTypes.First().Generic.First().DtoMap;
-			var relatedDataModels = CollectDataModelsForReferenceProperties(methodMap.Domain, returnDto, dataModel, childsForAllModels, infrastructureModelsConfig, alternativeAbstractDatabaseModelProperties, true, false);
+			var relatedDataModels = CollectDataModelsForReferenceProperties(methodMap.Domain, returnDto, dataModel, childsForAllModels, infrastructureModelsByDomainAndName, alternativeAbstractDatabaseModelProperties, true, false);
+			InfrastructureTemplateMethods.AddMissingQueryAnalysisItemsForApplicableCodeSnippets(relatedDataModels, methodMap.Domain, applicableWhereConditionCodeSnippets, false);
 
 			var modelItem = relatedDataModels.First(m => m.DataModel.Name == dataModel.Name && m.Domain == methodMap.Domain && m.IsRootModel);
 			var filterRequestParameter = methodMap.ParameterTypes.First();
@@ -942,19 +1008,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				AddStatusFilterCondition(tryBlockStatements, dataModel.Name, dataModel.IdentifierType, methodMetaData);
 			}
 
-			if (!returnDto.Dto.DataModelTypeProperty.IsNullOrEmpty()
-				&& !returnDto.Dto.DataModelTypePropertyValue.IsNullOrEmpty())
-			{
-				var typeProperty = dataModel.Properties.FirstOrDefault(p => p.Name == returnDto.Dto.DataModelTypeProperty);
-				if (typeProperty is not null)
-				{
-					var typeValue = returnDto.Dto.DataModelTypePropertyValue.ToLiteral(typeProperty.Type);
-
-					AddCodeSnippetFilterConditions(tryBlockStatements, returnDto.Dto.DataModelTypeProperty, typeValue, OperationType.Equal);
-				}
-			}
-
 			AddCodeSnippetFilterConditions(tryBlockStatements, dataModel, methodMetaData);
+			AddCodeSnippetFilterConditions(tryBlockStatements, applicableWhereConditionCodeSnippets, methodMetaData);
 
 			tryBlockStatements.Add(
 				"query"
@@ -1082,21 +1137,22 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			};
 		}
 
-
-
 		private static MethodCreationResult CreateSearchCountMethod(
 			InfrastructureModel dataModel,
 			UseCaseQueryProviderMethodMap methodMap,
 			Dictionary<string, List<InfrastructureModel>> childsForAllModels,
-			InfrastructureModels infrastructureModelsConfig,
+			Dictionary<string, Dictionary<string, InfrastructureModel>> infrastructureModelsByDomainAndName,
 			Dictionary<string, DatabaseModelProperty> alternativeAbstractDatabaseModelProperties,
+			List<ApplicableWhereConditionCodeSnippet> applicableWhereConditionCodeSnippets,
 			MethodMetaData metaData,
 			bool implementSoftDelete
 		)
 		{
 			var methodMetaData = metaData.Clone(methodMap.Name);
+			applicableWhereConditionCodeSnippets = InfrastructureTemplateMethods.FilterApplicableWhereConditionCodeSnippets(applicableWhereConditionCodeSnippets, methodMetaData);
 			var returnDto = methodMap.ParameterTypes.First().Generic.First().DtoMap;
-			var relatedDataModels = CollectDataModelsForReferenceProperties(methodMap.Domain, returnDto, dataModel, childsForAllModels, infrastructureModelsConfig, alternativeAbstractDatabaseModelProperties, true, false);
+			var relatedDataModels = CollectDataModelsForReferenceProperties(methodMap.Domain, returnDto, dataModel, childsForAllModels, infrastructureModelsByDomainAndName, alternativeAbstractDatabaseModelProperties, true, false);
+			InfrastructureTemplateMethods.AddMissingQueryAnalysisItemsForApplicableCodeSnippets(relatedDataModels, methodMap.Domain, applicableWhereConditionCodeSnippets, false);
 
 			var modelItem = relatedDataModels.First(m => m.DataModel.Name == dataModel.Name && m.Domain == methodMap.Domain && m.IsRootModel);
 			var filterRequestParameter = methodMap.ParameterTypes.First();
@@ -1116,6 +1172,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			}
 
 			AddCodeSnippetFilterConditions(tryBlockStatements, dataModel, methodMetaData);
+			AddCodeSnippetFilterConditions(tryBlockStatements, applicableWhereConditionCodeSnippets, methodMetaData);
 
 			tryBlockStatements.Add(
 				"query"
@@ -1302,7 +1359,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			ReferenceDtoMap dto,
 			InfrastructureModel model,
 			Dictionary<string, List<InfrastructureModel>> childsForAllModels,
-			InfrastructureModels infrastructureModelsConfig,
+			Dictionary<string, Dictionary<string, InfrastructureModel>> infrastructureModelsByDomainAndName,
 			Dictionary<string, DatabaseModelProperty> alternativeAbstractDatabaseModelProperties,
 			bool isRoot,
 			bool isValueObject
@@ -1336,10 +1393,9 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 						continue;
 					}
 
-					var childDataModel = infrastructureModelsConfig.Namespaces
-						.FirstOrDefault(ns => ns.Domain == childReferenceProperty.Dto.Domain)
-						?.Models
-						?.FirstOrDefault(m => m.Name == childReferenceProperty.Dto.DataModelName);
+					var childDataModel = infrastructureModelsByDomainAndName.TryGetValue(childReferenceProperty.Dto.Domain, out var modelsForDomain)
+						? modelsForDomain.TryGetValue(childReferenceProperty.Dto.DataModelName, out var refModel) ? refModel : null
+						: null;
 					if (childDataModel is null)
 					{
 						continue;
@@ -1347,7 +1403,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 
 					var childIsValueObject = model.Name == childDataModel.Name;
 
-					var currentRelatedDataModels = CollectDataModelsForReferenceProperties(childReferenceProperty.Dto.Domain, childReferenceProperty.Dto, childDataModel, childsForAllModels, infrastructureModelsConfig, alternativeAbstractDatabaseModelProperties, false, childIsValueObject);
+					var currentRelatedDataModels = CollectDataModelsForReferenceProperties(childReferenceProperty.Dto.Domain, childReferenceProperty.Dto, childDataModel, childsForAllModels, infrastructureModelsByDomainAndName, alternativeAbstractDatabaseModelProperties, false, childIsValueObject);
 					if (currentRelatedDataModels.Count > 0)
 					{
 						foreach (var relatedModel in currentRelatedDataModels)
@@ -1494,7 +1550,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 					// if it is not empty and contains at least one dot, it is an reference type and a left join is needed
 					var referencePropertyParts = property.ReferenceProperty.Split('.');
 					var currentRelatedDataModels = new List<QueryAnalysisItem>();
-					var referenceResult = CollectDataModelsForReferenceProperties(property, referencePropertyParts, 0, domain, model, childsForAllModels, infrastructureModelsConfig, alternativeAbstractDatabaseModelProperties, currentRelatedDataModels);
+					var referenceResult = CollectDataModelsForReferenceProperties(property, referencePropertyParts, 0, domain, model, childsForAllModels, infrastructureModelsByDomainAndName, alternativeAbstractDatabaseModelProperties, currentRelatedDataModels);
 					if (referenceResult)
 					{
 						relatedDataModels.AddRange(currentRelatedDataModels);
@@ -1511,6 +1567,55 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				.OrderBy(m => m.TableAliasConstant)
 				.ThenBy(m => m.Property.Name)
 				.ToList();
+		}
+
+		private static List<QueryAnalysisItem> CreateRelatedDataModelsForApplicableCodeSnippets(
+			string domain,
+			InfrastructureModel dataModel,
+			Dictionary<string, List<InfrastructureModel>> childsForAllModels,
+			Dictionary<string, Dictionary<string, InfrastructureModel>> infrastructureModelsByDomainAndName,
+			Dictionary<string, DatabaseModelProperty> alternativeAbstractDatabaseModelProperties,
+			List<ApplicableWhereConditionCodeSnippet> applicableWhereConditionCodeSnippets
+		)
+		{
+			var relatedDataModels = CollectDataModelsForReferenceProperties(
+				domain,
+				new ReferenceDtoMap
+				{
+					Domain = domain,
+					DataModelName = dataModel.Name,
+					Dto = new ApplicationUseCaseDto { Name = dataModel.Name, Properties = [] }
+				},
+				dataModel,
+				childsForAllModels,
+				infrastructureModelsByDomainAndName,
+				alternativeAbstractDatabaseModelProperties,
+				true,
+				false
+			);
+
+			InfrastructureTemplateMethods.AddMissingQueryAnalysisItemsForApplicableCodeSnippets(relatedDataModels, domain, applicableWhereConditionCodeSnippets, false);
+
+			return relatedDataModels;
+		}
+
+		private static void AddCodeSnippetReadConditions(
+			List<InterpolatedStringContentSyntax> interpolatedStringParts,
+			List<(ExpressionSyntax Property, string Name)> parameterItems,
+			List<QueryAnalysisItem> relatedDataModels,
+			string referenceDomain,
+			string referenceDataModel,
+			MethodMetaData metaData
+		)
+		{
+			foreach (var relatedDataModel in relatedDataModels
+				.Where(rdm => rdm.IsOnlyForSqlJoinCalculation)
+				.GroupBy(rdm => rdm.TableAliasConstant)
+				.Select(group => group.First()))
+			{
+				var dataModelType = relatedDataModel.GetDataType(referenceDomain, referenceDataModel);
+				InfrastructureTemplateMethods.AddCodeSnippetReadConditions(interpolatedStringParts, parameterItems, relatedDataModel.DataModel, dataModelType, relatedDataModel.TableAliasConstant.ToIdentifierName(), metaData);
+			}
 		}
 
 		private static void CheckAndAddTypeProperty(ReferenceDtoMap dto, InfrastructureModel model, InfrastructureModelProperty dataProperty, QueryAnalysisItem item)
@@ -1536,7 +1641,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			string currentDomain,
 			InfrastructureModel currentDataModel,
 			Dictionary<string, List<InfrastructureModel>> childsForAllModels,
-			InfrastructureModels infrastructureModelsConfig,
+			Dictionary<string, Dictionary<string, InfrastructureModel>> infrastructureModelsByDomainAndName,
 			Dictionary<string, DatabaseModelProperty> alternativeAbstractDatabaseModelProperties,
 			List<QueryAnalysisItem> relatedDataModels
 		)
@@ -1585,10 +1690,9 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 						? currentDataProperty.Type
 						: currentDataProperty.ReferenceType;
 
-					referenceDataModel = infrastructureModelsConfig.Namespaces
-						.FirstOrDefault(ns => ns.Domain == referenceDomain)
-						?.Models
-						.FirstOrDefault(m => m.Name == referenceType);
+					referenceDataModel = infrastructureModelsByDomainAndName.TryGetValue(referenceDomain, out var modelsByName)
+						? modelsByName.TryGetValue(referenceType, out var refModel) ? refModel : null
+						: null;
 				}
 
 				if (referenceDataModel is null)
@@ -1635,7 +1739,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 						TableAliasField = tableAlias.Declaration
 					});
 
-					return CollectDataModelsForReferenceProperties(dtoProperty, referencePropertyParts, i + 1, referenceDomain, referenceDataModel, childsForAllModels, infrastructureModelsConfig, alternativeAbstractDatabaseModelProperties, relatedDataModels);
+					return CollectDataModelsForReferenceProperties(dtoProperty, referencePropertyParts, i + 1, referenceDomain, referenceDataModel, childsForAllModels, infrastructureModelsByDomainAndName, alternativeAbstractDatabaseModelProperties, relatedDataModels);
 				}
 				else
 				{
@@ -2139,7 +2243,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 		{
 			foreach (var dataModelProperty in dataModel.Properties)
 			{
-				var snippetExpression = InfrastructureTemplateMethods.GetCodeSnippet(dataModel, dataModelProperty, metaData, true, false);
+				var snippetExpression = InfrastructureTemplateMethods.GetCodeSnippet(dataModel, dataModelProperty, metaData, true, false, false);
 				if (snippetExpression.Expression is null)
 				{
 					continue;
@@ -2147,6 +2251,96 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 
 				AddCodeSnippetFilterConditions(statements, dataModelProperty.Name, snippetExpression.Expression, snippetExpression.Operation);
 			}
+		}
+			
+		private static void AddCodeSnippetFilterConditions(List<StatementSyntax> statements, List<ApplicableWhereConditionCodeSnippet> applicableWhereConditionCodeSnippets, MethodMetaData metaData)
+		{
+			foreach (var applicableWhereConditionCodeSnippet in applicableWhereConditionCodeSnippets
+				.Where(snippet => snippet.ModelChain?.Parent is not null)
+				.GroupBy(snippet => $"{snippet.CodeSnippet.CodeSnippeKey}.{snippet.Property.Name}")
+				.Select(group => group.First()))
+			{
+				AddCodeSnippetFilterConditions(statements, applicableWhereConditionCodeSnippet, metaData);
+			}
+		}
+
+		private static void AddCodeSnippetFilterConditions(List<StatementSyntax> statements, ApplicableWhereConditionCodeSnippet applicableWhereConditionCodeSnippet, MethodMetaData metaData)
+		{
+			var snippetExpression = InfrastructureTemplateMethods.GetCodeSnippet(applicableWhereConditionCodeSnippet.ModelChain.Model, applicableWhereConditionCodeSnippet.Property, metaData, true, false, false);
+			if (snippetExpression.Expression is null)
+			{
+				return;
+			}
+
+			var propertyExpression = CreatePropertyExpressionForRelatedDataModel(applicableWhereConditionCodeSnippet.ModelChain, applicableWhereConditionCodeSnippet.Property.Name);
+			if (propertyExpression is null)
+			{
+				return;
+			}
+
+			AddCodeSnippetFilterConditions(statements, propertyExpression, applicableWhereConditionCodeSnippet.Property.Name, snippetExpression.Expression, snippetExpression.Operation);
+		}
+
+		private static ExpressionSyntax CreatePropertyExpressionForRelatedDataModel(ApplicableInfrastructureModelChainItem modelChain, string propertyName)
+		{
+			var chainItems = modelChain.GetItemsFromRoot().ToList();
+			ExpressionSyntax propertyExpression = "p".ToIdentifierName();
+
+			for (var i = 1; i < chainItems.Count; i++)
+			{
+				var parentChainItem = chainItems[i - 1];
+				var currentChainItem = chainItems[i];
+				var navigationProperty = parentChainItem.Model.Properties.FirstOrDefault(p =>
+					p.IsReference
+					&& p.ReferenceType == currentChainItem.Model.Name
+					&& (p.ReferenceDomain.IsNullOrEmpty() || p.ReferenceDomain == currentChainItem.Domain));
+
+				var navigationPropertyName = navigationProperty?.Name;
+				if (!navigationPropertyName.IsNullOrEmpty() && navigationPropertyName.EndsWith("Id"))
+				{
+					navigationPropertyName = navigationPropertyName.Substring(0, navigationPropertyName.Length - 2);
+				}
+
+				if (navigationPropertyName.IsNullOrEmpty())
+				{
+					return null;
+				}
+
+				propertyExpression = propertyExpression.Access(navigationPropertyName);
+			}
+
+			return propertyExpression.Access(propertyName);
+		}
+
+		private static void AddCodeSnippetFilterConditions(List<StatementSyntax> statements, ExpressionSyntax propertyExpression, string filterKey, ExpressionSyntax snippetExpression, OperationType operation)
+		{
+			var filterValueForVariableName = $"filterValueFor{filterKey}{DateTime.UtcNow.Ticks}";
+
+			statements.Add(
+				filterValueForVariableName
+				.ToVariableStatement(snippetExpression)
+			);
+
+			ExpressionSyntax filterCondition = operation switch
+			{
+				OperationType.Equal => propertyExpression.ToEquals(filterValueForVariableName.ToIdentifierName()),
+				OperationType.NotEqual => propertyExpression.NotEquals(filterValueForVariableName.ToIdentifierName()),
+				OperationType.In => filterValueForVariableName.Access("Contains").Call(propertyExpression.ToArgument()),
+				_ => propertyExpression.ToEquals(filterValueForVariableName.ToIdentifierName())
+			};
+
+			var filterExpression = "p"
+				.ToParameterExpression()
+				.WithExpressionBody(filterCondition);
+
+			statements.Add(
+				"dbFilterRequest"
+				.ToIdentifierName()
+				.Access("Where")
+				.Access("Add")
+				.Call(filterExpression.ToArgument())
+				.ToExpressionStatement()
+			);
 		}
 
 		private class MethodCreationResult

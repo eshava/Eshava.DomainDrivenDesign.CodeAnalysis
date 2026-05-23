@@ -66,6 +66,12 @@
 							"referenceType": "User",
 							"addToCreationBag": true,
 							"skipFromDomainModel": true
+						},
+						{
+							"type": "int",
+							"name": "CustomerCategoryId",
+							"isReference": true,
+							"referenceType": "CustomerCategoryData"
 						}
 					]
 				},
@@ -315,6 +321,25 @@
 							"referenceType": "User",
 							"addToCreationBag": false,
 							"skipFromDomainModel": true
+						}
+					]
+				},
+				{
+					"identifierType": "int",
+					"identifierGenerationOnAdd": true,
+					"tableName": "CustomerCategories",
+					"name": "CustomerCategoryData",
+					"classificationKey": "CustomerCategory",
+					"createRepository": true,
+					"createDbConfiguration": true,
+					"properties": [
+						{
+							"type": "string",
+							"name": "Name"
+						},
+						{
+							"type": "int",
+							"name": "AccessLevel"
 						}
 					]
 				},

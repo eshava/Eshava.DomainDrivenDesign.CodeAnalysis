@@ -24,14 +24,19 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			string databaseSettingsInterfaceUsing,
 			InfrastructureModel parentModel,
 			Dictionary<string, List<InfrastructureModel>> childsForModel,
-			Dictionary<string, InfrastructureModel> modelsForDomain,
 			ReferenceMap domainModelReferenceMap,
 			InfrastructureEnvironment environment
 		)
 		{
+			var modelsForDomain = environment.ModelsByDomainAndName[environment.Domain];
 			var repositoryCodeSnippet = environment.CodeSnippets
 				.FirstOrDefault(cs => cs.ApplyOnRepository)
 				?? new InfrastructureCodeSnippet();
+
+			var whereConditionCodeSnippets = repositoryCodeSnippet.PropertyStatements
+				.Where(ps => ps.IsFilter && ps.ForceAsWhereCondition)
+				.ToList();
+			var applicableWhereConditionCodeSnippets = InfrastructureTemplateMethods.GetApplicableWhereConditionCodeSnippets(model, environment.Domain, environment.ModelsByDomainAndName, whereConditionCodeSnippets);
 
 			var scopedSettings = new NameAndType(CommonNames.SCOPEDSETTINGS, environment.Project.ScopedSettingsClass.ToType());
 			NameAndType databaseSettings;
@@ -77,7 +82,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 
 			var fullDomainModelName = environment.GetFullDomainModelName(domainModelMap);
 
-			var relatedDataModels = CollectDataModelsForReferenceProperties(model, domainModelMap, childsForModel, true);
+			var relatedDataModels = CollectDataModelsForReferenceProperties(model, domainModelMap, childsForModel, applicableWhereConditionCodeSnippets, true);
 			relatedDataModels.ForEach(relation => unitInformation.AddField((relation.TableAliasConstant, FieldType.Const, relation.TableAliasField)));
 
 			var collectPropertyMappings = CollectDataToDomainPropertyMappings(domainModelMap, environment);
@@ -944,13 +949,13 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 					continue;
 				}
 
-				if (!valueObjectAssignments.TryGetValue(foreignKeyReference.PropertyName, out var assigments))
+				if (!valueObjectAssignments.TryGetValue(foreignKeyReference.PropertyName, out var assignmentContainer))
 				{
-					assigments = (parentdataModelProperty, []);
-					valueObjectAssignments.Add(foreignKeyReference.PropertyName, assigments);
+					assignmentContainer = (parentdataModelProperty, []);
+					valueObjectAssignments.Add(foreignKeyReference.PropertyName, assignmentContainer);
 				}
 
-				assigments.Assignments.Add((dataModelProperty, domainModelProperty));
+				assignmentContainer.Assignments.Add((dataModelProperty, domainModelProperty));
 			}
 		}
 
@@ -1599,6 +1604,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			bool implementSoftDelete
 		)
 		{
+			relatedDataModels = InfrastructureTemplateMethods.FilterQueryAnalysisItemsForApplicableWhereConditionCodeSnippets(relatedDataModels, metaData);
 
 			var queryParameters = new List<(ExpressionSyntax Property, string Name)>();
 
@@ -1620,6 +1626,15 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 
 			var appliedSnippets = new List<InfrastructureModelPropertyCodeSnippet>();
 			InfrastructureTemplateMethods.AddCodeSnippetReadConditions(interpolatedStringParts, queryParameters, dataModel, null, modelItem.TableAliasConstant.ToIdentifierName(), metaData);
+
+			foreach (var relatedDataModel in relatedDataModels
+				.Where(rdm => rdm.IsOnlyForSqlJoinCalculation)
+				.GroupBy(rdm => rdm.TableAliasConstant)
+				.Select(group => group.First()))
+			{
+				var dataModelType = relatedDataModel.GetDataType(domainModelMap.Domain, dataModel.Name);
+				InfrastructureTemplateMethods.AddCodeSnippetReadConditions(interpolatedStringParts, queryParameters, relatedDataModel.DataModel, dataModelType, relatedDataModel.TableAliasConstant.ToIdentifierName(), metaData);
+			}
 
 			interpolatedStringParts.Add($@"
 					".Interpolate());
@@ -1958,7 +1973,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 					{
 						ExpressionSyntax typeValue = null;
 						typeValue = dataModelProperty.Type switch
-						{
+							{
 							"int" => domainModelMap.DomainModel.DataModelTypePropertyValue.ToLiteralInt(),
 							"long" => domainModelMap.DomainModel.DataModelTypePropertyValue.ToLiteralLong(),
 							"string" => domainModelMap.DomainModel.DataModelTypePropertyValue.ToLiteralString(),
@@ -2111,7 +2126,13 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			return (rawItemsStatments, itemsStatments, processDataModels);
 		}
 
-		private static List<QueryAnalysisItem> CollectDataModelsForReferenceProperties(InfrastructureModel model, ReferenceDomainModelMap domainModelMap, Dictionary<string, List<InfrastructureModel>> childsForModel, bool isTopLevelCall)
+		private static List<QueryAnalysisItem> CollectDataModelsForReferenceProperties(
+			InfrastructureModel model,
+			ReferenceDomainModelMap domainModelMap,
+			Dictionary<string, List<InfrastructureModel>> childsForModel,
+			List<ApplicableWhereConditionCodeSnippet> applicableWhereConditionCodeSnippets,
+			bool isTopLevelCall
+		)
 		{
 			var items = new List<QueryAnalysisItem>();
 
@@ -2140,7 +2161,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 
 			if (!childsForModel.TryGetValue(model.Name, out var childModels))
 			{
-				return items;
+				childModels = [];
 			}
 
 			foreach (var childDomainModel in domainModelMap.ChildDomainModels)
@@ -2187,11 +2208,12 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 
 				items.Add(item);
 
-				items.AddRange(CollectDataModelsForReferenceProperties(childModel, childDomainModel, childsForModel, false));
+				items.AddRange(CollectDataModelsForReferenceProperties(childModel, childDomainModel, childsForModel, applicableWhereConditionCodeSnippets, false));
 			}
 
 			if (isTopLevelCall)
 			{
+				InfrastructureTemplateMethods.AddMissingQueryAnalysisItemsForApplicableCodeSnippets(items, domainModelMap.Domain, applicableWhereConditionCodeSnippets, true);
 				InfrastructureTemplateMethods.CheckAnalysisItemForTypeProperty(items);
 			}
 

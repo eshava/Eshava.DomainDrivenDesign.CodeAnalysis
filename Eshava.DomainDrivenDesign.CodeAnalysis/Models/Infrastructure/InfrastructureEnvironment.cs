@@ -11,7 +11,10 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models.Infrastructure
 		public string ApplicationNamespaceWithDomain { get; set; }
 		public string DomainProjectNamespace { get; set; }
 		public IEnumerable<InfrastructureCodeSnippet> CodeSnippets { get; set; }
-
+		/// <summary>
+		/// Domain -> Model.Name -> Model
+		/// </summary>
+		public Dictionary<string, Dictionary<string, InfrastructureModel>> ModelsByDomainAndName { get; set; }
 		public string GetFullDomainModelName(ReferenceDomainModelMap domainModelMap)
 		{
 			var fullDomainModelName = domainModelMap.GetDomainModelTypeName(DomainProjectNamespace, InfrastructureNamespaceWithDomain);

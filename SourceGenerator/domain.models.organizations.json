@@ -64,6 +64,12 @@
 							"referenceDomain": "Organizations"
 						},
 						{
+							"type": "int",
+							"name": "CustomerCategoryId",
+							"isReference": true,
+							"referenceType": "CustomerCategoryDDD"
+						},
+						{
 							"type": "AddressVO",
 							"name": "Address",
 							"isReference": true,
@@ -373,6 +379,61 @@
 							"validationRules": [
 								{
 									"type": 1
+								}
+							]
+						}
+					]
+				},
+				{
+					"identifierType": "int",
+					"name": "CustomerCategoryDDD",
+					"dataModelName": "CustomerCategoryData",
+					"featureName": "CustomerFeature",
+					"classificationKey": "CustomerCategory",
+					"addGeneralPatchMethod": true,
+					"properties": [
+						{
+							"type": "string",
+							"name": "Name",
+							"attributes": [
+								{
+									"name": "Required",
+									"usingForType": "System.ComponentModel.DataAnnotations"
+								},
+								{
+									"name": "MaxLength",
+									"usingForType": "System.ComponentModel.DataAnnotations",
+									"parameters": [
+										{
+											"type": "int",
+											"value": "250"
+										}
+									]
+								}
+							],
+							"validationRules": [
+								{
+									"type": 1
+								}
+							]
+						},
+						{
+							"type": "int",
+							"name": "AccessLevel",
+							"attributes": [
+								{
+									"name": "Range",
+									"usingForType": "System.ComponentModel.DataAnnotations",
+									"parameters": [
+										{
+											"type": "int",
+											"value": "0"
+										},
+										{
+											"type": "constant",
+											"value": "Int32.MaxValue"
+										}
+									]
 								}
 							]
 						}

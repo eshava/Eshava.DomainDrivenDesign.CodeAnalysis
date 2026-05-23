@@ -89,7 +89,31 @@ namespace Eshava.Example.SourceGenerator.Generators
 						ForceAsWhereCondition = true,
 						PropertyName = "AccessLevel",
 						Expression = "777".ToLiteralInt(),
-						Exceptions = []
+						Exceptions = [
+							new InfrastructureExceptionCodeSnippet
+							{
+								DataModelName = "CustomerCategoryData",
+								MethodName = "ReadForCustomerCategoryIdAsync",
+								ClassName = "CustomerDDDRepository",
+								UseInstead = true,
+								Operation = DomainDrivenDesign.CodeAnalysis.Enums.OperationType.NotEqual,
+								Expression = "555".ToLiteralInt(),
+							},
+							new InfrastructureExceptionCodeSnippet
+							{
+								DataModelName = "CustomerCategoryData",
+								MethodName = "ReadByNameAsync",
+								ClassName = "CustomerDDDRepository",
+								SkipUsage = true
+							},
+							new InfrastructureExceptionCodeSnippet
+							{
+								DataModelName = "CustomerCategoryData",
+								MethodName = "ReadAsync",
+								ClassName = "OrderDDDRepository",
+								SkipUsage = true
+							}
+						]
 					}
 				]
 			};
@@ -165,7 +189,54 @@ namespace Eshava.Example.SourceGenerator.Generators
 						ForceAsWhereCondition = true,
 						PropertyName = "AccessLevel",
 						Expression = "777".ToLiteralInt(),
-						Exceptions = []
+						Exceptions = [
+							new InfrastructureExceptionCodeSnippet
+							{
+								DataModelName = "CustomerCategoryData",
+								MethodName = "ExistsAsync",
+								ClassName = "OrderPositionQueryRepository",
+								SkipUsage = true
+							},
+							new InfrastructureExceptionCodeSnippet
+							{
+								DataModelName = "CustomerCategoryData",
+								MethodName = "ReadAsync",
+								ClassName = "OrderPositionQueryRepository",
+								SkipUsage = true
+							},
+							new InfrastructureExceptionCodeSnippet
+							{
+								DataModelName = "CustomerCategoryData",
+								MethodName = "SearchAsync",
+								ClassName = "OrderPositionQueryRepository",
+								SkipUsage = true
+							},
+							new InfrastructureExceptionCodeSnippet
+							{
+								DataModelName = "CustomerCategoryData",
+								MethodName = "IsUniqueNameAsync",
+								ClassName = "OfficeQueryRepository",
+								UseInstead = true,
+								Operation = DomainDrivenDesign.CodeAnalysis.Enums.OperationType.NotEqual,
+								Expression = "555".ToLiteralInt(),
+							},
+							new InfrastructureExceptionCodeSnippet
+							{
+								DataModelName = "CustomerCategoryData",
+								MethodName = "IsUniqueNameAsync",
+								ClassName = "CustomerQueryRepository",
+								UseInstead = true,
+								Operation = DomainDrivenDesign.CodeAnalysis.Enums.OperationType.NotEqual,
+								Expression = "555".ToLiteralInt(),
+							},
+							new InfrastructureExceptionCodeSnippet
+							{
+								DataModelName = "CustomerCategoryData",
+								MethodName = "IsUsedMainProductIdAsync",
+								ClassName = "CustomerQueryRepository",
+								SkipUsage = true
+							},
+						]
 					},
 					new InfrastructureModelPropertyCodeSnippet
 					{

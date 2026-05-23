@@ -25,6 +25,10 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models.Infrastructure
 		public bool IsEnumerable { get; set; }
 		public bool IsGroupBy { get; set; }
 		public bool IsRootModel { get; set; }
+		/// <summary>
+		/// Is used in combination with <see cref="InfrastructureModelPropertyCodeSnippet.ForceAsWhereCondition"/> set to true
+		/// </summary>
+		public bool IsOnlyForSqlJoinCalculation { get; set; }
 		public string TableAliasConstant { get; set; }
 		public FieldDeclarationSyntax TableAliasField { get; set; }
 

@@ -342,7 +342,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				{
 					if (property.SkipFromDomainModel)
 					{
-						var snippetExpression = InfrastructureTemplateMethods.GetCodeSnippet(model, property, methodMetaData, false, true);
+						var snippetExpression = InfrastructureTemplateMethods.GetCodeSnippet(model, property, methodMetaData, false, true, false);
 						if (snippetExpression.Expression is null)
 						{
 							creationBagArguments.Add(SyntaxHelper.CreateDefaultOf(property.Type.ToType()).ToArgument());
