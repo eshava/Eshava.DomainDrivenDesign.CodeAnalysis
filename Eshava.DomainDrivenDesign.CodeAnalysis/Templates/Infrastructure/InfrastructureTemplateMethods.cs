@@ -266,6 +266,74 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 		public static void AddCodeSnippetReadConditions(
 			List<InterpolatedStringContentSyntax> interpolatedStringParts,
 			List<(ExpressionSyntax Property, string Name)> queryParameters,
+			List<StatementSyntax> conditionalQueryStatements,
+			InfrastructureModel dataModel,
+			string dataModelTypeForJoin,
+			IdentifierNameSyntax tableAliasConstant,
+			MethodMetaData metaData
+		)
+		{
+			if (dataModelTypeForJoin.IsNullOrEmpty())
+			{
+				dataModelTypeForJoin = dataModel.Name;
+			}
+
+			foreach (var dataModelProperty in dataModel.Properties)
+			{
+				var propertySnippet = GetCodeSnippet(dataModel.Name, dataModelProperty.Name, metaData.CodeSnippets, true, false);
+				var snippetExpression = GetCodeSnippet(dataModel, dataModelProperty, metaData, true, false, false);
+				if (snippetExpression.Expression is null)
+				{
+					continue;
+				}
+
+				var snippetOperation = snippetExpression.Operation.Map();
+				var parameterName = snippetExpression.UseDefault
+					? dataModelProperty.Name
+					: dataModelProperty.Name + DateTime.UtcNow.Ticks.ToString();
+
+				var conditionParts = new List<InterpolatedStringContentSyntax>
+				{
+					@"
+					AND
+						".Interpolate(),
+					tableAliasConstant.Interpolate(),
+					".".Interpolate(),
+					Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(dataModelTypeForJoin.Access(dataModelProperty.Name).ToArgument()).Interpolate(),
+					$@" {snippetOperation} @{parameterName}".Interpolate()
+				};
+
+				if (propertySnippet?.WhereClause?.IsConditionalWhereCondition ?? false)
+				{
+					if (queryParameters.All(qp => qp.Name != parameterName))
+					{
+						queryParameters.Add((snippetExpression.Expression, parameterName));
+					}
+
+					conditionalQueryStatements.Add(
+						propertySnippet.WhereClause.Condition.If(
+							"query"
+								.ToIdentifierName()
+								.AddAssign(conditionParts.ToRawStringExpression())
+								.ToExpressionStatement()
+						)
+					);
+
+					continue;
+				}
+
+				interpolatedStringParts.AddRange(conditionParts);
+
+				if (queryParameters.All(qp => qp.Name != parameterName))
+				{
+					queryParameters.Add((snippetExpression.Expression, parameterName));
+				}
+			}
+		}
+
+		public static void AddCodeSnippetReadConditions(
+			List<InterpolatedStringContentSyntax> interpolatedStringParts,
+			List<(ExpressionSyntax Property, string Name)> queryParameters,
 			InfrastructureModel dataModel,
 			string dataModelTypeForJoin,
 			IdentifierNameSyntax tableAliasConstant,
@@ -364,7 +432,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				return (null, OperationType.Equal, true);
 			}
 
-			if (propertySnippet.ForceAsWhereCondition && isForJoinCondition)
+			if ((propertySnippet.WhereClause?.ForceAsWhereCondition ?? false) && isForJoinCondition)
 			{
 				return (null, OperationType.Equal, true);
 			}
@@ -610,7 +678,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				return false;
 			}
 
-			var whereConditionCodeSnippets = metaData.CodeSnippets.Where(cs => cs.ForceAsWhereCondition).ToList();
+			var whereConditionCodeSnippets = metaData.CodeSnippets.Where(cs => cs.WhereClause?.ForceAsWhereCondition ?? false).ToList();
 			var hasApplicableSnippet = item.DataModel?.Properties.Any(property =>
 			{
 				var propertySnippet = GetCodeSnippet(item.DataModel.Name, property.Name, whereConditionCodeSnippets, true, false);

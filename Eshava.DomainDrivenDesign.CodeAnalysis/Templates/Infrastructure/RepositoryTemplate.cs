@@ -34,7 +34,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				?? new InfrastructureCodeSnippet();
 
 			var whereConditionCodeSnippets = repositoryCodeSnippet.PropertyStatements
-				.Where(ps => ps.IsFilter && ps.ForceAsWhereCondition)
+				.Where(ps => ps.IsFilter && (ps.WhereClause?.ForceAsWhereCondition ?? false))
 				.ToList();
 			var applicableWhereConditionCodeSnippets = InfrastructureTemplateMethods.GetApplicableWhereConditionCodeSnippets(model, environment.Domain, environment.ModelsByDomainAndName, whereConditionCodeSnippets);
 
@@ -268,12 +268,14 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 		)
 		{
 			var methodDeclarationName = $"{methodName}Async";
-			(var query, var queryParameters) = GetReadByQuery(model, readByPropertyName, readByVariableName, domainModelMap, relatedDataModels, metaData.Clone(methodDeclarationName), implementSoftDelete);
+			(var query, var conditionalQueryStatements, var queryParameters) = GetReadByQuery(model, readByPropertyName, readByVariableName, domainModelMap, relatedDataModels, metaData.Clone(methodDeclarationName), implementSoftDelete);
 
 			var tryBlockStatements = new List<StatementSyntax>
 			{
 				query
 			};
+
+			tryBlockStatements.AddRange(conditionalQueryStatements);
 
 			var usingInnerStatments = new List<StatementSyntax>
 			{
@@ -1084,12 +1086,14 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			var methodDeclarationName = $"{methodName}{readByPropertyName}Async";
 			var returnListName = $"{domainModelMap.DomainModelName.ToVariableName()}Models";
 
-			(var query, var queryParameters) = GetReadByQuery(model, readByPropertyName, readByVariableName, domainModelMap, relatedDataModels, metaData.Clone(methodDeclarationName), implementSoftDelete);
+			(var query, var conditionalQueryStatements, var queryParameters) = GetReadByQuery(model, readByPropertyName, readByVariableName, domainModelMap, relatedDataModels, metaData.Clone(methodDeclarationName), implementSoftDelete);
 
 			var tryBlockStatements = new List<StatementSyntax>
 			{
 				query
 			};
+
+			tryBlockStatements.AddRange(conditionalQueryStatements);
 
 			var usingInnerStatments = new List<StatementSyntax>
 			{
@@ -1594,7 +1598,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			return (methodDeclarationName, methodDeclaration);
 		}
 
-		private static (LocalDeclarationStatementSyntax Query, List<InfrastructureModelPropertyCodeSnippet> QueryParameter) GetReadByQuery(
+		private static (LocalDeclarationStatementSyntax Query, List<StatementSyntax> ConditionalQueryStatements, List<InfrastructureModelPropertyCodeSnippet> QueryParameter) GetReadByQuery(
 			InfrastructureModel dataModel,
 			string readByPropertyName,
 			string readByVariableName,
@@ -1607,6 +1611,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			relatedDataModels = InfrastructureTemplateMethods.FilterQueryAnalysisItemsForApplicableWhereConditionCodeSnippets(relatedDataModels, metaData);
 
 			var queryParameters = new List<(ExpressionSyntax Property, string Name)>();
+			var conditionalQueryStatements = new List<StatementSyntax>();
 
 			(var interpolatedStringParts, var _) = InfrastructureTemplateMethods.CreateSqlQueryWithoutWhereCondition(dataModel, domainModelMap.Domain, relatedDataModels, implementSoftDelete, false, queryParameters, metaData);
 			var modelItem = relatedDataModels.First(m => m.DataModel.Name == dataModel.Name && m.IsRootModel);
@@ -1625,7 +1630,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			}
 
 			var appliedSnippets = new List<InfrastructureModelPropertyCodeSnippet>();
-			InfrastructureTemplateMethods.AddCodeSnippetReadConditions(interpolatedStringParts, queryParameters, dataModel, null, modelItem.TableAliasConstant.ToIdentifierName(), metaData);
+			InfrastructureTemplateMethods.AddCodeSnippetReadConditions(interpolatedStringParts, queryParameters, conditionalQueryStatements, dataModel, null, modelItem.TableAliasConstant.ToIdentifierName(), metaData);
 
 			foreach (var relatedDataModel in relatedDataModels
 				.Where(rdm => rdm.IsOnlyForSqlJoinCalculation)
@@ -1633,7 +1638,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				.Select(group => group.First()))
 			{
 				var dataModelType = relatedDataModel.GetDataType(domainModelMap.Domain, dataModel.Name);
-				InfrastructureTemplateMethods.AddCodeSnippetReadConditions(interpolatedStringParts, queryParameters, relatedDataModel.DataModel, dataModelType, relatedDataModel.TableAliasConstant.ToIdentifierName(), metaData);
+				InfrastructureTemplateMethods.AddCodeSnippetReadConditions(interpolatedStringParts, queryParameters, conditionalQueryStatements, relatedDataModel.DataModel, dataModelType, relatedDataModel.TableAliasConstant.ToIdentifierName(), metaData);
 			}
 
 			interpolatedStringParts.Add($@"
@@ -1644,7 +1649,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				appliedSnippets.AddRange(queryParameters.Select(qp => new InfrastructureModelPropertyCodeSnippet { PropertyName = qp.Name, Expression = qp.Property }));
 			}
 
-			return ("query".ToVariableStatement(interpolatedStringParts.ToRawStringExpression()), appliedSnippets);
+			return ("query".ToVariableStatement(interpolatedStringParts.ToRawStringExpression()), conditionalQueryStatements, appliedSnippets);
 		}
 
 		private static StatementSyntax GetReadByQueryResult(

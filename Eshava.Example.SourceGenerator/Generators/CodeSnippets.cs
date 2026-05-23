@@ -86,7 +86,11 @@ namespace Eshava.Example.SourceGenerator.Generators
 					{
 						IsMapping = false,
 						IsFilter = true,
-						ForceAsWhereCondition = true,
+						WhereClause = new InfrastructureModelPropertyCodeSnippetWhereClause
+						{
+							ForceAsWhereCondition = true,
+							Condition = "System".Access("DateTime").Access("UtcNow").Access("Hour").GreaterThan("12".ToLiteralInt())
+						},
 						PropertyName = "AccessLevel",
 						Expression = "777".ToLiteralInt(),
 						Exceptions = [
@@ -186,7 +190,11 @@ namespace Eshava.Example.SourceGenerator.Generators
 					{
 						IsMapping = false,
 						IsFilter = true,
-						ForceAsWhereCondition = true,
+						WhereClause = new InfrastructureModelPropertyCodeSnippetWhereClause
+						{
+							ForceAsWhereCondition = true,
+							Condition = "System".Access("DateTime").Access("UtcNow").Access("Hour").GreaterThan("12".ToLiteralInt())
+						},
 						PropertyName = "AccessLevel",
 						Expression = "777".ToLiteralInt(),
 						Exceptions = [
