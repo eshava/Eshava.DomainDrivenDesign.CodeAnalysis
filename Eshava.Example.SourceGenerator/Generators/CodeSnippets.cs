@@ -305,7 +305,22 @@ namespace Eshava.Example.SourceGenerator.Generators
 								Expression = "Status".Access("Inactive")
 							}
 						]
-					}
+					},
+					new InfrastructureModelPropertyCodeSnippet
+					{
+						IsMapping = true,
+						ModelName = "CustomerData",
+						PropertyName = "CompanyName",
+						Expression =  "mapper"
+							.Access("GetValue".AsGeneric("string"))
+							.Call(
+								Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call("CustomerData.CompanyName".ToIdentifierName().ToArgument()).ToArgument(),
+								"CUSTOMERDATA".ToIdentifierName().ToArgument()
+							)
+							.Access("Trim")
+							.Call(),
+						Exceptions = []
+					},
 				]
 			};
 		}

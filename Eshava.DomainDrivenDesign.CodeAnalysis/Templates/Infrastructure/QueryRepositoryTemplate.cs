@@ -819,7 +819,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 
 			(var interpolatedQueryParts, var _) = InfrastructureTemplateMethods.CreateSqlQueryWithoutWhereCondition(dataModel, methodMap.Domain, relatedDataModels, implementSoftDelete, false, parameterItems, methodMetaData);
 			var dtoInitializerExpressions = new List<ExpressionSyntax>();
-			GetDtoInitializerExpressions(methodMap.Domain, dataModel.Name, null, null, relatedDataModels, dtoInitializerExpressions, new HashSet<string>());
+			GetDtoInitializerExpressions(methodMap.Domain, dataModel.Name, null, null, relatedDataModels, dtoInitializerExpressions, new HashSet<string>(), methodMetaData);
 
 			interpolatedQueryParts.Add(@"
 					WHERE
@@ -1001,13 +1001,13 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 
 			(var interpolatedStringParts, var interpolatedColumnParts) = InfrastructureTemplateMethods.CreateSqlQueryWithoutWhereCondition(dataModel, methodMap.Domain, relatedDataModels, implementSoftDelete, false, additionalQueryParameters, methodMetaData);
 			var dtoInitializerExpressions = new List<ExpressionSyntax>();
-			GetDtoInitializerExpressions(methodMap.Domain, dataModel.Name, null, null, relatedDataModels, dtoInitializerExpressions, new HashSet<string>());
+			GetDtoInitializerExpressions(methodMap.Domain, dataModel.Name, null, null, relatedDataModels, dtoInitializerExpressions, new HashSet<string>(), methodMetaData);
 
 			var mapperExpression = GetMapperExpression(returnDto.DtoName, dtoInitializerExpressions);
 
 			var tryBlockStatements = new List<StatementSyntax>
 			{
-				GetFilterTransformStatement(dataModel.Name,returnDto.DtoName,filterRequestParameter.Name)
+				GetFilterTransformStatement(dataModel.Name,returnDto.DtoName, filterRequestParameter.Name)
 			};
 
 			if (implementSoftDelete)
@@ -1792,7 +1792,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			string dtoName,
 			List<QueryAnalysisItem> relatedDataModels,
 			List<ExpressionSyntax> dtoInitializerExpressions,
-			HashSet<string> processedDtoTableAlias
+			HashSet<string> processedDtoTableAlias,
+			MethodMetaData metaData
 		)
 		{
 			var parentRelatedDataModels = relatedDataModels
@@ -1812,12 +1813,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				if (item.DataModel.TableName.IsNullOrEmpty())
 				{
 					var dataType = item.GetDataType(referenceDomain, referenceType, true);
-					ExpressionSyntax valueObject = "mapper"
-						.Access("GetValue".AsGeneric(item.ParentProperty.Type))
-						.Call(
-							Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(dataType.Access(item.ParentProperty.Name).ToArgument()).ToArgument(),
-							item.TableAliasConstant.ToArgument()
-						);
+					var valueObject = GetMapperGetValueExpression(item.ParentProperty, item.TableAliasConstant, dataType, item.ParentDataModel.Name, null, metaData);
 
 					valueObject = valueObject.Access(item.Property.Name, true);
 					if (!item.DtoProperty.IsNullableType && DataTypeConstants.NotNullableTypes.Contains(item.DtoProperty.Type))
@@ -1837,19 +1833,12 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				}
 				else
 				{
-					var propertyType = item.DtoProperty.TypeWithUsing;
-
 					var dataType = item.GetDataType(referenceDomain, referenceType);
 					dtoInitializerExpressions.Add(
 						item.DtoProperty.Name
 						.ToIdentifierName()
 						.Assign(
-							"mapper"
-							.Access("GetValue".AsGeneric(propertyType))
-							.Call(
-								Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(dataType.Access(item.Property.Name).ToArgument()).ToArgument(),
-								item.TableAliasConstant.ToArgument()
-							)
+								GetMapperGetValueExpression(item.Property, item.TableAliasConstant, dataType, item.DataModel.Name, item.DtoProperty.TypeWithUsing, metaData)
 						)
 					);
 				}
@@ -1880,7 +1869,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				dtoName = dtoReferenceItem.Dto?.Name;
 
 				var childDtoInitializerExpressions = new List<ExpressionSyntax>();
-				GetDtoInitializerExpressions(referenceDomain, referenceType, parentDtoName, dtoName, relatedDataModels, childDtoInitializerExpressions, processedDtoTableAlias);
+				GetDtoInitializerExpressions(referenceDomain, referenceType, parentDtoName, dtoName, relatedDataModels, childDtoInitializerExpressions, processedDtoTableAlias, metaData);
 
 				ExpressionSyntax dtoInstance = dtoName.ToIdentifierName().ToInstanceWithInitializer(childDtoInitializerExpressions.ToArray());
 				if (dtoReferenceItem.IsEnumerable)
@@ -1888,7 +1877,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 					var dataType = dtoReferenceItem.GetDataType(referenceDomain, referenceType);
 					if (dtoReferenceItem.IsGroupBy)
 					{
-						var identifierCheck = GetMapperGetValueExpression(dtoReferenceItem.Property, dtoReferenceItem.TableAliasConstant, dataType)
+						var identifierCheck = GetMapperGetValueExpression(dtoReferenceItem.Property, dtoReferenceItem.TableAliasConstant, dataType, dtoReferenceItem.DataModel.Name, null, metaData)
 							.ToEquals(Eshava.CodeAnalysis.SyntaxConstants.Default);
 
 						if (!(dtoReferenceItem.Dto?.DataModelTypeProperty.IsNullOrEmpty() ?? true)
@@ -1898,7 +1887,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 								.SingleOrDefault(p => p.Name == dtoReferenceItem.Dto.DataModelTypeProperty);
 
 							identifierCheck = identifierCheck.Or(
-								GetMapperGetValueExpression(typeProperty, dtoReferenceItem.TableAliasConstant, dataType)
+								GetMapperGetValueExpression(typeProperty, dtoReferenceItem.TableAliasConstant, dataType, dtoReferenceItem.DataModel.Name, null, metaData)
 									.NotEquals(dtoReferenceItem.Dto.DataModelTypePropertyValue.ToLiteral(typeProperty.Type))
 							);
 						}
@@ -1921,7 +1910,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 					var typeProperty = dtoReferenceItem.DataModel.Properties
 						.SingleOrDefault(p => p.Name == dtoReferenceItem.Dto.DataModelTypeProperty);
 
-					var identifierCheck = GetMapperGetValueExpression(typeProperty, dtoReferenceItem.TableAliasConstant, dataType)
+					var identifierCheck = GetMapperGetValueExpression(typeProperty, dtoReferenceItem.TableAliasConstant, dataType, dtoReferenceItem.DataModel.Name, null, metaData)
 						.NotEquals(dtoReferenceItem.Dto.DataModelTypePropertyValue.ToLiteral(typeProperty.Type));
 
 					dtoInstance = identifierCheck
@@ -1939,12 +1928,23 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			}
 		}
 
-		private static InvocationExpressionSyntax GetMapperGetValueExpression(InfrastructureModelProperty property, string tableAliasConstant, string dataType)
+		private static ExpressionSyntax GetMapperGetValueExpression(InfrastructureModelProperty property, string tableAliasConstant, string modelDataTypeWithNamespace, string modelDataType, string propertyTargetDataType, MethodMetaData metaData)
 		{
+			var propertySnippet = InfrastructureTemplateMethods.GetCodeSnippet(modelDataType, property.Name, metaData.CodeSnippets, false, true);
+			if (propertySnippet?.Expression is not null
+				&& !(propertySnippet.Expression is LiteralExpressionSyntax && !property.Type.EndsWith("?")))
+			{
+				return propertySnippet.Expression;
+			}
+
+			var getValueType = propertyTargetDataType.IsNullOrEmpty()
+				? property.TypeWithUsing
+				: propertyTargetDataType;
+
 			return "mapper"
-				.Access("GetValue".AsGeneric(property.TypeWithUsing))
+				.Access("GetValue".AsGeneric(getValueType))
 				.Call(
-					Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(dataType.Access(property.Name).ToArgument()).ToArgument(),
+					Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(modelDataTypeWithNamespace.Access(property.Name).ToArgument()).ToArgument(),
 					tableAliasConstant.ToArgument()
 				);
 		}
