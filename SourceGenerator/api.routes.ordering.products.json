@@ -38,6 +38,39 @@
 					]
 				},
 				{
+					"httpMethod": "GET",
+					"route": "/products/{id}/special/{specialId}",
+					"useCase": {
+						"domain": "Ordering",
+						"classificationKey": "Product",
+						"referenceModel": "ProductData",
+						"useCaseName": "Read"
+					},
+					"parameters": [
+						{
+							"parameterType": "Route",
+							"parameterName": null,
+							"type": "int",
+							"usingForType": null,
+							"name": "id",
+							"requestPropertyName": "ProductId"
+						}
+					],
+					"authorizationPolicies": [
+						{
+							"isString": false,
+							"name": "CustomAuthorizationPolicy.Product",
+							"using": "Eshava.Example.Api.Policies"
+						}
+					],
+					"apiRouteEndpointFilters": [
+						{
+							"name": "CustomEndpointFilter",
+							"using": "Eshava.Example.Api.Filters"
+						}
+					]
+				},
+				{
 					"httpMethod": "POST",
 					"route": "/products/search",
 					"useCase": {

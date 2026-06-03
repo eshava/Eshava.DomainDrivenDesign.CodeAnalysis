@@ -38,60 +38,76 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Api
 			unitInformation.AddUsing(CommonNames.Namespaces.TASKS);
 			unitInformation.AddUsing(CommonNames.Namespaces.Eshava.DomainDrivenDesign.Application.DTOS);
 
-			var apiRoutesToProcess = new List<(ApiRoute Route, UseCaseMap UseCaseMap, AdditionalApiRouteInformation Additional, List<ApiRouteCodeSnippet> CodeSnippets)>();
-			foreach (var apiRoute in apiRoutes)
+			var apiRoutesToProcess = new List<(ApiRoute Route, UseCaseMap UseCaseMap, AdditionalApiRouteInformation Additional, List<ApiRouteCodeSnippet> CodeSnippets, int? ApiRouteCounter)>();
+
+			var groupedApiRoutes = apiRoutes.GroupBy(ar => new
 			{
-				apiRoute.HttpMethod = apiRoute.HttpMethod?.ToUpperInvariant();
+				ar.UseCase.ClassificationKey,
+				ar.UseCase.UseCaseName,
+				ar.UseCase.MethodToCall,
+				ar.HttpMethod
+			});
 
-				if (!useCasesMap.TryGetUseCase(apiRoute.UseCase.Domain, apiRoute.UseCase.ClassificationKey, apiRoute.UseCase.UseCaseName, apiRoute.UseCase.ReferenceModel, out var useCaseMap))
+			foreach (var apiRouteGroup in groupedApiRoutes)
+			{
+				var apiRouteCounter = 0;
+				var apiRouteTotalCount = apiRouteGroup.Count();
+				foreach (var apiRoute in apiRouteGroup)
 				{
-					continue;
-				}
+					apiRouteCounter++;
 
-				if ((useCaseMap.UseCase.Type == Models.Application.ApplicationUseCaseType.Search
-					|| useCaseMap.UseCase.Type == Models.Application.ApplicationUseCaseType.SearchCount
-					|| useCaseMap.UseCase.Type == Models.Application.ApplicationUseCaseType.Read)
-					&& useCaseMap.UseCase.SkipUseCase)
-				{
-					continue;
-				}
+					apiRoute.HttpMethod = apiRoute.HttpMethod?.ToUpperInvariant();
 
-				var filteredCodeSnippets = codeSnippets
-					.Where(cs => cs.IsApplicable(useCaseMap.UseCase.Type))
-					.ToList();
-
-				filteredCodeSnippets.ForEach(cs =>
-				{
-					foreach (var @using in cs.AdditionalUsings)
-					{
-						unitInformation.AddUsing(@using);
-					}
-
-					cs.Parameters.ForEach(p => unitInformation.AddUsing(p.Using));
-				});
-
-				var additional = apiRoute.UseCase.MethodToCall.IsNullOrEmpty()
-					? null
-					: new AdditionalApiRouteInformation
-					{
-						IsAsync = apiRoute.UseCase.IsAsync,
-						MethodToCall = apiRoute.UseCase.MethodToCall
-					};
-
-				unitInformation.AddUsing(useCaseMap.Namespace);
-				apiRoutesToProcess.Add((apiRoute, useCaseMap, additional, filteredCodeSnippets));
-
-				if (useCaseMap.UseCase.Type == Models.Application.ApplicationUseCaseType.Search && !useCaseMap.UseCase.SkipCountUseCase)
-				{
-					var countApiRoute = apiRoute.ConvertToCountRoute();
-
-					if (!useCasesMap.TryGetUseCase(countApiRoute.UseCase.Domain, countApiRoute.UseCase.ClassificationKey, countApiRoute.UseCase.UseCaseName, countApiRoute.UseCase.ReferenceModel, out var useCaseMapCount))
+					if (!useCasesMap.TryGetUseCase(apiRoute.UseCase.Domain, apiRoute.UseCase.ClassificationKey, apiRoute.UseCase.UseCaseName, apiRoute.UseCase.ReferenceModel, out var useCaseMap))
 					{
 						continue;
 					}
 
-					unitInformation.AddUsing(useCaseMapCount.Namespace);
-					apiRoutesToProcess.Add((countApiRoute, useCaseMapCount, additional, filteredCodeSnippets));
+					if ((useCaseMap.UseCase.Type == Models.Application.ApplicationUseCaseType.Search
+						|| useCaseMap.UseCase.Type == Models.Application.ApplicationUseCaseType.SearchCount
+						|| useCaseMap.UseCase.Type == Models.Application.ApplicationUseCaseType.Read)
+						&& useCaseMap.UseCase.SkipUseCase)
+					{
+						continue;
+					}
+
+					var filteredCodeSnippets = codeSnippets
+						.Where(cs => cs.IsApplicable(useCaseMap.UseCase.Type))
+						.ToList();
+
+					filteredCodeSnippets.ForEach(cs =>
+					{
+						foreach (var @using in cs.AdditionalUsings)
+						{
+							unitInformation.AddUsing(@using);
+						}
+
+						cs.Parameters.ForEach(p => unitInformation.AddUsing(p.Using));
+					});
+
+					var additional = apiRoute.UseCase.MethodToCall.IsNullOrEmpty()
+						? null
+						: new AdditionalApiRouteInformation
+						{
+							IsAsync = apiRoute.UseCase.IsAsync,
+							MethodToCall = apiRoute.UseCase.MethodToCall
+						};
+
+					unitInformation.AddUsing(useCaseMap.Namespace);
+					apiRoutesToProcess.Add((apiRoute, useCaseMap, additional, filteredCodeSnippets, apiRouteTotalCount > 1 ? apiRouteCounter : null));
+
+					if (useCaseMap.UseCase.Type == Models.Application.ApplicationUseCaseType.Search && !useCaseMap.UseCase.SkipCountUseCase)
+					{
+						var countApiRoute = apiRoute.ConvertToCountRoute();
+
+						if (!useCasesMap.TryGetUseCase(countApiRoute.UseCase.Domain, countApiRoute.UseCase.ClassificationKey, countApiRoute.UseCase.UseCaseName, countApiRoute.UseCase.ReferenceModel, out var useCaseMapCount))
+						{
+							continue;
+						}
+
+						unitInformation.AddUsing(useCaseMapCount.Namespace);
+						apiRoutesToProcess.Add((countApiRoute, useCaseMapCount, additional, filteredCodeSnippets, apiRouteTotalCount > 1 ? apiRouteCounter : null));
+					}
 				}
 			}
 
@@ -126,20 +142,20 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Api
 
 			foreach (var apiRoute in apiRoutesToProcess)
 			{
-				unitInformation.AddMethod(GetRouteMethod(apiRoute.Route, apiRoute.UseCaseMap, apiRoute.Additional, apiRoute.CodeSnippets));
+				unitInformation.AddMethod(GetRouteMethod(apiRoute.Route, apiRoute.UseCaseMap, apiRoute.Additional, apiRoute.CodeSnippets, apiRoute.ApiRouteCounter));
 			}
 
 			return unitInformation.CreateCodeString();
 		}
 
-		private static (string Name, MethodDeclarationSyntax Method) GetMapMethod(List<(ApiRoute Route, UseCaseMap UseCaseMap, AdditionalApiRouteInformation Additional, List<ApiRouteCodeSnippet> CodeSnippets)> apiRoutes, string errorResponseClass)
+		private static (string Name, MethodDeclarationSyntax Method) GetMapMethod(List<(ApiRoute Route, UseCaseMap UseCaseMap, AdditionalApiRouteInformation Additional, List<ApiRouteCodeSnippet> CodeSnippets, int? ApiRouteCounter)> apiRoutes, string errorResponseClass)
 		{
 			var statements = new List<StatementSyntax>();
 			var app = "app";
 
 			foreach (var apiRoute in apiRoutes)
 			{
-				statements.Add(GetMapCall(apiRoute.Route, apiRoute.UseCaseMap, apiRoute.Additional, app, errorResponseClass).ToExpressionStatement());
+				statements.Add(GetMapCall(apiRoute.Route, apiRoute.UseCaseMap, apiRoute.Additional, app, errorResponseClass, apiRoute.ApiRouteCounter).ToExpressionStatement());
 			}
 
 			var methodName = "Map";
@@ -160,9 +176,9 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Api
 			return (methodName, methodDeclaration);
 		}
 
-		private static InvocationExpressionSyntax GetMapCall(ApiRoute apiRoute, UseCaseMap useCaseMap, AdditionalApiRouteInformation additional, string app, string errorResponseClass)
+		private static InvocationExpressionSyntax GetMapCall(ApiRoute apiRoute, UseCaseMap useCaseMap, AdditionalApiRouteInformation additional, string app, string errorResponseClass, int? apiRouteCounter)
 		{
-			var routeMethod = GetRouteMethodName(apiRoute.UseCase, apiRoute.HttpMethod.ToLower().ToPropertyName(), false);
+			var routeMethod = GetRouteMethodName(apiRoute.UseCase, apiRoute.HttpMethod.ToLower().ToPropertyName(), false, apiRouteCounter);
 
 			var mapCall = app
 				.Access(GetHttpMethod(apiRoute.HttpMethod))
@@ -259,13 +275,17 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Api
 			return mapCall;
 		}
 
-		private static string GetRouteMethodName(ApiRouteUseCase apiRouteUseCase, string httpMethod, bool isUseCaseCall)
+		private static string GetRouteMethodName(ApiRouteUseCase apiRouteUseCase, string httpMethod, bool isUseCaseCall, int? apiRouteCounter)
 		{
 			if (apiRouteUseCase?.MethodToCall.IsNullOrEmpty() ?? true)
 			{
+				var counterSuffix = apiRouteCounter.HasValue 
+					? apiRouteCounter.Value.ToString() 
+					: "";
+
 				return isUseCaseCall
-					? $"{apiRouteUseCase.UseCaseName}Async"
-					: $"{httpMethod}{apiRouteUseCase.ClassificationKey}{apiRouteUseCase.UseCaseName}Async";
+					? $"{apiRouteUseCase.UseCaseName}{counterSuffix}Async"
+					: $"{httpMethod}{apiRouteUseCase.ClassificationKey}{apiRouteUseCase.UseCaseName}{counterSuffix}Async";
 			}
 
 			var methodName = apiRouteUseCase.MethodToCall;
@@ -280,6 +300,11 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Api
 				methodName += $"For{apiRouteUseCase.ClassificationKey}{apiRouteUseCase.UseCaseName}";
 			}
 
+			if (apiRouteCounter.HasValue)
+			{
+				methodName += apiRouteCounter.Value;
+			}
+
 			if (apiRouteUseCase.IsAsync)
 			{
 				methodName += "Async";
@@ -288,7 +313,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Api
 			return methodName;
 		}
 
-		private static (string Name, MethodDeclarationSyntax Method) GetRouteMethod(ApiRoute apiRoute, UseCaseMap useCaseMap, AdditionalApiRouteInformation additional, List<ApiRouteCodeSnippet> codeSnippets)
+		private static (string Name, MethodDeclarationSyntax Method) GetRouteMethod(ApiRoute apiRoute, UseCaseMap useCaseMap, AdditionalApiRouteInformation additional, List<ApiRouteCodeSnippet> codeSnippets, int? apiRouteCounter)
 		{
 			var httpMethod = apiRoute.HttpMethod.ToLower().ToPropertyName();
 			var parameters = new List<ParameterSyntax>();
@@ -473,7 +498,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Api
 
 			var useCaseCall = useCaseMap.UseCase.ClassName
 				.ToVariableName()
-				.Access(GetRouteMethodName(apiRoute.UseCase, httpMethod, true));
+				.Access(GetRouteMethodName(apiRoute.UseCase, httpMethod, true, null));
 
 			useCaseCall = alternativeMethodCall
 				? useCaseCall.Call()
@@ -508,7 +533,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Api
 				methodModifiers.Add(SyntaxKind.AsyncKeyword);
 			}
 
-			var methodName = GetRouteMethodName(apiRoute.UseCase, httpMethod, false);
+			var methodName = GetRouteMethodName(apiRoute.UseCase, httpMethod, false, apiRouteCounter);
 			var methodDeclaration = methodName.ToMethod(
 				methodResultType,
 				statements,
