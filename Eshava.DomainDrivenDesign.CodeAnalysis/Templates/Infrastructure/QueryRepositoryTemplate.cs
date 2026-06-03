@@ -1813,7 +1813,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				if (item.DataModel.TableName.IsNullOrEmpty())
 				{
 					var dataType = item.GetDataType(referenceDomain, referenceType, true);
-					var valueObject = GetMapperGetValueExpression(item.ParentProperty, item.TableAliasConstant, dataType, item.ParentDataModel.Name, null, metaData);
+					var valueObject = GetMapperGetValueExpression(item.ParentDataModel, item.ParentProperty, item.TableAliasConstant, dataType, null, metaData);
 
 					valueObject = valueObject.Access(item.Property.Name, true);
 					if (!item.DtoProperty.IsNullableType && DataTypeConstants.NotNullableTypes.Contains(item.DtoProperty.Type))
@@ -1838,7 +1838,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 						item.DtoProperty.Name
 						.ToIdentifierName()
 						.Assign(
-								GetMapperGetValueExpression(item.Property, item.TableAliasConstant, dataType, item.DataModel.Name, item.DtoProperty.TypeWithUsing, metaData)
+								GetMapperGetValueExpression(item.DataModel, item.Property, item.TableAliasConstant, dataType, item.DtoProperty.TypeWithUsing, metaData)
 						)
 					);
 				}
@@ -1877,7 +1877,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 					var dataType = dtoReferenceItem.GetDataType(referenceDomain, referenceType);
 					if (dtoReferenceItem.IsGroupBy)
 					{
-						var identifierCheck = GetMapperGetValueExpression(dtoReferenceItem.Property, dtoReferenceItem.TableAliasConstant, dataType, dtoReferenceItem.DataModel.Name, null, metaData)
+						var identifierCheck = GetMapperGetValueExpression(dtoReferenceItem.DataModel, dtoReferenceItem.Property, dtoReferenceItem.TableAliasConstant, dataType, null, metaData)
 							.ToEquals(Eshava.CodeAnalysis.SyntaxConstants.Default);
 
 						if (!(dtoReferenceItem.Dto?.DataModelTypeProperty.IsNullOrEmpty() ?? true)
@@ -1887,7 +1887,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 								.SingleOrDefault(p => p.Name == dtoReferenceItem.Dto.DataModelTypeProperty);
 
 							identifierCheck = identifierCheck.Or(
-								GetMapperGetValueExpression(typeProperty, dtoReferenceItem.TableAliasConstant, dataType, dtoReferenceItem.DataModel.Name, null, metaData)
+								GetMapperGetValueExpression(dtoReferenceItem.DataModel, typeProperty, dtoReferenceItem.TableAliasConstant, dataType, null, metaData)
 									.NotEquals(dtoReferenceItem.Dto.DataModelTypePropertyValue.ToLiteral(typeProperty.Type))
 							);
 						}
@@ -1910,7 +1910,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 					var typeProperty = dtoReferenceItem.DataModel.Properties
 						.SingleOrDefault(p => p.Name == dtoReferenceItem.Dto.DataModelTypeProperty);
 
-					var identifierCheck = GetMapperGetValueExpression(typeProperty, dtoReferenceItem.TableAliasConstant, dataType, dtoReferenceItem.DataModel.Name, null, metaData)
+					var identifierCheck = GetMapperGetValueExpression(dtoReferenceItem.DataModel, typeProperty, dtoReferenceItem.TableAliasConstant, dataType, null, metaData)
 						.NotEquals(dtoReferenceItem.Dto.DataModelTypePropertyValue.ToLiteral(typeProperty.Type));
 
 					dtoInstance = identifierCheck
@@ -1928,11 +1928,10 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			}
 		}
 
-		private static ExpressionSyntax GetMapperGetValueExpression(InfrastructureModelProperty property, string tableAliasConstant, string modelDataTypeWithNamespace, string modelDataType, string propertyTargetDataType, MethodMetaData metaData)
+		private static ExpressionSyntax GetMapperGetValueExpression(InfrastructureModel dataModel, InfrastructureModelProperty property, string tableAliasConstant, string modelDataTypeWithNamespace, string propertyTargetDataType, MethodMetaData metaData)
 		{
-			var propertySnippet = InfrastructureTemplateMethods.GetCodeSnippet(modelDataType, property.Name, metaData.CodeSnippets, false, true);
-			if (propertySnippet?.Expression is not null
-				&& !(propertySnippet.Expression is LiteralExpressionSyntax && !property.Type.EndsWith("?")))
+			var propertySnippet = InfrastructureTemplateMethods.GetCodeSnippet(dataModel, property, metaData, false, true, false);
+			if (propertySnippet.Expression is not null)
 			{
 				return propertySnippet.Expression;
 			}
