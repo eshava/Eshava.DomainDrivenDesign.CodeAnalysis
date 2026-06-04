@@ -35,25 +35,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 
 		public static void AddDomainModelUsings(UnitInformation unitInformation, ReferenceDomainModelMap domainModelMap, string domainProjectNamespace, string domain)
 		{
-			if (!domainModelMap.DomainModel.IsNamespaceDirectoryUncountable)
-			{
-				unitInformation.AddUsing($"{domainProjectNamespace}.{domain}.{domainModelMap.DomainModel.NamespaceDirectory}");
-			}
-
-			foreach (var childDomainModel in domainModelMap.ChildDomainModels)
-			{
-				if (childDomainModel.DomainModel.IsNamespaceDirectoryUncountable)
-				{
-					continue;
-				}
-
-				unitInformation.AddUsing($"{domainProjectNamespace}.{domain}.{childDomainModel.DomainModel.NamespaceDirectory}");
-			}
-
-			if (domainModelMap.IsChildDomainModel && !domainModelMap.AggregateDomainModel.DomainModel.IsNamespaceDirectoryUncountable)
-			{
-				unitInformation.AddUsing($"{domainProjectNamespace}.{domain}.{domainModelMap.AggregateDomainModel.DomainModel.NamespaceDirectory}");
-			}
+			AddDomainModelUsings(unitInformation, domainModelMap.GetTopLevelDomainModel(), $"{domainProjectNamespace}.{domain}");
 		}
 
 		public static void AddReferenceUsageChecks(UnitInformation unitInformation, string projectFullQualifiedNamespace, UseCasesMap useCasesMap, ApplicationUseCase useCase, ReferenceDomainModelMap domainModelMap)
@@ -1259,12 +1241,12 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			var childVariableName = childDomainModel.ClassificationKey.ToVariableName();
 
 			return CreateCollectChildWrapperMethod(
-				childDomainModel, 
-				"Create", 
-				new List<(TypeSyntax Type, string Name)> { (Type: dtoMap.DtoName.ToType(), Name: childVariableName) }, 
-				domainProjectNamespace, 
-				applicationProjectNamespace, 
-				true, 
+				childDomainModel,
+				"Create",
+				new List<(TypeSyntax Type, string Name)> { (Type: dtoMap.DtoName.ToType(), Name: childVariableName) },
+				domainProjectNamespace,
+				applicationProjectNamespace,
+				true,
 				readAggregateByChildId
 			);
 		}
@@ -1733,6 +1715,19 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			}
 
 			return (methodName, methodDeclaration.WithParameter(methodParameter.ToArray()));
+		}
+
+		private static void AddDomainModelUsings(UnitInformation unitInformation, ReferenceDomainModelMap domainModelMap, string fullDomainProjectNamespace)
+		{
+			if (!domainModelMap.DomainModel.IsNamespaceDirectoryUncountable)
+			{
+				unitInformation.AddUsing($"{fullDomainProjectNamespace}.{domainModelMap.DomainModel.NamespaceDirectory}");
+			}
+
+			foreach (var childDomainModel in domainModelMap.ChildDomainModels)
+			{
+				AddDomainModelUsings(unitInformation, childDomainModel, fullDomainProjectNamespace);
+			}
 		}
 	}
 }
