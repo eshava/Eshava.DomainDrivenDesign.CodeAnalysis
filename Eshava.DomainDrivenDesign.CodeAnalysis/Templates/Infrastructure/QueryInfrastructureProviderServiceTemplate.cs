@@ -108,7 +108,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 					statements,
 					SyntaxKind.PublicKeyword
 				)
-				.WithParameter(parameter);
+				.AddParameter(parameter);
 
 			return (typeUsings, (methodMap.Name, methodDeclaration));
 		}

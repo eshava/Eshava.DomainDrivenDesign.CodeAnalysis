@@ -399,18 +399,6 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				modelConstant.ToIdentifierName().Interpolate()
 			};
 
-			foreach (var parameter in additionalParameters)
-			{
-				interpolatedQueryParts.Add($@"
-					AND
-						".Interpolate());
-				interpolatedQueryParts.Add(modelConstant.ToIdentifierName().Interpolate());
-				interpolatedQueryParts.Add(".".Interpolate());
-				interpolatedQueryParts.Add(Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(dataModel.Name.Access(parameter.PropertyName).ToArgument()).Interpolate());
-				interpolatedQueryParts.Add($@" = @{parameter.PropertyName}
-						".Interpolate());
-			}
-
 			var parameterItems = methodMap.ParameterTypes
 			.Select(p => (Property: (ExpressionSyntax)p.Name.ToIdentifierName(), Name: p.PropertyName))
 			.ToList();
@@ -429,6 +417,18 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			{
 				InfrastructureTemplateMethods.AddStatusWhereCondition(modelConstant, dataModel.Name, interpolatedQueryParts, parameterItems, methodMetaData);
 				parameterItems.Add(("Status".Access("Active"), "Status"));
+			}
+
+			foreach (var parameter in additionalParameters)
+			{
+				interpolatedQueryParts.Add($@"
+					AND
+						".Interpolate());
+				interpolatedQueryParts.Add(modelConstant.ToIdentifierName().Interpolate());
+				interpolatedQueryParts.Add(".".Interpolate());
+				interpolatedQueryParts.Add(Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(dataModel.Name.Access(parameter.PropertyName).ToArgument()).Interpolate());
+				interpolatedQueryParts.Add($@" = @{parameter.PropertyName}
+						".Interpolate());
 			}
 
 			var interpolatedStringIdParts = new List<InterpolatedStringContentSyntax>
@@ -1287,7 +1287,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 					SyntaxKind.PublicKeyword,
 					SyntaxKind.AsyncKeyword
 				)
-				.WithParameter(parameter);
+				.AddParameter(parameter);
 
 			return (typeUsings, (methodMap.Name, methodDeclaration));
 		}
@@ -2220,9 +2220,13 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 
 		private static void AddCodeSnippetFilterConditions(List<StatementSyntax> statements, List<ApplicableWhereConditionCodeSnippet> applicableWhereConditionCodeSnippets, MethodMetaData metaData)
 		{
+			// The model carrying the property belongs in the key: a code snippet without a model name applies
+			// to that property on every model, and every one of them needs its own condition. Excluding one is
+			// what InfrastructureExceptionCodeSnippet.DataModelName is for, which works on exactly this
+			// granularity. See the "Where condition code snippets" section of CLAUDE.md.
 			foreach (var applicableWhereConditionCodeSnippet in applicableWhereConditionCodeSnippets
 				.Where(snippet => snippet.ModelChain?.Parent is not null)
-				.GroupBy(snippet => $"{snippet.CodeSnippet.CodeSnippeKey}.{snippet.Property.Name}")
+				.GroupBy(snippet => $"{snippet.CodeSnippet.CodeSnippeKey}.{snippet.ModelChain.Domain}.{snippet.ModelChain.Model.Name}.{snippet.Property.Name}")
 				.Select(group => group.First()))
 			{
 				AddCodeSnippetFilterConditions(statements, applicableWhereConditionCodeSnippet, metaData);
@@ -2352,7 +2356,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 		)
 		{
 			foreach (var relatedDataModel in relatedDataModels
-				.Where(rdm => rdm.IsOnlyForSqlJoinCalculation)
+				.Where(rdm => rdm.IsOnlyForSqlJoinCalculation || rdm.IsCodeSnippetRelated)
 				.GroupBy(rdm => rdm.TableAliasConstant)
 				.Select(group => group.First()))
 			{

@@ -318,7 +318,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			);
 
 			methodDeclaration = methodDeclaration
-				.WithParameter(
+				.AddParameter(
 					"request"
 					.ToVariableName()
 					.ToParameter()

@@ -102,6 +102,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 
 			CodeSnippetHelpers.AddStatements(tryBlockStatements, returnDataType, codeSnippets);
 
+			StatementHelpers.AddLocalAsyncMethodCallAndFaultyCheck(tryBlockStatements, "ExecuteBeforeAsync", "executeBeforeResult", returnDataType, "request".ToIdentifierName());
 			StatementHelpers.AddAsyncMethodCallAndFaultyCheck(tryBlockStatements, provider, $"{useCase.UseCaseName}Async", providerResult, returnDataType, requestEntityId);
 			tryBlockStatements.Add(providerResult.ToNullCheck(returnDataType));
 
@@ -140,7 +141,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			return (
 				methodDeclarationName,
 				methodDeclaration
-				.WithParameter(
+				.AddParameter(
 					"request"
 					.ToVariableName()
 					.ToParameter()

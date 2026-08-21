@@ -504,7 +504,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			return (
 				methodName,
 				methodDeclaration
-				.WithParameter(methodParameter.ToArray())
+				.AddParameter(methodParameter.ToArray())
 			);
 		}
 
@@ -531,7 +531,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			return (
 				methodName,
 				methodDeclaration
-				.WithParameter(
+				.AddParameter(
 					parameterName
 					.ToParameter()
 					.WithType(foreignKeyReference.DomainModel.IdentifierType.ToType())
@@ -571,7 +571,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			return (
 				methodName,
 				methodDeclaration
-				.WithParameter(
+				.AddParameter(
 					parameterName
 					.ToParameter()
 					.WithType(propertyType.ToType())

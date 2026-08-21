@@ -376,7 +376,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			unitInformation.AddMethod((
 				methodDeclarationName,
 				methodDeclaration
-				.WithParameter(useCase.ClassificationKey.ToVariableName()
+				.AddParameter(useCase.ClassificationKey.ToVariableName()
 					.ToParameter()
 					.WithType(dtoMap.DtoName.ToType()))
 			));

@@ -167,7 +167,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Api
 			);
 
 			methodDeclaration = methodDeclaration
-				.WithParameter(
+				.AddParameter(
 					app
 					.ToParameter()
 					.WithType("WebApplication".ToType())
@@ -279,8 +279,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Api
 		{
 			if (apiRouteUseCase?.MethodToCall.IsNullOrEmpty() ?? true)
 			{
-				var counterSuffix = apiRouteCounter.HasValue 
-					? apiRouteCounter.Value.ToString() 
+				var counterSuffix = apiRouteCounter.HasValue
+					? apiRouteCounter.Value.ToString()
 					: "";
 
 				return isUseCaseCall
@@ -346,33 +346,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Api
 
 			if ((apiRoute.Parameters?.Count ?? 0) > 0)
 			{
-				foreach (var parameter in apiRoute.Parameters)
-				{
-					var attributeType = GetParameterAttributeName(parameter.ParameterType);
-					var attributes = new List<AttributeSyntax>();
-					if (!attributeType.IsNullOrEmpty())
-					{
-						attributes.AddRange(
-							AttributeTemplate.CreateAttributes([
-								new AttributeDefinition
-								{
-									Name = attributeType,
-									Parameters = parameter.ParameterName.IsNullOrEmpty()
-										? []
-										: [new AttributeParameter { Name = "Name", Value = parameter.ParameterName, Type = "string" }]
-								}
-							])
-						);
-					}
-
-					parameters.Add(
-						parameter.Name
-						.EscapeReservedName()
-						.ToParameter()
-						.WithType(parameter.Type.ToType())
-						.WithAttributes(attributes.ToArray())
-					);
-				}
+				var otherParameter = apiRoute.Parameters.Where(p => GetParameterAttributeName(p.ParameterType) != "FromQuery").ToList();
+				ProcessApiRouteParameters(parameters, otherParameter);
 			}
 
 			var createRequestInstance = useCaseMap.UseCase.Type switch
@@ -421,7 +396,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Api
 						"request"
 						.ToParameter()
 						.WithType(useCaseMap.UseCase.RequestType.ToType())
-						.WithAttributes(
+						.AddAttributes(
 							AttributeTemplate.CreateAttributes([
 								new AttributeDefinition
 								{
@@ -496,6 +471,12 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Api
 				}
 			}
 
+			if ((apiRoute.Parameters?.Count ?? 0) > 0)
+			{
+				var queryParameter = apiRoute.Parameters.Where(p => GetParameterAttributeName(p.ParameterType) == "FromQuery").ToList();
+				ProcessApiRouteParameters(parameters, queryParameter);
+			}
+
 			var useCaseCall = useCaseMap.UseCase.ClassName
 				.ToVariableName()
 				.Access(GetRouteMethodName(apiRoute.UseCase, httpMethod, true, null));
@@ -540,7 +521,43 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Api
 				methodModifiers.ToArray()
 			);
 
-			return (methodName, methodDeclaration.WithParameter(parameters.ToArray()));
+			return (methodName, methodDeclaration.AddParameter(parameters.ToArray()));
+		}
+
+		private static void ProcessApiRouteParameters(List<ParameterSyntax> parameterSyntaxes, List<ApiRouteParameter> parameters)
+		{
+			foreach (var parameter in parameters)
+			{
+				var attributeType = GetParameterAttributeName(parameter.ParameterType);
+				var attributes = new List<AttributeSyntax>();
+				if (!attributeType.IsNullOrEmpty())
+				{
+					attributes.AddRange(
+						AttributeTemplate.CreateAttributes([
+							new AttributeDefinition
+								{
+									Name = attributeType,
+									Parameters = parameter.ParameterName.IsNullOrEmpty()
+										? []
+										: [new AttributeParameter { Name = "Name", Value = parameter.ParameterName, Type = "string" }]
+								}
+						])
+					);
+				}
+
+				var parameterSyntax = parameter.Name
+					.EscapeReservedName()
+					.ToParameter()
+					.WithType(parameter.Type.ToType())
+					.AddAttributes(attributes.ToArray());
+
+				if (attributeType == "FromQuery")
+				{
+					parameterSyntax = parameterSyntax.WithDefault(Eshava.CodeAnalysis.SyntaxConstants.Default.ToEqualsValueClause());
+				}
+
+				parameterSyntaxes.Add(parameterSyntax);
+			}
 		}
 
 		private static void AddFileStreamReturnResult(List<StatementSyntax> statements, ApplicationUseCase useCase, ExpressionSyntax useCaseCall, bool isAsync)

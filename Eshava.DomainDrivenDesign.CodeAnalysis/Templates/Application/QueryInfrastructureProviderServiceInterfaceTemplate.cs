@@ -40,7 +40,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 						method.ReturnType.GetReturnParameterType(),
 						null
 					)
-					.WithParameter(parameter)
+					.AddParameter(parameter)
 					.AddSemicolon();
 
 				unitInformation.AddMethod((method.Name, methodDeclaration));

@@ -31,7 +31,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			var methodDeclarationName = "Configure";
 			var methodDeclaration = methodDeclarationName
 				.ToMethod(Eshava.CodeAnalysis.SyntaxConstants.Void, CreateBuilderStatements(model.TableName, databaseSchema, model.IdentifierGenerationOnAdd), SyntaxKind.PublicKeyword)
-				.WithParameter(parameterDeclaration);
+				.AddParameter(parameterDeclaration);
 
 			unitInformation.AddMethod((methodDeclarationName, methodDeclaration));
 

@@ -59,7 +59,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Api
 			return (
 				methodDeclarationName,
 				methodDeclaration
-				.WithParameter(
+				.AddParameter(
 					app
 					.ToParameter()
 					.WithType("WebApplication".ToType())

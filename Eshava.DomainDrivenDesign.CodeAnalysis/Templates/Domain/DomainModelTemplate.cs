@@ -233,7 +233,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Domain
 			return (
 				setChildsDeclarationName,
 				setChildsDeclaration
-				.WithParameter(parameterList.ToArray())
+				.AddParameter(parameterList.ToArray())
 				.AddBodyStatements(syntaxStatements.ToArray())
 			);
 		}
@@ -282,7 +282,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Domain
 				methodName,
 				methodName
 				.ToMethod(returnValue, statements, SyntaxKind.PublicKeyword)
-				.WithParameter(
+				.AddParameter(
 					parameterName
 					.ToParameter()
 					.WithType(childDomainModel.IdentifierType.ToType())
@@ -366,13 +366,13 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Domain
 			if (isDtoMethod)
 			{
 				addChildDeclaration = addChildDeclaration
-					.WithTypeParameter("TDto".ToTypeParameter())
-					.WithConstraints(("TDto", Eshava.CodeAnalysis.SyntaxConstants.ClassConstraint.AsArray()))
+					.AddTypeParameter("TDto".ToTypeParameter())
+					.AddConstraints(("TDto", Eshava.CodeAnalysis.SyntaxConstants.ClassConstraint.AsArray()))
 				;
 			}
 
 			addChildDeclaration = addChildDeclaration
-					.WithParameter(parameterList.ToArray())
+					.AddParameter(parameterList.ToArray())
 					.AddBodyStatements(statements.ToArray());
 			;
 
@@ -504,7 +504,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Domain
 							SyntaxKind.ProtectedKeyword,
 							SyntaxKind.VirtualKeyword
 						)
-						.WithParameter(
+						.AddParameter(
 							parameterName.ToParameter().WithType(childType.ToType())
 						)
 					));
@@ -696,7 +696,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Domain
 			);
 
 			methodDeclaration = methodDeclaration
-				.WithParameter(
+				.AddParameter(
 					DomainNames.CALLBACK
 					.ToParameter()
 					.WithType(GetCallbackType(childDomainModel.DomainModelName))
@@ -891,7 +891,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Domain
 			statements.Add(instanceStatment.Return());
 
 			dataToInstanceDeclaration = dataToInstanceDeclaration
-				.WithParameter(parameterList.ToArray())
+				.AddParameter(parameterList.ToArray())
 				.AddBodyStatements(statements.ToArray());
 
 			return (dataToInstanceDeclarationName, dataToInstanceDeclaration);
@@ -953,9 +953,9 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Domain
 			return (
 				dataToInstanceDeclarationName,
 				dataToInstanceDeclaration
-				.WithTypeParameter("TDto".ToTypeParameter())
-				.WithConstraints(("TDto", Eshava.CodeAnalysis.SyntaxConstants.ClassConstraint.AsArray()))
-				.WithParameter(parameterList.ToArray())
+				.AddTypeParameter("TDto".ToTypeParameter())
+				.AddConstraints(("TDto", Eshava.CodeAnalysis.SyntaxConstants.ClassConstraint.AsArray()))
+				.AddParameter(parameterList.ToArray())
 				.AddBodyStatements(statements.ToArray())
 			);
 		}
@@ -1081,7 +1081,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Domain
 			return (
 				dataToInstanceDeclarationName,
 				dataToInstanceDeclaration
-				.WithParameter(parameterList.ToArray())
+				.AddParameter(parameterList.ToArray())
 				.AddBodyStatements(statements.ToArray())
 			);
 		}
@@ -1139,7 +1139,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Domain
 			return (
 				methodDeclarationName,
 				methodDeclaration
-				.WithParameter(
+				.AddParameter(
 					"patches"
 					.ToVariableName()
 					.ToParameter()

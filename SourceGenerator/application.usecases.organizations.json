@@ -1421,6 +1421,17 @@
 									]
 								},
 								{
+									"name": "CategoryName",
+									"type": "string",
+									"referenceProperty": "Customer.CustomerCategory.Name",
+									"isSortable": true,
+									"isSearchable": true,
+									"searchOperations": [
+										"Equal",
+										"Contains"
+									]
+								},
+								{
 									"name": "Address",
 									"type": "BillingOfficeAddressSearch"
 								}

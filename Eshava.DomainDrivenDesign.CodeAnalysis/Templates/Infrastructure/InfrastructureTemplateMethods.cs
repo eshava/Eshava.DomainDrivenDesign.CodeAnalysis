@@ -44,11 +44,15 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 					var currentModel = currentChainItem.Model;
 					var currentDomain = currentChainItem.Domain;
 
-					if (items.Any(item => item.ParentDomain == parentDomain
+					var existingItem = items.FirstOrDefault(item => item.ParentDomain == parentDomain
 						&& item.Domain == currentDomain
 						&& item.ParentDataModel?.Name == parentModel.Name
-						&& item.DataModel.Name == currentModel.Name))
+						&& item.DataModel.Name == currentModel.Name);
+
+					if (existingItem is not null)
 					{
+						existingItem.IsCodeSnippetRelated = true;
+
 						continue;
 					}
 
@@ -87,7 +91,10 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 						dtoProperty = new Models.Application.ApplicationUseCaseDtoProperty { Name = "*" };
 					}
 
-					var tableAlis = currentModel.Name.CreateModelConstantField();
+					var tableAlias = i == 1
+						? currentModel.Name.CreateModelConstantField()
+						: String.Concat(modelChain.Skip(i - 1).Take(2).Select(m => m.Model.ClassificationKey)).CreateModelConstantField();
+
 					items.Add(new QueryAnalysisItem
 					{
 						ParentDomain = parentDomain,
@@ -104,8 +111,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 						IsGroupBy = isEnumerable,
 						IsRootModel = currentDomain == rootDomain && i == 0,
 						IsOnlyForSqlJoinCalculation = true,
-						TableAliasConstant = tableAlis.FieldName,
-						TableAliasField = tableAlis.Declaration
+						TableAliasConstant = tableAlias.FieldName,
+						TableAliasField = tableAlias.Declaration
 					});
 				}
 			}
@@ -506,7 +513,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				return applicableWhereConditionCodeSnippets;
 			}
 
-			CollectApplicableWhereConditionCodeSnippets(model, modelDomain, infratructureModelsByDomainAndName, whereConditionCodeSnippets.ToList(), applicableWhereConditionCodeSnippets, null, new HashSet<string>());
+			CollectApplicableWhereConditionCodeSnippets(model, modelDomain, infratructureModelsByDomainAndName, whereConditionCodeSnippets.ToList(), applicableWhereConditionCodeSnippets);
 
 			return applicableWhereConditionCodeSnippets;
 		}
@@ -590,50 +597,62 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			}
 		}
 
+		/// <summary>
+		/// Collects the code snippets that are applicable to the model itself or to any model reachable from it.
+		/// </summary>
+		/// <remarks>
+		/// Deliberately breadth first: every reachable model is visited exactly once, and the model chain
+		/// recorded for it is therefore the shortest one. A depth first walk would have to enumerate all
+		/// simple paths to guarantee that, which grows combinatorially and produces one applicable snippet
+		/// per path instead of one per model. Those surplus chains end up as surplus SQL joins.
+		/// See the "Where condition code snippets" section of CLAUDE.md.
+		/// </remarks>
 		private static void CollectApplicableWhereConditionCodeSnippets(
 			InfrastructureModel model,
 			string modelDomain,
 			Dictionary<string, Dictionary<string, InfrastructureModel>> infratructureModelsByDomainAndName,
 			IReadOnlyCollection<InfrastructureModelPropertyCodeSnippet> whereConditionCodeSnippets,
-			List<ApplicableWhereConditionCodeSnippet> applicableWhereConditionCodeSnippets,
-			ApplicableInfrastructureModelChainItem currentModelChain,
-			HashSet<string> processedModels
+			List<ApplicableWhereConditionCodeSnippet> applicableWhereConditionCodeSnippets
 		)
 		{
-			var processedModelKey = $"{modelDomain}.{model.Name}";
-			if (!processedModels.Add(processedModelKey))
+			var processedModels = new HashSet<string> { $"{modelDomain}.{model.Name}" };
+			var modelChainsToProcess = new Queue<ApplicableInfrastructureModelChainItem>();
+			modelChainsToProcess.Enqueue(new ApplicableInfrastructureModelChainItem(modelDomain, model, null));
+
+			while (modelChainsToProcess.Count > 0)
 			{
-				return;
+				var modelChain = modelChainsToProcess.Dequeue();
+
+				foreach (var property in modelChain.Model.Properties)
+				{
+					foreach (var codeSnippet in whereConditionCodeSnippets.Where(cs => IsApplicableWhereConditionCodeSnippet(modelChain.Model, property, cs)))
+					{
+						applicableWhereConditionCodeSnippets.Add(new ApplicableWhereConditionCodeSnippet(codeSnippet, property, modelChain));
+					}
+
+					if (!property.IsReference || property.ReferenceType.IsNullOrEmpty())
+					{
+						continue;
+					}
+
+					var referenceDomain = property.ReferenceDomain.IsNullOrEmpty()
+						? modelChain.Domain
+						: property.ReferenceDomain;
+
+					infratructureModelsByDomainAndName.TryGetValue(referenceDomain, out var modelsForReferenceDomain);
+					if (modelsForReferenceDomain is null || !modelsForReferenceDomain.TryGetValue(property.ReferenceType, out var referencedModel))
+					{
+						continue;
+					}
+
+					if (!processedModels.Add($"{referenceDomain}.{referencedModel.Name}"))
+					{
+						continue;
+					}
+
+					modelChainsToProcess.Enqueue(new ApplicableInfrastructureModelChainItem(referenceDomain, referencedModel, modelChain));
+				}
 			}
-
-			var modelChain = new ApplicableInfrastructureModelChainItem(modelDomain, model, currentModelChain);
-
-			foreach (var property in model.Properties)
-			{
-				foreach (var codeSnippet in whereConditionCodeSnippets.Where(cs => IsApplicableWhereConditionCodeSnippet(model, property, cs)))
-				{
-					applicableWhereConditionCodeSnippets.Add(new ApplicableWhereConditionCodeSnippet(codeSnippet, property, modelChain));
-				}
-
-				if (!property.IsReference || property.ReferenceType.IsNullOrEmpty())
-				{
-					continue;
-				}
-
-				var referenceDomain = property.ReferenceDomain.IsNullOrEmpty()
-					? modelDomain
-					: property.ReferenceDomain;
-
-				infratructureModelsByDomainAndName.TryGetValue(referenceDomain, out var modelsForReferenceDomain);
-				if (modelsForReferenceDomain is null || !modelsForReferenceDomain.TryGetValue(property.ReferenceType, out var referencedModel))
-				{
-					continue;
-				}
-
-				CollectApplicableWhereConditionCodeSnippets(referencedModel, referenceDomain, infratructureModelsByDomainAndName, whereConditionCodeSnippets, applicableWhereConditionCodeSnippets, modelChain, processedModels);
-			}
-
-			processedModels.Remove(processedModelKey);
 		}
 
 		private static bool IsApplicableWhereConditionCodeSnippet(
@@ -701,7 +720,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				return true;
 			}
 
-			foreach (var childItem in relatedDataModels.Where(child => child.IsOnlyForSqlJoinCalculation && child.ParentDomain == item.Domain && child.ParentDataModel?.Name == item.DataModel?.Name))
+			foreach (var childItem in relatedDataModels.Where(child => (child.IsOnlyForSqlJoinCalculation || child.IsCodeSnippetRelated) && child.ParentDomain == item.Domain && child.ParentDataModel?.Name == item.DataModel?.Name))
 			{
 				if (HasApplicableWhereConditionCodeSnippet(childItem, relatedDataModels, metaData, new HashSet<string>(processedItems)))
 				{
@@ -752,11 +771,6 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 					continue;
 				}
 
-				if (item.Property.IsReference && !item.Property.IsParentReference)
-				{
-					continue;
-				}
-
 				CreateJoinQueryParts(parentItem.Domain, parentItem.DataModel.Name, parentItem, item, items, interpolatedTableParts, processedTableAliases, implementSoftDelete, queryParameters, metaData);
 			}
 		}
@@ -800,36 +814,19 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				{
 
 				}
+				else if (item.Property.IsReference && !item.Property.IsParentReference)
+				{
+					var parentModelProperty = item.DataModel.Properties.FirstOrDefault(p => p.IsParentReference);
+					if (parentModelProperty is not null
+						&& (parentModelProperty.ReferenceDomain.IsNullOrEmpty() || parentModelProperty.ReferenceDomain == parentItem.Domain)
+						&& parentModelProperty.ReferenceType == parentItem.DataModel.Name)
+					{
+						match = AddJoinStatement(referenceDomain, referenceDataModel, parentItem, item, parentModelProperty.Name, interpolatedTableParts, implementSoftDelete, queryParameters, metaData);
+					}
+				}
 				else if (item.Property.IsParentReference)
 				{
-					var dataType = item.GetDataType(referenceDomain, referenceDataModel);
-					var parentDataType = parentItem.GetDataType(referenceDomain, referenceDataModel);
-
-					var codeSnippetTableParts = new List<InterpolatedStringContentSyntax>();
-					AddCodeSnippetReadConditions(codeSnippetTableParts, queryParameters, item.DataModel, dataType, item.TableAliasConstant.ToIdentifierName(), metaData, true);
-
-					interpolatedTableParts.AddRange(
-						GetJoinsQueryParts(
-							item.TableAliasConstant,
-							dataType,
-							item.DataModel.Name,
-							item.Property.Name,
-							parentItem.TableAliasConstant,
-							parentDataType,
-							"Id",
-							implementSoftDelete,
-							queryParameters,
-							metaData,
-							codeSnippetTableParts.Count > 0 ? SqlJoinType.Join : SqlJoinType.LeftJoin
-						)
-					);
-					match = true;
-
-					CheckAndAddTypePropertyJoinCondition(item, interpolatedTableParts, queryParameters, dataType);
-					if (codeSnippetTableParts.Count > 0)
-					{
-						interpolatedTableParts.AddRange(codeSnippetTableParts);
-					}
+					match = AddJoinStatement(referenceDomain, referenceDataModel, parentItem, item, item.Property.Name, interpolatedTableParts, implementSoftDelete, queryParameters, metaData);
 				}
 				else
 				{
@@ -939,6 +936,51 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 					CreateJoinQueryParts(referenceDomain, referenceDataModel, item, newItem, items, interpolatedTableParts, processedTableAliases, implementSoftDelete, queryParameters, metaData);
 				}
 			}
+		}
+
+		private static bool AddJoinStatement(
+			string referenceDomain,
+			string referenceDataModel,
+			QueryAnalysisItem parentItem,
+			QueryAnalysisItem item,
+			string propertyNameForJoin,
+			List<InterpolatedStringContentSyntax> interpolatedTableParts,
+			bool implementSoftDelete,
+			List<(ExpressionSyntax Property, string Name)> queryParameters,
+			MethodMetaData metaData
+		)
+		{
+			bool match;
+			var dataType = item.GetDataType(referenceDomain, referenceDataModel);
+			var parentDataType = parentItem.GetDataType(referenceDomain, referenceDataModel);
+
+			var codeSnippetTableParts = new List<InterpolatedStringContentSyntax>();
+			AddCodeSnippetReadConditions(codeSnippetTableParts, queryParameters, item.DataModel, dataType, item.TableAliasConstant.ToIdentifierName(), metaData, true);
+
+			interpolatedTableParts.AddRange(
+				GetJoinsQueryParts(
+					item.TableAliasConstant,
+					dataType,
+					item.DataModel.Name,
+					propertyNameForJoin,
+					parentItem.TableAliasConstant,
+					parentDataType,
+					"Id",
+					implementSoftDelete,
+					queryParameters,
+					metaData,
+					codeSnippetTableParts.Count > 0 ? SqlJoinType.Join : SqlJoinType.LeftJoin
+				)
+			);
+			match = true;
+
+			CheckAndAddTypePropertyJoinCondition(item, interpolatedTableParts, queryParameters, dataType);
+			if (codeSnippetTableParts.Count > 0)
+			{
+				interpolatedTableParts.AddRange(codeSnippetTableParts);
+			}
+
+			return match;
 		}
 
 		private static void CheckAndAddTypePropertyJoinCondition(QueryAnalysisItem item, List<InterpolatedStringContentSyntax> interpolatedTableParts, List<(ExpressionSyntax Property, string Name)> queryParameters, string dataType)

@@ -25,7 +25,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 				"Task".AsGeneric("ResponseData".AsGeneric(responseName)),
 				null
 				)
-				.WithParameter("request".ToParameter().WithType(requestName.ToType()))
+				.AddParameter("request".ToParameter().WithType(requestName.ToType()))
 				.AddSemicolon();
 
 			unitInformation.AddMethod((methodDeclarationName, methodDeclaration));

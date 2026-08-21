@@ -437,7 +437,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models
 
 			if (HasConstructor)
 			{
-				var constructorDeclaration = ClassName.ToContructor(
+				var constructorDeclaration = ClassName.ToConstructor(
 					ConstructorParameters,
 					ConstructorBodyStatements,
 					ConstructorModifiers.ToArray()
@@ -445,7 +445,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Models
 
 				if (ConstructorArguments.Any())
 				{
-					constructorDeclaration = constructorDeclaration.WithInitializer(ConstructorArguments.ToArray());
+					constructorDeclaration = constructorDeclaration.WithBaseInitializer(ConstructorArguments.ToArray());
 				}
 
 				classDeclaration = classDeclaration.AddMembers(constructorDeclaration);

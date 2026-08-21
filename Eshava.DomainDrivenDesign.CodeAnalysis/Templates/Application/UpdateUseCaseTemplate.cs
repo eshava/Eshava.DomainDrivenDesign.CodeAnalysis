@@ -262,6 +262,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 					"ExecuteBeforeAsync"
 					.ToIdentifierName()
 					.Call(
+						"request".Access($"{domainModelMap.ClassificationKey}Id").ToArgument(),
 						"patchesResult".Access("Data").ToArgument(),
 						"request".Access(domainModelMap.ClassificationKey).ToArgument()
 					)
@@ -453,7 +454,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			);
 
 			methodDeclaration = methodDeclaration
-				.WithParameter(
+				.AddParameter(
 					domainModelVariableName
 						.ToParameter()
 						.WithType(domainModelType.ToIdentifierName()),
@@ -509,7 +510,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 						.ToVariableStatement(
 							relatedPropertyPatchName
 							.Access("Value", true)
-							.AsType(relatedProperty.TypeWithUsing.ToType())
+							.AsType(relatedProperty.TypeWithUsing.ToType(), true)
 							.AddNullFallback(domainModelVariableName.Access(relatedProperty.Name))
 						)
 					);
@@ -811,7 +812,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 				methodDeclarations.Insert(0, (
 					methodDeclarationName,
 					methodDeclaration
-					.WithParameter(
+					.AddParameter(
 						aggregateParameterName
 							.ToParameter()
 							.WithType(domainModelType),
@@ -986,7 +987,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 				}
 
 				methodDeclaration = methodDeclaration
-					.WithParameter(methodParameter.ToArray());
+					.AddParameter(methodParameter.ToArray());
 
 				methodDeclarations.Add((methodDeclarationname, methodDeclaration));
 			}
@@ -1061,7 +1062,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 						.WithType(childDomainModel.IdentifierType.ToType())
 			};
 
-			return (methodDeclarationName, methodDeclaration.WithParameter(methodParameter.ToArray()));
+			return (methodDeclarationName, methodDeclaration.AddParameter(methodParameter.ToArray()));
 		}
 
 		public static void CreateForeignKeyCheckMethodForPatches(
@@ -1117,7 +1118,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			unitInformation.AddMethod((
 				methodDeclarationName,
 				methodDeclaration
-				.WithParameter("patches"
+				.AddParameter("patches"
 					.ToParameter()
 					.WithType("IList".AsGeneric("Patch".AsGeneric(domainModelName))))
 			));
@@ -1176,7 +1177,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 				statements.Add(
 					patchName
 					.Access("Value", true)
-					.AsType(foreignKeyHashSet.Property.TypeWithUsing.ToType(true).AsNullable())
+					.AsType(foreignKeyHashSet.Property.TypeWithUsing.ToType(true).AsNullable(), true)
 					.IsNotNull()
 					.If(patchStatements.ToArray())
 				);

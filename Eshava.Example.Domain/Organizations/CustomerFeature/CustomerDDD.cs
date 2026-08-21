@@ -29,6 +29,7 @@ namespace Eshava.Example.Domain.Organizations.CustomerFeature
 		protected override void Init()
 		{
 			_officeDDDChanged = CreatedOrChangedOfficeDDD;
+			_billingOfficeDDDChanged = CreatedOrChangedBillingOfficeDDD;
 		}
 
 		protected override ResponseData<bool> Validate()

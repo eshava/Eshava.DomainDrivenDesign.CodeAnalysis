@@ -315,7 +315,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 				methodDeclarations.Add((
 					methodDeclarationName,
 					methodDeclaration
-					.WithParameter(
+					.AddParameter(
 						foreignKeyIdVariableName
 						.ToParameter()
 						.WithType(foreignKey.IdentifierType.ToType()),
@@ -520,7 +520,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			);
 
 			methodDeclaration = methodDeclaration
-				.WithParameter(
+				.AddParameter(
 					"request"
 					.ToVariableName()
 					.ToParameter()
@@ -688,7 +688,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 						}
 					}
 
-					methodDeclarations.Add((methodDeclarationName, methodDeclaration.WithParameter(methodParameter.ToArray())));
+					methodDeclarations.Add((methodDeclarationName, methodDeclaration.AddParameter(methodParameter.ToArray())));
 
 					methodDeclarations.AddRange(CreateCreateChildAndSubChildMethods(request, childDomainModel, childReferenceProperty.Dto, aggregateParameterName, domainModelType, dtoForeignKeyReferences, foreignKeyReferenceContainer, domainModelWithMappings, false, false));
 				}
@@ -752,7 +752,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			);
 
 			methodDeclaration = methodDeclaration
-				.WithParameter(
+				.AddParameter(
 					dtoVariableName
 					.ToParameter()
 					.WithType(dto.Name.ToType())
@@ -1337,7 +1337,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 				SyntaxKind.PrivateKeyword
 			);
 
-			return (methodDeclarationName, methodDeclaration.WithParameter(methodParameters.ToArray()));
+			return (methodDeclarationName, methodDeclaration.AddParameter(methodParameters.ToArray()));
 		}
 
 		private static (List<StatementSyntax> Statements, List<ParameterSyntax> MethodParameter) CreateCollectChildStatements(
@@ -1714,7 +1714,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 				}
 			}
 
-			return (methodName, methodDeclaration.WithParameter(methodParameter.ToArray()));
+			return (methodName, methodDeclaration.AddParameter(methodParameter.ToArray()));
 		}
 
 		private static void AddDomainModelUsings(UnitInformation unitInformation, ReferenceDomainModelMap domainModelMap, string fullDomainProjectNamespace)

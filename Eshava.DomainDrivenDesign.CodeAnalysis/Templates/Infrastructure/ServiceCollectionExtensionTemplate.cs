@@ -74,7 +74,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			);
 
 			methodDeclaration = methodDeclaration
-				.WithParameter(
+				.AddParameter(
 					"services"
 					.ToParameter()
 					.WithType("IServiceCollection".ToType())

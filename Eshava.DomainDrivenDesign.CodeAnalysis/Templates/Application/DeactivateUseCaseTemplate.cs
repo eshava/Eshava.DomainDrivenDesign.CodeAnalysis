@@ -212,6 +212,12 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 
 			StatementHelpers.AddLocalAsyncMethodCallAndFaultyCheck(statements, "IsDeletable", null, returnDataType, modelReference);
 
+			if (useCase.DeactivateBefore.Count > 0)
+			{
+				StatementHelpers.AddLocalAsyncMethodCallAndFaultyCheck(statements, "ExecuteBeforeAutoGen", null, returnDataType, modelReference);
+			}
+
+			StatementHelpers.AddLocalAsyncMethodCallAndFaultyCheck(statements, "ExecuteBefore", null, returnDataType, modelReference);
 
 			if (domainModelMap.IsChildDomainModel)
 			{
@@ -221,13 +227,6 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			{
 				StatementHelpers.AddMethodCallAndFaultyCheck(statements, providerResult, "Deactivate", "deactivateResult", returnDataType);
 			}
-
-			if (useCase.DeactivateBefore.Count > 0)
-			{
-				StatementHelpers.AddLocalAsyncMethodCallAndFaultyCheck(statements, "ExecuteBeforeAutoGen", null, returnDataType, modelReference);
-			}
-
-			StatementHelpers.AddLocalAsyncMethodCallAndFaultyCheck(statements, "ExecuteBefore", null, returnDataType, modelReference);
 
 			StatementHelpers.AddAsyncMethodCallAndFaultyCheck(statements, provider, "SaveAsync", "saveResult", returnDataType, providerResult);
 
@@ -269,7 +268,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			);
 
 			methodDeclaration = methodDeclaration
-				.WithParameter(
+				.AddParameter(
 					domainModel.ClassificationKey.ToVariableName()
 					.ToParameter()
 					.WithType(domainModel.GetDomainModelTypeName(request.DomainProjectNamespace, request.ApplicationProjectNamespace).ToType())
@@ -324,7 +323,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			);
 
 			methodDeclaration = methodDeclaration
-				.WithParameter(
+				.AddParameter(
 					domainModel.DomainModelName.ToVariableName()
 					.ToParameter()
 					.WithType(domainModel.GetDomainModelTypeName(request.DomainProjectNamespace, request.ApplicationProjectNamespace).ToType())

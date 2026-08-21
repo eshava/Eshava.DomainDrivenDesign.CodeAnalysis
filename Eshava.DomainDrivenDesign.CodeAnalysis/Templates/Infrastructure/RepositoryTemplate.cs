@@ -318,7 +318,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			return (
 				methodDeclarationName,
 				methodDeclaration
-				.WithParameter(readByVariableName.ToVariableName()
+				.AddParameter(readByVariableName.ToVariableName()
 					.ToParameter()
 					.WithType(readByPropertyType)
 				)
@@ -450,7 +450,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			var dataModelReferenceParameter = "dataInstance".ToParameter().WithType(dataModelReferenceType);
 			var validationEngineParameter = ApplicationNames.Engines.VALIDATIONENGINE.ToParameter().WithType(ApplicationNames.Engines.VALIDATIONENGINETYPE.ToType());
 
-			methodDeclaration = methodDeclaration.WithParameter(dataModelReferenceParameter, validationEngineParameter);
+			methodDeclaration = methodDeclaration.AddParameter(dataModelReferenceParameter, validationEngineParameter);
 
 			return (methodDeclarationName, methodDeclaration);
 		}
@@ -844,11 +844,11 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				var parentReferenceType = $"{domainModelMap.AggregateDomainModel.ClassificationKey.ToPlural()}.{domainModelMap.AggregateDomainModel.DomainModelName}CreationBag".ToType();
 				var parentReferenceParameter = "creationBag".ToParameter().WithType(parentReferenceType);
 
-				methodDeclaration = methodDeclaration.WithParameter(domainModelReferenceParameter, parentReferenceParameter);
+				methodDeclaration = methodDeclaration.AddParameter(domainModelReferenceParameter, parentReferenceParameter);
 			}
 			else
 			{
-				methodDeclaration = methodDeclaration.WithParameter(domainModelReferenceParameter);
+				methodDeclaration = methodDeclaration.AddParameter(domainModelReferenceParameter);
 			}
 
 			return (methodDeclarationName, methodDeclaration);
@@ -1129,7 +1129,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			);
 
 			methodDeclaration = methodDeclaration
-				.WithParameter(
+				.AddParameter(
 					readByVariableName
 					.ToVariableName()
 					.ToParameter()
@@ -1251,7 +1251,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			);
 
 			methodDeclaration = methodDeclaration
-				.WithParameter(
+				.AddParameter(
 					"patches"
 					.ToParameter()
 					.WithType("IEnumerable".AsGeneric("Patch".AsGeneric(fullDomainModelName))),
@@ -1588,7 +1588,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			);
 
 			methodDeclaration = methodDeclaration
-				.WithParameter(
+				.AddParameter(
 					"patch"
 					.ToVariableName()
 					.ToParameter()
@@ -1633,7 +1633,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			InfrastructureTemplateMethods.AddCodeSnippetReadConditions(interpolatedStringParts, queryParameters, conditionalQueryStatements, dataModel, null, modelItem.TableAliasConstant.ToIdentifierName(), metaData);
 
 			foreach (var relatedDataModel in relatedDataModels
-				.Where(rdm => rdm.IsOnlyForSqlJoinCalculation)
+				.Where(rdm => rdm.IsOnlyForSqlJoinCalculation || rdm.IsCodeSnippetRelated)
 				.GroupBy(rdm => rdm.TableAliasConstant)
 				.Select(group => group.First()))
 			{

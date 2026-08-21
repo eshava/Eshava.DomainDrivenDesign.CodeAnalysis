@@ -60,7 +60,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 						"Task".AsGeneric(CommonNames.RESPONSEDATA.AsGeneric("IEnumerable".AsGeneric(fullDomainModelName))),
 						null
 						)
-						.WithParameter($"{foreignKeyReference.PropertyName.ToVariableName()}".ToParameter().WithType(foreignKeyReference.DomainModel.IdentifierType.ToType()))
+						.AddParameter($"{foreignKeyReference.PropertyName.ToVariableName()}".ToParameter().WithType(foreignKeyReference.DomainModel.IdentifierType.ToType()))
 						.AddSemicolon();
 
 					unitInformation.AddMethod((methodDeclarationName, methodDeclaration));
@@ -91,7 +91,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 						returnType,
 						null
 						)
-						.WithParameter($"{property.Name.ToVariableName()}".ToParameter().WithType(propertyType.ToType()))
+						.AddParameter($"{property.Name.ToVariableName()}".ToParameter().WithType(propertyType.ToType()))
 						.AddSemicolon();
 
 					unitInformation.AddMethod((methodDeclarationName, methodDeclaration));
