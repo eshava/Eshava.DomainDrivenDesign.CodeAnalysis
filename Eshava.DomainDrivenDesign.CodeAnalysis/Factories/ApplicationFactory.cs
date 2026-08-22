@@ -63,6 +63,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 						UseCasesMap = useCasesMap,
 						CodeSnippets = codeSnippets,
 						AlternativeClasses = applicationProjectConfig.AlternativeClasses,
+						UseNewtonsoftJson = applicationProjectConfig.UseNewtonsoftJson,
 						AddAssemblyCommentToFiles = applicationProjectConfig.AddAssemblyCommentToFiles
 					};
 
@@ -379,6 +380,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Factories
 				templateRequest.DomainModelReferenceMap,
 				templateRequest.DtoReferenceMap,
 				codeSnippets,
+				templateRequest.UseNewtonsoftJson,
 				templateRequest.AddAssemblyCommentToFiles
 			);
 

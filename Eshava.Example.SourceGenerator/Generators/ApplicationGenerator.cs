@@ -81,15 +81,13 @@ namespace Eshava.Example.SourceGenerator.Generators
 						Name = "ApplicationId",
 						Type = "int",
 						Using = null,
+						// The attribute of the serializer this project uses, and only that one - a
+						// snippet carrying both would oblige the project to reference both packages
 						Attributes =
 						[
 							new Eshava.DomainDrivenDesign.CodeAnalysis.Models.AttributeDefinition
 							{
-								Name = $"{CommonNames.Namespaces.NEWTONSOFT}.JsonIgnore"
-							},
-							new Eshava.DomainDrivenDesign.CodeAnalysis.Models.AttributeDefinition
-							{
-								Name = $"{CommonNames.Namespaces.JSON}.JsonIgnore"
+								Name = $"{CommonNames.Namespaces.JSON}.{CommonNames.Attributes.JSONIGNORE}"
 							}
 						]
 					}

@@ -19,6 +19,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			ReferenceMap domainModelReferenceMap,
 			DtoReferenceMap dtoReferenceMap,
 			List<UseCaseCodeSnippet> codeSnippets,
+			bool useNewtonsoftJson,
 			bool addAssemblyCommentToFiles
 		)
 		{
@@ -31,14 +32,18 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			unitInformation.AddUsing(CommonNames.Namespaces.SYSTEM);
 			unitInformation.AddUsing(CommonNames.Namespaces.GENERIC);
 
+			// Only the attribute of the serializer the project actually uses. Emitting both would
+			// oblige every consuming project to reference both packages, whichever one it serializes
+			// with.
+			var jsonIgnoreNamespace = useNewtonsoftJson
+				? CommonNames.Namespaces.NEWTONSOFT
+				: CommonNames.Namespaces.JSON
+				;
+
 			var attributes = AttributeTemplate.CreateAttributes([
 				new AttributeDefinition
 				{
-					Name = $"{CommonNames.Namespaces.NEWTONSOFT}.JsonIgnore"
-				},
-				new AttributeDefinition
-				{
-					Name = $"{CommonNames.Namespaces.JSON}.JsonIgnore"
+					Name = $"{jsonIgnoreNamespace}.{CommonNames.Attributes.JSONIGNORE}"
 				}
 			]);
 

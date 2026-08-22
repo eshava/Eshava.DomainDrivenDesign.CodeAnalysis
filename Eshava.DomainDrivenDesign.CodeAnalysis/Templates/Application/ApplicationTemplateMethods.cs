@@ -1046,8 +1046,17 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 				unitInformation.AddUsing(property.UsingForType);
 			}
 
-			var attributes = property.Attributes ?? [];
-			if (!isValidation)
+			// A copy: what the domain model contributes belongs to this generated type, not back into
+			// the configuration the caller passed in. Writing it back would make the result depend on
+			// which template ran first, and the same configuration is walked by more than one.
+			var attributes = new List<AttributeDefinition>(property.Attributes ?? []);
+
+			// A property the serializer ignores takes over nothing from its domain model property.
+			// The domain model states what the model requires, the dto states what the payload
+			// carries, and for an ignored property the two contradict each other: a property that is
+			// required but can never be deserialized makes the schema generator of System.Text.Json
+			// reject the whole type, so the api documentation of that endpoint cannot be produced.
+			if (!isValidation && !HasJsonIgnoreAttribute(attributes))
 			{
 				var domainAttributes = domainModel
 					?.DomainModel
@@ -1077,6 +1086,38 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 					}
 				}
 			}
+		}
+
+		/// <summary>
+		/// Whether one of the attributes configured on the dto property tells a json serializer to
+		/// ignore it. Both serializers the generator knows carry the same type name, and it may be
+		/// written qualified or not, with or without the Attribute suffix - so only the type name
+		/// itself is compared.
+		/// </summary>
+		private static bool HasJsonIgnoreAttribute(IEnumerable<AttributeDefinition> attributes)
+		{
+			return attributes.Any(attribute => IsJsonIgnoreAttribute(attribute?.Name));
+		}
+
+		private static bool IsJsonIgnoreAttribute(string attributeName)
+		{
+			if (attributeName.IsNullOrEmpty())
+			{
+				return false;
+			}
+
+			var separatorIndex = attributeName.LastIndexOf('.');
+			var typeName = separatorIndex < 0
+				? attributeName
+				: attributeName.Substring(separatorIndex + 1)
+				;
+
+			if (typeName.EndsWith(CommonNames.Attributes.SUFFIX))
+			{
+				typeName = typeName.Substring(0, typeName.Length - CommonNames.Attributes.SUFFIX.Length);
+			}
+
+			return typeName == CommonNames.Attributes.JSONIGNORE;
 		}
 
 		private static IEnumerable<StatementSyntax> CreateCollectChildStatementsForReadByChildId(

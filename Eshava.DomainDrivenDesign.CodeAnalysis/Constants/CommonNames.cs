@@ -9,6 +9,16 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Constants
 		public const string RESPONSEDATA = "ResponseData";
 		public const string MESSAGECONSTANTS = "MessageConstants";
 
+		public static class Attributes
+		{
+			/// <summary>
+			/// Type name suffix every attribute class carries and every usage may omit
+			/// </summary>
+			public const string SUFFIX = "Attribute";
+
+			public const string JSONIGNORE = "JsonIgnore";
+		}
+
 		public static class DatabaseSettings
 		{
 			public const string SETTINGS = "databaseSettings";
