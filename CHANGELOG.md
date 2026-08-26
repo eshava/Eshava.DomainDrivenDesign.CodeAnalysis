@@ -3,6 +3,33 @@
 Notable changes per released version, newest first. Versions before 1.2.21 are not documented here —
 the Git history is the source for those.
 
+## 1.2.23
+
+### Fixed
+
+* **`CheckValidationConstraintsAsync` declared the same patch variable twice and did not compile.**
+  A unique rule declares the patch of its own property for the whole method and the patch of each
+  related property inside the `if` block that guards the check. Where a property is the subject of
+  one unique rule and a related property of another, both declarations name the same variable, one
+  enclosing the other — which C# rejects as `CS0136`, so the generated use case broke the build of
+  the consuming project. The patches are declared up front now, one per property, before any of the
+  checks. That is independent of the order the rules are written in: declaring them lazily would
+  have moved the problem to `CS0841` when the related use comes first.
+
+  Two side effects, both harmless. A related property that is not the subject of a rule moves its
+  declaration out of the `if` block to the top of the method — `patches.FirstOrDefault(…)` has no
+  side effect, so this is placement, not behaviour. And a property related to several rules is
+  looked up once instead of once per rule.
+
+### Known
+
+* **A dto property two or more references away from the queried model loses its joins.** The
+  generated `SELECT` names a table alias that no `JOIN` introduces, so the statement is rejected by
+  the database while the generated C# compiles. Excluding that one query repository method from
+  generation and writing it by hand is the way around it. The cause, why the obvious correction
+  makes other queries worse, and what a real fix needs are in the "Known Defect: Missing Joins
+  Beyond The Second Reference" section of `CLAUDE.md`.
+
 ## 1.2.22
 
 ### Breaking
@@ -112,6 +139,16 @@ the Git history is the source for those.
   different chains no longer collides with the alias of the queried model. And a model that is part
   of a query only because a code snippet reaches through it now carries `IsCodeSnippetRelated`, so
   the repository template treats it like a model that exists for the join calculation alone.
+* **One filter condition per model, for a code snippet that applies to more than one.** A snippet
+  without a `ModelName` matches its property on every model that has it — that is what makes it
+  global — but the conditions were grouped by the snippet and the property name alone. The model the
+  property had been found on was nowhere in that key, so as soon as one query reached two models
+  carrying the property, both fell into one group and one of the two conditions was dropped while
+  the joins for it were still generated. Which one survived was whatever the traversal reached
+  first, so an exception written against a particular model could miss its target. The key carries
+  the domain and the model name now, which is the granularity `InfrastructureExceptionCodeSnippet`
+  already works on. No known configuration reaches two such models today; the generated output of
+  the example generator is unchanged.
 * Conflicts between namespaces and model names.
 * The `EventDomainProperty` calculation.
 * A method name conflict in api routes.

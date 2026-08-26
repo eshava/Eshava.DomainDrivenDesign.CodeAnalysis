@@ -429,18 +429,34 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 
 			var statements = new List<StatementSyntax>();
 
-			foreach (var property in domainModelMap.DomainModel.Properties)
-			{
-				foreach (var rule in property.ValidationRules)
-				{
-					switch (rule.Type)
-					{
-						case ValidationRuleType.Unique:
-							AddUniqueCheck(statements, domainModelMap, property, rule, provider, domainModelVariableName);
+			var uniqueRules = domainModelMap.DomainModel.Properties
+				.SelectMany(property => property.ValidationRules
+					.Where(rule => rule.Type == ValidationRuleType.Unique)
+					.Select(rule => (Property: property, Rule: rule)))
+				.ToList();
 
-							break;
+			// The patch variables are declared up front, one per property. A property can be the subject of
+			// one unique rule and a related property of another - the subject declares its patch variable for
+			// the whole method, the related one used to declare it again inside an if block, and C# rejects
+			// that as a nested redeclaration. Declaring them here keeps it at one declaration per property and
+			// does not depend on the order the rules are written in.
+			var declaredPatchVariables = new HashSet<string>();
+			foreach (var uniqueRule in uniqueRules)
+			{
+				AddPatchVariable(statements, declaredPatchVariables, uniqueRule.Property.Name);
+
+				foreach (var relatedPropertyName in uniqueRule.Rule.RelatedProperties)
+				{
+					if (domainModelMap.DomainModel.Properties.Any(p => p.Name == relatedPropertyName))
+					{
+						AddPatchVariable(statements, declaredPatchVariables, relatedPropertyName);
 					}
 				}
+			}
+
+			foreach (var uniqueRule in uniqueRules)
+			{
+				AddUniqueCheck(statements, domainModelMap, uniqueRule.Property, uniqueRule.Rule, provider, domainModelVariableName);
 			}
 
 			statements.Add(StatementHelpers.GetResponseDataReturn(true));
@@ -467,6 +483,17 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			return (methodDeclarationName, methodDeclaration);
 		}
 
+		private static void AddPatchVariable(List<StatementSyntax> statements, HashSet<string> declaredPatchVariables, string propertyName)
+		{
+			var propertyPatchName = $"{propertyName.ToVariableName()}Patch";
+			if (!declaredPatchVariables.Add(propertyPatchName))
+			{
+				return;
+			}
+
+			statements.Add(propertyPatchName.CreatePatchVariable(propertyName, "patches".ToIdentifierName()));
+		}
+
 		private static void AddUniqueCheck(
 			List<StatementSyntax> statements,
 			ReferenceDomainModelMap domainModel,
@@ -478,7 +505,6 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 		{
 			var propertyPatchValue = $"{property.Name.ToVariableName()}Value";
 			var propertyPatchName = $"{property.Name.ToVariableName()}Patch";
-			statements.Add(propertyPatchName.CreatePatchVariable(property.Name, "patches".ToIdentifierName()));
 
 			var arguments = new List<ExpressionSyntax>
 			{
@@ -503,7 +529,6 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 
 					var relatedPropertyPatchValue = $"{relatedProperty.Name.ToVariableName()}Value";
 					var relatedPropertyPatchName = $"{relatedProperty.Name.ToVariableName()}Patch";
-					ifStatements.Add(relatedPropertyPatchName.CreatePatchVariable(relatedProperty.Name, "patches".ToIdentifierName()));
 
 					ifStatements.Add(
 						relatedPropertyPatchValue

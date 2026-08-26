@@ -146,6 +146,49 @@ output byte for byte** — normalise the tick-based `filterValueFor…` variable
 factory classes can be run outside a generator, which makes that cheap. Joins may shrink; the
 `Where.Add` expressions and the selected columns must not change.
 
+## Known Defect: Missing Joins Beyond The Second Reference
+
+**A dto property that sits two or more references away from the queried model loses its joins.**
+Open, not fixed. The symptom is distinctive and worth recognising: **a table alias appears in the
+`SELECT` list but in no `JOIN`.** Nothing complains — the generated C# compiles, the alias is a
+declared constant, and only the database rejects the statement.
+
+`CreateJoinQueryParts` descends the related data models and skips a child on this condition:
+
+```csharp
+if (newItem.DtoProperty is null && !newItem.IsOnlyForSqlJoinCalculation)
+{
+    continue;
+}
+```
+
+For a chain `queried model → A → B` where only `B` carries the selected property, `A` is an
+intermediate hop: it has no dto property of its own, correctly, because it contributes no column —
+and it is not flagged for the join calculation either, because that flag belongs to the code snippet
+path. The descent therefore stops at `A`, and `B` is never reached although it is what the query
+selects. A code snippet reaching through the same models does not rescue it:
+`AddMissingQueryAnalysisItemsForApplicableCodeSnippets` finds the existing items and sets only
+`IsCodeSnippetRelated`, never `IsOnlyForSqlJoinCalculation`, which is what the condition tests.
+
+**Relaxing that condition is not enough, and it breaks other queries.** `QueryAnalysisItem` records
+its parent as a **model name**, not as a table alias. Where two items carry the same model — the same
+table reached through two different references — every child of that model matches both of them, and
+which alias ends up under which parent is decided by iteration order together with
+`processedTableAliases`. Letting intermediate hops through changes that order: verified on the
+example configuration, a product type was then joined on the product of the invoice position instead
+of the product of the order position, so the `ON` clause pointed at the wrong table. A second pass
+does not help either — the alias check is the first statement of the method, so an item already
+joined returns before the recursion and the pass cannot descend through it.
+
+**The fix is to make the parent unambiguous**: a parent table alias on `QueryAnalysisItem`, set at
+every creation site, matched instead of the model name. The alias assignment stops depending on
+traversal order, the "is this item needed" question becomes answerable, and the duplicate aliases
+that the chain-derived naming can still produce become addressable as well.
+
+**Until then the way around it is to exclude that one method from generation and write it by hand.**
+Worth a comment at the hand written method saying why it is not generated, otherwise it reads as an
+oversight later.
+
 ## Dependencies
 
 Consumes `Eshava.Core`, `Eshava.CodeAnalysis` and `Eshava.DomainDrivenDesign` as NuGet packages.
