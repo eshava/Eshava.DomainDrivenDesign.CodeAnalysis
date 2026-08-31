@@ -3,6 +3,31 @@
 Notable changes per released version, newest first. Versions before 1.2.21 are not documented here —
 the Git history is the source for those.
 
+## 1.2.24
+
+### Breaking
+
+* **The lower bound for `Eshava.CodeAnalysis` moves to 1.0.8.** The endpoint fix below is generated
+  with `CoalesceAssign`, which that version introduces. `Eshava.CodeAnalysis` flows on to the
+  consumers, so a generator project that declares an older version of it alongside this package
+  does not restore — `NU1605`. Raise both together.
+
+### Fixed
+
+* **A POST or PUT endpoint handed a null request to the use case.** As far as ASP.NET Core is
+  concerned the body is optional — in a project without `<Nullable>enable</Nullable>` an empty one
+  is accepted and arrives as null — and the generated method only wrapped its assignments in
+  `if (request is not null)`. Everything the route contributed was dropped without a trace in that
+  case: the values a code snippet supplies, the identifier out of the route. What reached the use
+  case was null, and the first property access inside it threw. The generated catch block turned
+  that into a logged error and a 500, for what is a client error.
+
+  The guard is gone, replaced by `request ??= new <Request>();` ahead of the assignments. The route
+  values are therefore always assignable, and a missing body is left to the validation inside the
+  use case. **The nested guard for the dto property stays**: in a partial put that property is a
+  `PartialPutDocument<T>`, where an empty instance would read as "a put without a single field"
+  rather than as a missing body.
+
 ## 1.2.23
 
 ### Fixed

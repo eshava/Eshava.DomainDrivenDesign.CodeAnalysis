@@ -15,7 +15,7 @@
 
 
 	<ItemGroup>
-		<PackageReference Include="Eshava.CodeAnalysis" Version="1.0.7">
+		<PackageReference Include="Eshava.CodeAnalysis" Version="1.0.8">
 			<GeneratePathProperty>True</GeneratePathProperty>
 		</PackageReference>
 	</ItemGroup>

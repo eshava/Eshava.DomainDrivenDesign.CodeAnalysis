@@ -456,18 +456,22 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Api
 						);
 					}
 
-					if (requestParameterStatements.Count > 0)
-					{
-						statements.Add(
-							"request"
-							.ToIdentifierName()
-							.IsNotNull()
-							.If(
-								requestParameterStatements
-								.ToArray()
-							)
-						);
-					}
+					// The framework treats the body as optional, so an empty one arrives as null. An
+					// empty request as the fallback keeps the route parameters and the code snippet
+					// values assignable, and leaves the missing content to the validation inside the
+					// use case instead of a null reference in it.
+					statements.Add(
+						"request"
+						.ToIdentifierName()
+						.CoalesceAssign(
+							useCaseMap.UseCase.RequestType
+							.ToType()
+							.ToInstance()
+						)
+						.ToExpressionStatement()
+					);
+
+					statements.AddRange(requestParameterStatements);
 				}
 			}
 
