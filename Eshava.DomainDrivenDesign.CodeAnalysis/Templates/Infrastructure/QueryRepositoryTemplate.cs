@@ -419,14 +419,42 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				parameterItems.Add(("Status".Access("Active"), "Status"));
 			}
 
+			// A null related value has to match a null column, so a nullable parameter is compared null safely.
+			// A plain equality never matches null, which would report every record as unique and drop the
+			// constraint silently - the opposite mistake to checking a value that is not set at all.
+			//
+			// The checked property above is deliberately left as a plain equality: the use case does not run
+			// the check for a value that is not set, and null matching null there would turn the records that
+			// share the unset state into a collision.
 			foreach (var parameter in additionalParameters)
 			{
+				var parameterCanBeNull = CanBeNull(parameter);
+
 				interpolatedQueryParts.Add($@"
 					AND
 						".Interpolate());
+
+				if (parameterCanBeNull)
+				{
+					interpolatedQueryParts.Add("(".Interpolate());
+				}
+
 				interpolatedQueryParts.Add(modelConstant.ToIdentifierName().Interpolate());
 				interpolatedQueryParts.Add(".".Interpolate());
 				interpolatedQueryParts.Add(Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(dataModel.Name.Access(parameter.PropertyName).ToArgument()).Interpolate());
+
+				if (parameterCanBeNull)
+				{
+					interpolatedQueryParts.Add($" = @{parameter.PropertyName} OR (".Interpolate());
+					interpolatedQueryParts.Add(modelConstant.ToIdentifierName().Interpolate());
+					interpolatedQueryParts.Add(".".Interpolate());
+					interpolatedQueryParts.Add(Eshava.CodeAnalysis.SyntaxConstants.NameOf.Call(dataModel.Name.Access(parameter.PropertyName).ToArgument()).Interpolate());
+					interpolatedQueryParts.Add($@" IS NULL AND @{parameter.PropertyName} IS NULL))
+						".Interpolate());
+
+					continue;
+				}
+
 				interpolatedQueryParts.Add($@" = @{parameter.PropertyName}
 						".Interpolate());
 			}
@@ -502,6 +530,23 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				Method = method,
 				Fields = GetConstantFields(methodMap.Domain, dataModel.Name, relatedDataModels)
 			};
+		}
+
+		/// <summary>
+		/// Whether a parameter of a generated method can arrive as null, which decides how it is compared in
+		/// the SQL statement.
+		/// </summary>
+		/// <remarks>
+		/// Only the declared type is available here - the domain model property it was derived from is not -
+		/// so a reference type other than string is not recognised. Those do not currently occur as a
+		/// unique parameter: the domain properties carrying a unique rule are scalars.
+		/// </remarks>
+		private static bool CanBeNull(UseCaseQueryProviderMethodParameterTypeMap parameter)
+		{
+			var typeName = parameter.Type?.ToString() ?? parameter.TypeName;
+
+			return typeName is not null
+				&& (typeName == "string" || typeName.EndsWith("?"));
 		}
 
 		private static MethodCreationResult CreateReadAggregateIdMethod(

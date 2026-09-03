@@ -3,6 +3,46 @@
 Notable changes per released version, newest first. Versions before 1.2.21 are not documented here —
 the Git history is the source for those.
 
+## 1.2.25
+
+### Fixed
+
+* **The unique check ran on a value that was not set, and reported an optional field as a duplicate.**
+  `CheckValidationConstraintsAsync` called the provider for every property carrying a unique rule,
+  without asking whether the property held a value. The create use case had no guard at all; the
+  update use case had one, but only because a patch whose value is null is skipped anyway — an empty
+  string passed it.
+
+  The database comparison is a plain equality, so the two unset states behaved differently and both
+  behaved wrongly. An empty string matches every other record holding one, which is a validation
+  error on data that is perfectly valid — and an empty string is what a client sends for an optional
+  field left blank. A null matches nothing, so the check was a database round trip that could not
+  fail. Whitespace behaves like an empty string, because SQL Server ignores trailing blanks in a
+  comparison.
+
+  Both use cases now guard the check: `!string.IsNullOrWhiteSpace(…)` for a `string` property,
+  `is not null` for a nullable one, nothing for a property that cannot be unset. A required property
+  loses nothing by it, because a missing value is rejected before the unique check is reached.
+
+* **A unique rule with an optional related property enforced nothing.** The mirror image of the
+  above, and the more dangerous of the two because it produces no error. The generated statement
+  compared each related property with a plain equality, so a null related value matched no record —
+  the count came back as zero and every record was reported as unique. The constraint was gone
+  without a trace.
+
+  A nullable related parameter is now compared null safely:
+  `(X = @X OR (X IS NULL AND @X IS NULL))`. **The checked property itself stays a plain equality**,
+  deliberately: the use case no longer runs the check for a value that is not set, and matching null
+  against null there would turn the records sharing the unset state into a collision.
+
+  **This can reject data a service accepted before**, wherever a unique rule names an optional
+  related property — that is the constraint starting to work rather than a change of intent. Only
+  the SQL of `IsUnique…Async` changes, its signature does not.
+
+  Not recognised is a related property of a nullable reference type other than `string`: only the
+  declared type reaches the template. No configuration currently has one — the properties carrying
+  unique rules are scalars.
+
 ## 1.2.24
 
 ### Breaking

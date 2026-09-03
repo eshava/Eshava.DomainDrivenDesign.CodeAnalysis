@@ -517,6 +517,8 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 				propertyPatchValue.ToVariableStatement(propertyPatchName.Access("Value").Cast(property.TypeWithUsing.ToType()))
 			};
 
+			var checkStatements = new List<StatementSyntax>();
+
 			if (rule.RelatedProperties.Count > 0)
 			{
 				foreach (var relatedPropertyName in rule.RelatedProperties)
@@ -530,7 +532,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 					var relatedPropertyPatchValue = $"{relatedProperty.Name.ToVariableName()}Value";
 					var relatedPropertyPatchName = $"{relatedProperty.Name.ToVariableName()}Patch";
 
-					ifStatements.Add(
+					checkStatements.Add(
 						relatedPropertyPatchValue
 						.ToVariableStatement(
 							relatedPropertyPatchName
@@ -545,7 +547,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			}
 
 			var resultName = $"isUnique{property.Name}Result";
-			StatementHelpers.AddAsyncMethodCallAndFaultyCheck(ifStatements, provider, $"IsUnique{property.Name}Async", resultName, (TypeSyntax)null, arguments.ToArray());
+			StatementHelpers.AddAsyncMethodCallAndFaultyCheck(checkStatements, provider, $"IsUnique{property.Name}Async", resultName, (TypeSyntax)null, arguments.ToArray());
 
 			var uniqueFaultyResult = SyntaxConstants.ResponseDataBool.CreateFaultyResponse(
 				EshavaMessageConstant.InvalidData.Map(),
@@ -558,12 +560,23 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 					.AddValidationError(relatedProperty, "Unique", $"{relatedProperty.ToVariableName()}Value".ToIdentifierName());
 			}
 
-			ifStatements.Add(
+			checkStatements.Add(
 				resultName
 				.Access("Data")
 				.Not()
 				.If(uniqueFaultyResult.Return())
 			);
+
+			// The patch value being not null is guarded below, so only an empty value is left to guard here.
+			var guard = ApplicationTemplateMethods.CreateUniqueCheckGuard(property, propertyPatchValue.ToIdentifierName(), true);
+			if (guard is null)
+			{
+				ifStatements.AddRange(checkStatements);
+			}
+			else
+			{
+				ifStatements.Add(guard.If(checkStatements.ToArray()));
+			}
 
 			statements.Add(
 				propertyPatchName

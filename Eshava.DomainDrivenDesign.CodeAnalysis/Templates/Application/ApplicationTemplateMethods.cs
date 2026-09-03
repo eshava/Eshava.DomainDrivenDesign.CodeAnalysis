@@ -1573,6 +1573,40 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			return additionalCreateChildStatements;
 		}
 
+		/// <summary>
+		/// Condition a unique check is only executed under, or null where the value can never be unset.
+		/// </summary>
+		/// <remarks>
+		/// A value that is not set must not be checked for uniqueness. An optional property is allowed to be
+		/// unset on any number of records, so the check can only produce a validation error that is wrong -
+		/// and an empty string is what a client sends for an optional field it left blank. The database
+		/// comparison is a plain equality, which makes the two unset states behave differently: an empty
+		/// string matches every other record holding one, while null matches nothing at all, so the check is
+		/// either wrong or pointless. Whitespace counts as unset as well, because SQL Server ignores trailing
+		/// blanks in a comparison and would treat it as an empty string anyway.
+		///
+		/// A required property cannot lose anything by this: the value is rejected as missing before the
+		/// unique check is reached.
+		/// </remarks>
+		/// <param name="nullIsAlreadyGuarded">
+		/// Set by the update use case, which reaches the check only for a patch whose value is not null, so
+		/// only the empty value remains to be guarded here.
+		/// </param>
+		internal static ExpressionSyntax CreateUniqueCheckGuard(DomainModelProperty property, ExpressionSyntax value, bool nullIsAlreadyGuarded = false)
+		{
+			if (property.Type == "string")
+			{
+				return Eshava.CodeAnalysis.SyntaxConstants.String
+					.Access("IsNullOrWhiteSpace")
+					.Call(value.ToArgument())
+					.Not();
+			}
+
+			return !nullIsAlreadyGuarded && property.Type.EndsWith("?")
+				? value.IsNotNull()
+				: null;
+		}
+
 		private static void AddUniqueCheck(
 			List<StatementSyntax> statements,
 			ReferenceDomainModelMap domainModel,
@@ -1618,8 +1652,10 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 				return;
 			}
 
+			var checkStatements = new List<StatementSyntax>();
+
 			var resultName = $"isUnique{property.Name}Result";
-			StatementHelpers.AddAsyncMethodCallAndFaultyCheck(statements, provider, $"IsUnique{property.Name}Async", resultName, (TypeSyntax)null, arguments.ToArray());
+			StatementHelpers.AddAsyncMethodCallAndFaultyCheck(checkStatements, provider, $"IsUnique{property.Name}Async", resultName, (TypeSyntax)null, arguments.ToArray());
 
 			var uniqueFaultyResult = SyntaxConstants.ResponseDataBool.CreateFaultyResponse(
 				EshavaMessageConstant.InvalidData.Map(),
@@ -1632,12 +1668,22 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 					.AddValidationError(relatedProperty.Domain, "Unique", dtoVariableName.Access(relatedProperty.Dto));
 			}
 
-			statements.Add(
+			checkStatements.Add(
 				resultName
 				.Access("Data")
 				.Not()
 				.If(uniqueFaultyResult.Return())
 			);
+
+			var guard = CreateUniqueCheckGuard(property, dtoVariableName.Access(dtoProperty.Name));
+			if (guard is null)
+			{
+				statements.AddRange(checkStatements);
+
+				return;
+			}
+
+			statements.Add(guard.If(checkStatements.ToArray()));
 		}
 
 		private static (string Name, MemberDeclarationSyntax Method) CreateCreateChildMethod(
