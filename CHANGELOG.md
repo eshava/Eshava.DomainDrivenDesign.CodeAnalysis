@@ -13,6 +13,13 @@ the Git history is the source for those.
   and a hand-written partial of such a use case could have reached for the field. Where one does,
   the dependency has to be declared by hand now, through `AdditionalContructorParameter`.
 
+* **A use case with `checkForeignKeyReferencesAutomatically` no longer receives the query
+  infrastructure provider service of every model that references it.** It receives the ones the
+  generated checks actually name. This changes constructor signatures broadly — anywhere a model is
+  the target of a foreign key and no usage check is written for it — so a hand-written partial
+  reaching for such a field has to declare the dependency itself now, the same way. The generated
+  code is unaffected: not one statement changes.
+
 ### Fixed
 
 * **An update or deactivate use case with `readAggregateByChildId` asked for the wrong query
@@ -35,6 +42,22 @@ the Git history is the source for those.
   already the key of the patch pair. The call site appended it a second time regardless, producing
   `CS1501` against a method that takes three parameters. The argument is now added only where the
   wrapper it belongs to actually exists, which is a child nested two levels or deeper.
+
+* **Reference usage checks injected providers nothing used.** `AddReferenceUsageChecks` comes as a
+  pair: one overload writes the `IsUsed…Async` calls, the other injects the providers those calls
+  need. The injecting one walked every `ReferencesToMe` of the model and its children, while the
+  writing one produces a check only where one belongs — for an update, only where a child is removed
+  from a collection and has to be deactivated. Everything in the gap between the two was a
+  dependency the use case asked the container for and never touched.
+
+  The injecting overload now takes the generated methods as its authority: a provider is injected
+  where a method already names its field. Both templates call it after their methods exist, and in
+  the update template it moved behind the last of them for that reason. In the example project this
+  removes 21 of 24 unused providers, across use cases that have nothing to do with each other.
+
+  **The three that stay have a different origin** and are untouched: the regular dependency
+  collection contributes the query provider of every model carrying a validation rule, whether or
+  not the use case generates a constraint check for it. A deactivate use case never generates one.
 
 ## 1.2.25
 

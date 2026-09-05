@@ -144,8 +144,6 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 					unitInformation.AddMethod(foreignKeyCheckMethod);
 				}
 
-				ApplicationTemplateMethods.AddReferenceUsageChecks(unitInformation, request.ApplicationProjectNamespace, request.UseCasesMap, request.UseCase, domainModelMap);
-
 				if (!domainModelMap.IsChildDomainModel)
 				{
 					CreateForeignKeyCheckMethodForPatches(
@@ -159,6 +157,10 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 						foreignKeyReferenceContainer
 					);
 				}
+
+				// Last, because it injects the reference query providers the generated methods name -
+				// so every method that could name one has to exist by now.
+				ApplicationTemplateMethods.AddReferenceUsageChecks(unitInformation, request.ApplicationProjectNamespace, request.UseCasesMap, request.UseCase, domainModelMap);
 			}
 
 			CheckAndAddProviderReferences(unitInformation, request.UseCase, alternativeClass, codeSnippets);

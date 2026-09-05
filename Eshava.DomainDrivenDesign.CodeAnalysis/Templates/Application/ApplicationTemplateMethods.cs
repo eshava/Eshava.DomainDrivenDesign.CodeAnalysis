@@ -57,6 +57,16 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 				references.AddRange(domainModelMap.ChildDomainModels.SelectMany(cdm => cdm.ReferencesToMe));
 			}
 
+			// The checks that use these providers are written by the overload below, and only for the
+			// references it actually writes one for - an update, for instance, writes them only where it
+			// deactivates a child it removes from a collection. Both templates call this method after
+			// their methods exist, so the generated code is what decides: injecting a provider no
+			// statement names gives the use case a dependency it asks the container for and never touches.
+			var referencedIdentifiers = unitInformation.Methods
+				.SelectMany(method => method.DescendantNodes().OfType<IdentifierNameSyntax>())
+				.Select(identifier => identifier.Identifier.ValueText)
+				.ToImmutableHashSet();
+
 			foreach (var domainModel in references)
 			{
 
@@ -76,6 +86,11 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 				var queryProviderType = domainModel.ClassificationKey.ToQueryProviderType();
 				var queryProviderName = domainModel.ClassificationKey.ToQueryProviderName();
 				var queryProviderField = $"_{queryProviderName}";
+
+				if (!referencedIdentifiers.Contains(queryProviderField))
+				{
+					continue;
+				}
 
 				if (!unitInformation.ConstructorParameters.Any(p => p.Name == queryProviderName))
 				{
