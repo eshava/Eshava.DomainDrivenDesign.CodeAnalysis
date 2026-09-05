@@ -3,6 +3,39 @@
 Notable changes per released version, newest first. Versions before 1.2.21 are not documented here —
 the Git history is the source for those.
 
+## 1.2.26
+
+### Breaking
+
+* **An update or deactivate use case built with `readAggregateByChildId` no longer receives the
+  query infrastructure provider service of the aggregate.** It receives the one of the child
+  instead — see below. The parameter was never used by the generated code, but it was injected,
+  and a hand-written partial of such a use case could have reached for the field. Where one does,
+  the dependency has to be declared by hand now, through `AdditionalContructorParameter`.
+
+### Fixed
+
+* **An update or deactivate use case with `readAggregateByChildId` asked for the wrong query
+  infrastructure provider service and did not compile.** The lookup that turns the child id into
+  the id of the top level aggregate — `Read<Aggregate>IdAsync` — is declared on the **child's**
+  query provider, and the generated method body called it there. The constructor, however, was
+  handed the provider of the **aggregate**, so the field the body used did not exist: `CS0103` in
+  the consuming project, plus an injected dependency nothing touched. The create use case was
+  never affected, because there the id really is read through the parent.
+
+  **It surfaced only when the child domain model carries no validation rule.** A child that has one
+  contributes its own query provider through the regular dependency collection, which happened to
+  supply exactly the field the body was missing — so the defect sat behind three use cases in the
+  example project that compiled by coincidence. The example now covers a child without validation
+  rules on both use case types.
+
+* **The same combination generated a call with one argument too many.** Where the child hangs
+  directly on the top level aggregate, no wrapper method is generated — the child is patched
+  through the method taking the aggregate, the patches and the document layer, and the child id is
+  already the key of the patch pair. The call site appended it a second time regardless, producing
+  `CS1501` against a method that takes three parameters. The argument is now added only where the
+  wrapper it belongs to actually exists, which is a child nested two levels or deeper.
+
 ## 1.2.25
 
 ### Fixed

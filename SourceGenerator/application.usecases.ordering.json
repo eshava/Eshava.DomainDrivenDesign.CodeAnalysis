@@ -450,6 +450,28 @@
 				},
 				{
 					"type": 6,
+					"useCaseName": "DeactivateByPositionId",
+					"classificationKey": "Order",
+					"featureName": "OrderFeature",
+					"domainModelReference": "OrderPositionDDD",
+					"checkForeignKeyReferencesAutomatically": true,
+					"readAggregateByChildId": true,
+					"attributes": [
+						{
+							"name": "UseCaseClass",
+							"usingForType": "Eshava.Example.Application.Common.Attributes",
+							"parameters": [
+								{
+									"name": "name",
+									"type": "string",
+									"value": "OrderPosition"
+								}
+							]
+						}
+					]
+				},
+				{
+					"type": 6,
 					"useCaseName": "Deactivate",
 					"classificationKey": "Order",
 					"featureName": "OrderFeature",
@@ -768,6 +790,62 @@
 					"validationConfigurationAsTreeStructure": true,
 					"validationConfigurationKeepCapitalLettersTogether": false,
 					"checkForeignKeyReferencesAutomatically": true,
+					"dtos": [
+						{
+							"name": "OrderPositionUpdate",
+							"referenceModelName": "OrderPositionDDD",
+							"properties": [
+								{
+									"name": "PostionName",
+									"type": "string"
+								},
+								{
+									"name": "PositionDescription",
+									"type": "string"
+								},
+								{
+									"name": "ProductId",
+									"type": "int"
+								},
+								{
+									"name": "AlternativeProductId",
+									"type": "int?"
+								},
+								{
+									"name": "Price",
+									"type": "decimal"
+								},
+								{
+									"name": "Units",
+									"type": "int"
+								}
+							]
+						}
+					],
+					"attributes": [
+						{
+							"name": "UseCaseClass",
+							"usingForType": "Eshava.Example.Application.Common.Attributes",
+							"parameters": [
+								{
+									"name": "name",
+									"type": "string",
+									"value": "Order"
+								}
+							]
+						}
+					]
+				},
+				{
+					"type": 5,
+					"useCaseName": "UpdateByPositionId",
+					"classificationKey": "Order",
+					"featureName": "OrderFeature",
+					"addValidationConfigurationMethod": true,
+					"validationConfigurationAsTreeStructure": true,
+					"validationConfigurationKeepCapitalLettersTogether": false,
+					"checkForeignKeyReferencesAutomatically": true,
+					"readAggregateByChildId": true,
 					"dtos": [
 						{
 							"name": "OrderPositionUpdate",

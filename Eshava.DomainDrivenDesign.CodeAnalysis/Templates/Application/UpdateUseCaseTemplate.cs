@@ -32,7 +32,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 			var queryProviders = domainModelMap.GetQueryProviders(relevantDomainModelNames, request.ApplicationProjectNamespace, request.UseCasesMap.GetFeatureName).ToList();
 			if (request.UseCase.ReadAggregateByChildId && domainModelMap.IsChildDomainModel)
 			{
-				queryProviders.Add(domainModelMap.AggregateDomainModel.GetQueryProvider(request.ApplicationProjectNamespace, request.UseCasesMap.GetFeatureName));
+				queryProviders.Add(domainModelMap.GetQueryProvider(request.ApplicationProjectNamespace, request.UseCasesMap.GetFeatureName));
 			}
 
 			var domainModelTypeName = domainModelMap.GetDomainModelTypeName(request.DomainProjectNamespace, request.ApplicationProjectNamespace);
@@ -301,7 +301,13 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 					"request".Access(domainModelMap.ClassificationKey)
 				};
 
-				if (useCase.ReadAggregateByChildId)
+				// The child id is an argument of the wrapper method only, and CreateProcessChildsMethods
+				// generates that wrapper only when the aggregate the child hangs on is not the top level
+				// one. A direct child of the top level aggregate is patched through the method taking the
+				// aggregate, the patches and the document layer - its id is already the key of the patch
+				// pair, so passing it again calls a method that does not exist.
+				if (useCase.ReadAggregateByChildId
+					&& domainModelMap.GetTopLevelDomainModel().DomainModelName != domainModelMap.AggregateDomainModel.DomainModelName)
 				{
 					methodArguments.Add("request".Access($"{domainModelMap.ClassificationKey}Id"));
 				}
