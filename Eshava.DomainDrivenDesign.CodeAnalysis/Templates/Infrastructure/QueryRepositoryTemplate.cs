@@ -1475,6 +1475,10 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 									? model.Properties.First(p => p.Name == property.Name)
 									: model.Properties.First(p => p.Name == property.ReferenceProperty);
 							}
+							else if (relatedModel.ParentProperty is null)
+							{
+								relatedModel.ParentProperty = GetForeignKeyPropertyForNestedDto(model, childDataModel, childReferenceProperty.Dto.Domain, property.Name);
+							}
 
 							relatedModel.IsEnumerable = property.IsEnumerable;
 							relatedModel.ParentDtoPropertyName = property.Name;
@@ -1619,6 +1623,75 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 				.OrderBy(m => m.TableAliasConstant)
 				.ThenBy(m => m.Property.Name)
 				.ToList();
+		}
+
+		/// <summary>
+		/// Foreign key on <paramref name="model"/> pointing at <paramref name="childDataModel"/>, wrapped as the
+		/// navigation property a nested dto needs to be joined.
+		/// </summary>
+		/// <remarks>
+		/// A nested dto can be written two ways. It can name the model it hangs on and reach into the referenced
+		/// model through dotted reference properties - the dotted path then builds the navigation property that
+		/// carries the foreign key. Or it can name the referenced model itself and list its columns, and then
+		/// nothing carries it: CreateJoinQueryParts finds a null parent property, takes the child domain model
+		/// path, looks for a parent reference pointing back here, finds none - and emits no join at all while the
+		/// columns are selected all the same. The database rejects that statement; the generated C# compiles.
+		///
+		/// Returns null wherever that path is not the one in use - then the parent property stays null and the
+		/// existing behaviour is untouched.
+		/// </remarks>
+		private static InfrastructureModelProperty GetForeignKeyPropertyForNestedDto(InfrastructureModel model, InfrastructureModel childDataModel, string childDomain, string dtoPropertyName)
+		{
+			// Where the two models are parent and child of each other, in either direction, the join already comes
+			// out of the parent reference and must keep doing so. Overriding it here is not a no-op: a model that
+			// holds its parent reference alongside a second reference to the same table - Office with CustomerId
+			// and AlternativeCustomerId - would silently start joining on the wrong column.
+			var isRelatedThroughParentReference = model.Properties
+					.Any(p => p.IsParentReference
+						&& p.ReferenceType == childDataModel.Name
+						&& (p.ReferenceDomain.IsNullOrEmpty() || p.ReferenceDomain == childDomain)
+					)
+				|| childDataModel.Properties
+					.Any(p => p.IsParentReference && p.ReferenceType == model.Name);
+
+			if (isRelatedThroughParentReference)
+			{
+				return null;
+			}
+
+			var candidates = model.Properties
+				.Where(p => p.IsReference
+					&& !p.IsParentReference
+					&& p.ReferenceType == childDataModel.Name
+					&& (p.ReferenceDomain.IsNullOrEmpty() || p.ReferenceDomain == childDomain)
+				)
+				.ToList();
+
+			if (candidates.Count == 0)
+			{
+				return null;
+			}
+
+			// Two references to the same table are told apart by the dto property name: the property named Product
+			// is the one behind ProductId. Without that match a single candidate is still unambiguous; several are
+			// not, and guessing would join on the wrong column without saying so.
+			var foreignKeyProperty = candidates.FirstOrDefault(p => p.Name == $"{dtoPropertyName}Id")
+				?? (candidates.Count == 1 ? candidates[0] : null);
+
+			if (foreignKeyProperty is null)
+			{
+				return null;
+			}
+
+			return new InfrastructureModelProperty
+			{
+				Name = dtoPropertyName,
+				Type = childDataModel.Name,
+				IsReference = true,
+				ReferenceType = foreignKeyProperty.ReferenceType,
+				ReferenceDomain = foreignKeyProperty.ReferenceDomain,
+				ReferencePropertyName = foreignKeyProperty.Name
+			};
 		}
 
 		private static List<QueryAnalysisItem> CreateRelatedDataModelsForApplicableCodeSnippets(

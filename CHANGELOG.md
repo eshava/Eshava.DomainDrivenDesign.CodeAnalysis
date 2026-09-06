@@ -3,6 +3,41 @@
 Notable changes per released version, newest first. Versions before 1.2.21 are not documented here —
 the Git history is the source for those.
 
+## 1.2.27
+
+### Fixed
+
+* **A nested dto naming the referenced model itself produced its columns but no join.** A nested dto
+  can be written two ways, and only one of them carried the join. It can name the model it hangs on
+  and reach into the referenced model through dotted reference properties — `Product.Name` on a dto
+  over `OrderPositionData` — and then the dotted path builds the navigation property that carries
+  the foreign key. Or it can name the referenced model itself and list its plain columns, which is
+  what a grouped sub-object naturally looks like.
+
+  In the second form `CollectDataModelsForReferenceProperties` produced one analysis item per column
+  and parented them correctly, so the `SELECT` list and the dto assembly came out right — but it set
+  the parent property only where the nested model is a value object. For a real table it stayed null,
+  and `CreateJoinQueryParts` reads exactly that to choose its path: it took the child domain model
+  branch, looked for a parent reference pointing back at the queried model, found none, and emitted
+  no join. **The symptom is a table alias in the `SELECT` list that no `JOIN` introduces** — the
+  generated C# compiles, the alias is a declared constant, and only the database rejects the
+  statement.
+
+  The parent property is now filled from the foreign key on the queried model, and the existing join
+  branch turns it into the `ON` clause unchanged. Two guards keep it from reaching further than it
+  should: where the two models are parent and child of each other in either direction the join
+  already comes out of the parent reference and is left alone, and where a model holds several
+  references to the same table the dto property name has to name the one to use. Both matter — a
+  model with a parent reference and a second reference to the same table would otherwise start
+  joining on the wrong column, silently.
+
+  **This is not the open defect below.** That one is about a property two or more references away
+  losing the joins of its intermediate hops; this is a first level reference, and it is fixed.
+
+  The example project gained a search use case in this form, which it had nowhere before — which is
+  why the defect survived. Verified as that section demands: the full generated output before and
+  after, normalised for the tick-based parameter names, differs in nothing but the added join.
+
 ## 1.2.26
 
 ### Breaking

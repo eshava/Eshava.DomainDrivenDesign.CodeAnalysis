@@ -894,6 +894,73 @@
 				},
 				{
 					"type": 2,
+					"useCaseName": "SearchWithProductDetails",
+					"classificationKey": "OrderPosition",
+					"featureName": "OrderFeature",
+					"skipCountUseCase": true,
+					"dtos": [
+						{
+							"name": "OrderPositionWithProductDetailsItem",
+							"referenceModelName": "OrderPositionData",
+							"properties": [
+								{
+									"name": "Id",
+									"type": "int"
+								},
+								{
+									"name": "Name",
+									"type": "string",
+									"referenceProperty": "PostionName",
+									"isSortable": true,
+									"useForDefaultSorting": true
+								},
+								{
+									"name": "Units",
+									"type": "int"
+								},
+								{
+									"name": "ProductDetails",
+									"type": "ProductDetailsItem"
+								}
+							]
+						},
+						{
+							"name": "ProductDetailsItem",
+							"referenceModelName": "ProductData",
+							"properties": [
+								{
+									"name": "Id",
+									"type": "int"
+								},
+								{
+									"name": "Name",
+									"type": "string"
+								},
+								{
+									"name": "Category",
+									"type": "ProductCategory",
+									"usingForType": "Eshava.Example.Domain.Ordering.ProductFeature"
+								}
+							]
+						}
+					],
+					"mainDto": "OrderPositionWithProductDetailsItem",
+					"attributes": [
+						{
+							"name": "UseCaseClass",
+							"usingForType": "Eshava.Example.Application.Common.Attributes",
+							"parameters": [
+								{
+									"name": "name",
+									"type": "string",
+									"value": "OrderPosition"
+								}
+							]
+						}
+					]
+				},
+				{
+					"type": 2,
 					"useCaseName": "Search",
 					"classificationKey": "OrderPosition",
 					"featureName": "OrderFeature",
