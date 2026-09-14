@@ -847,6 +847,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 						var codeSnippetTableParts = new List<InterpolatedStringContentSyntax>();
 						AddCodeSnippetReadConditions(codeSnippetTableParts, queryParameters, item.DataModel, dataType, item.TableAliasConstant.ToIdentifierName(), metaData, true);
 
+						// The foreign key sits on the joined model, so a queried row may have no match at all
 						interpolatedTableParts.AddRange(
 							GetJoinsQueryParts(
 								item.TableAliasConstant,
@@ -859,7 +860,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 								implementSoftDelete,
 								queryParameters,
 								metaData,
-								codeSnippetTableParts.Count > 0 ? SqlJoinType.Join : SqlJoinType.LeftJoin
+								GetJoinType(codeSnippetTableParts, null)
 							)
 						);
 						match = true;
@@ -891,7 +892,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 							implementSoftDelete,
 							queryParameters,
 							metaData,
-							codeSnippetTableParts.Count > 0 ? SqlJoinType.Join : SqlJoinType.LeftJoin
+							GetJoinType(codeSnippetTableParts, referenceProperty)
 						)
 					);
 					match = true;
@@ -957,6 +958,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 			var codeSnippetTableParts = new List<InterpolatedStringContentSyntax>();
 			AddCodeSnippetReadConditions(codeSnippetTableParts, queryParameters, item.DataModel, dataType, item.TableAliasConstant.ToIdentifierName(), metaData, true);
 
+			// The foreign key sits on the joined model, so a queried row may have no match at all
 			interpolatedTableParts.AddRange(
 				GetJoinsQueryParts(
 					item.TableAliasConstant,
@@ -969,7 +971,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 					implementSoftDelete,
 					queryParameters,
 					metaData,
-					codeSnippetTableParts.Count > 0 ? SqlJoinType.Join : SqlJoinType.LeftJoin
+					GetJoinType(codeSnippetTableParts, null)
 				)
 			);
 			match = true;
@@ -1017,6 +1019,33 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Infrastructure
 					queryParameters.Add((typeValue, typePropertyParameter));
 				}
 			}
+		}
+
+		/// <summary>
+		/// Decides how a referenced table is joined.
+		/// </summary>
+		/// <remarks>
+		/// The code snippet read conditions - the owner and status checks a consumer attaches to a
+		/// table - are written into the ON clause, so they restrict the joined row whichever join type
+		/// is used. Whether the join may also drop the <b>queried</b> row is a separate question, and
+		/// it is answered by the reference alone: only where the queried side holds the foreign key
+		/// and that key cannot be null is a matching row guaranteed to exist, and only then is an inner
+		/// join safe. A nullable foreign key, or a key sitting on the joined side - a child that may
+		/// not exist - stays a left join, because an inner join there removes every queried row without
+		/// a match from the result. Without snippet conditions the join is a left join in any case.
+		/// </remarks>
+		/// <param name="codeSnippetTableParts">The snippet conditions written for the joined table</param>
+		/// <param name="foreignKeyOnQueriedSide">The foreign key on the queried side of the join, or null where the joined model holds the key</param>
+		private static SqlJoinType GetJoinType(List<InterpolatedStringContentSyntax> codeSnippetTableParts, InfrastructureModelProperty foreignKeyOnQueriedSide)
+		{
+			if (codeSnippetTableParts.Count == 0
+				|| foreignKeyOnQueriedSide is null
+				|| foreignKeyOnQueriedSide.IsNullableType)
+			{
+				return SqlJoinType.LeftJoin;
+			}
+
+			return SqlJoinType.Join;
 		}
 
 		private static List<InterpolatedStringContentSyntax> GetJoinsQueryParts(

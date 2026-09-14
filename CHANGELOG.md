@@ -3,6 +3,40 @@
 Notable changes per released version, newest first. Versions before 1.2.21 are not documented here —
 the Git history is the source for those.
 
+## 1.2.28
+
+### Fixed
+
+* **A referenced table carrying code snippet read conditions was joined with an inner join, and the
+  queried rows without a match disappeared with it.** Since the join type was introduced, the
+  decision was made by one question only: does the joined table get snippet conditions - the owner
+  and status checks a consumer attaches to a table, `UserId = @UserId` in the example. Where it did,
+  the join was an inner join. That is right for exactly one shape of reference: a foreign key on the
+  queried side that cannot be null. It is wrong for the other two, and both occur in ordinary
+  configurations.
+
+  A **nullable foreign key** - `DepreciationId` of type `int?` pointing at a table with an owner
+  condition - dropped every queried row in which the key is unset. Where a dto joined two such
+  references, only the rows carrying both survived, which for a booking with an optional
+  depreciation and an optional loan agreement is close to none. **The symptom is a search that
+  returns nothing while the read by id still works** - the read does not join the referenced tables.
+  Nothing fails: the statement is valid and the rows are simply not in it.
+
+  A **foreign key on the joined side** - a child collection joined onto its aggregate through the
+  child's parent reference - dropped every queried row that has no child. A read of an aggregate with
+  an empty collection came back empty.
+
+  The join type is decided in one place now, `GetJoinType`, and it asks the reference: an inner join
+  only where snippet conditions exist **and** the queried side holds the foreign key **and** that key
+  is not nullable. Everything else is a left join, as it was before the join type existed. The snippet
+  conditions stay inside the `ON` clause either way, so a left join still hides the columns of a row
+  that fails the owner check - it just no longer removes the queried row along with it.
+
+  Only the join keyword changes. Verified on the example configuration by generating everything
+  before and after and comparing, normalised for the tick-based parameter names: 18 of 143 joins move
+  from `JOIN` to `LEFT JOIN` - the one nullable key on the queried side and the seventeen child-side
+  joins - and nothing else differs. The example gained tests pinning the three shapes.
+
 ## 1.2.27
 
 ### Fixed

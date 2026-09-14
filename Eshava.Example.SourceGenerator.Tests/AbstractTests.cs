@@ -9,26 +9,24 @@ namespace Eshava.Example.SourceGenerator.Tests
 	{
 		protected static DataContainer Init()
 		{
-#pragma warning disable RS1035 // Do not use APIs banned for analyzers
-			var apiProjectJson = System.IO.File.ReadAllText(@"..\..\..\..\SourceGenerator\api.project.json", System.Text.Encoding.UTF8);
-			var apiRoutesOrderingOrderJson = System.IO.File.ReadAllText(@"..\..\..\..\SourceGenerator\api.routes.ordering.orders.json", System.Text.Encoding.UTF8);
-			var apiRoutesOrderingOrderPositionJson = System.IO.File.ReadAllText(@"..\..\..\..\SourceGenerator\api.routes.ordering.orderpositions.json", System.Text.Encoding.UTF8);
-			var apiRoutesOrderingProductJson = System.IO.File.ReadAllText(@"..\..\..\..\SourceGenerator\api.routes.ordering.products.json", System.Text.Encoding.UTF8);
-			var apiRoutesOrganizationsJson = System.IO.File.ReadAllText(@"..\..\..\..\SourceGenerator\api.routes.organizations.json", System.Text.Encoding.UTF8);
+			var apiProjectJson = ReadConfiguration("api.project.json");
+			var apiRoutesOrderingOrderJson = ReadConfiguration("api.routes.ordering.orders.json");
+			var apiRoutesOrderingOrderPositionJson = ReadConfiguration("api.routes.ordering.orderpositions.json");
+			var apiRoutesOrderingProductJson = ReadConfiguration("api.routes.ordering.products.json");
+			var apiRoutesOrganizationsJson = ReadConfiguration("api.routes.organizations.json");
 			
-			var applicationProjectJson = System.IO.File.ReadAllText(@"..\..\..\..\SourceGenerator\application.project.json", System.Text.Encoding.UTF8);
-			var applicationUseCasesOrderingJson = System.IO.File.ReadAllText(@"..\..\..\..\SourceGenerator\application.usecases.ordering.json", System.Text.Encoding.UTF8);
-			var applicationUseCasesOrganizationsJson = System.IO.File.ReadAllText(@"..\..\..\..\SourceGenerator\application.usecases.organizations.json", System.Text.Encoding.UTF8);
+			var applicationProjectJson = ReadConfiguration("application.project.json");
+			var applicationUseCasesOrderingJson = ReadConfiguration("application.usecases.ordering.json");
+			var applicationUseCasesOrganizationsJson = ReadConfiguration("application.usecases.organizations.json");
 			
-			var domainProjectJson = System.IO.File.ReadAllText(@"..\..\..\..\SourceGenerator\domain.project.json", System.Text.Encoding.UTF8);
-			var domainModelsOrderingJson = System.IO.File.ReadAllText(@"..\..\..\..\SourceGenerator\domain.models.ordering.json", System.Text.Encoding.UTF8);
-			var domainModelsOrganizationsJson = System.IO.File.ReadAllText(@"..\..\..\..\SourceGenerator\domain.models.organizations.json", System.Text.Encoding.UTF8);
+			var domainProjectJson = ReadConfiguration("domain.project.json");
+			var domainModelsOrderingJson = ReadConfiguration("domain.models.ordering.json");
+			var domainModelsOrganizationsJson = ReadConfiguration("domain.models.organizations.json");
 			
-			var infrastructurProjectJson = System.IO.File.ReadAllText(@"..\..\..\..\SourceGenerator\infrastructure.project.json", System.Text.Encoding.UTF8);
-			var infrastructurModelsOrderingJson = System.IO.File.ReadAllText(@"..\..\..\..\SourceGenerator\infrastructure.models.ordering.json", System.Text.Encoding.UTF8);
-			var infrastructurModelsOrganizationsJson = System.IO.File.ReadAllText(@"..\..\..\..\SourceGenerator\infrastructure.models.organizations.json", System.Text.Encoding.UTF8);
-			var infrastructurModelsAccountingJson = System.IO.File.ReadAllText(@"..\..\..\..\SourceGenerator\infrastructure.models.accounting.json", System.Text.Encoding.UTF8);
-#pragma warning restore RS1035 // Do not use APIs banned for analyzers
+			var infrastructurProjectJson = ReadConfiguration("infrastructure.project.json");
+			var infrastructurModelsOrderingJson = ReadConfiguration("infrastructure.models.ordering.json");
+			var infrastructurModelsOrganizationsJson = ReadConfiguration("infrastructure.models.organizations.json");
+			var infrastructurModelsAccountingJson = ReadConfiguration("infrastructure.models.accounting.json");
 
 			var apiProjectConfig = Newtonsoft.Json.JsonConvert.DeserializeObject<ApiProject>(apiProjectJson);
 			var apiRoutesConfigs = new[]
@@ -71,6 +69,20 @@ namespace Eshava.Example.SourceGenerator.Tests
 				InfrastructureProject = infrastructureProjectConfig,
 				InfrastructureModels = infrastructureModelsConfigs
 			};
+		}
+
+		/// <summary>
+		/// Reads a configuration file of the example from the SourceGenerator folder, relative to the
+		/// test assembly. Built with Path.Combine so the tests run on Windows and Linux alike - a
+		/// backslash in a literal path is part of the file name on Linux.
+		/// </summary>
+		private static string ReadConfiguration(string fileName)
+		{
+#pragma warning disable RS1035 // Do not use APIs banned for analyzers
+			var path = System.IO.Path.Combine("..", "..", "..", "..", "SourceGenerator", fileName);
+
+			return System.IO.File.ReadAllText(path, System.Text.Encoding.UTF8);
+#pragma warning restore RS1035 // Do not use APIs banned for analyzers
 		}
 	}
 }
