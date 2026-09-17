@@ -1,7 +1,40 @@
-# Changelog
+﻿# Changelog
 
 Notable changes per released version, newest first. Versions before 1.2.21 are not documented here —
 the Git history is the source for those.
+
+## 1.2.29
+
+### Fixed
+
+* **A create use case walked a child the payload did not carry, and threw a `NullReferenceException`
+  on every caller that left a child out.** The generated dto declares a child property without an
+  initializer, so a missing child arrives as `null` rather than as an empty list - and the generated
+  create took it straight into a `foreach`, or into the domain model's `Add` method for a single
+  child. Both dereference it. The endpoint answered 500 where the payload was merely short of a
+  block, and it did so in every service built with this generator.
+
+  A missing child is now answered by the dto property that describes it: declared `Required` it is a
+  faulty response carrying the validation error `Required` on that property, otherwise there is
+  simply nothing to create and the create call is skipped.
+
+  **That question is asked at run time, of the generated dto type, and it has to be.** A child is no
+  property of the domain model - it is an entry in its `childDomainModels` - so the route by which a
+  domain model property hands its attributes to the dto property does not exist for a child, and the
+  configured dto property carries nothing to read while the statements are written. The generated dto
+  does carry the attribute, so the emitted code asks the type:
+  `System.Attribute.IsDefined(typeof(…Dto).GetProperty("Children"), typeof(RequiredAttribute))`, and
+  only in the branch where the child is `null`.
+
+  The check sits at the call site rather than inside the generated `Create…Async` method, which puts
+  it in one place for all of it: the child list and the single child, and every nesting level - an
+  aggregate's children, their children, and theirs. The update use case is untouched by this. It
+  calls the same create method with the `ItemsToAdd` of a patch comparison, which is a list the
+  comparison builds and never `null`.
+
+  Nothing generated before changes; the create call moves into the `else` branch of the new check.
+  Verified on the example configuration, which describes children three levels deep and in both
+  shapes, and pinned with tests.
 
 ## 1.2.28
 

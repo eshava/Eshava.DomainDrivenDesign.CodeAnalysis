@@ -1,4 +1,4 @@
-# Eshava.DomainDrivenDesign.CodeAnalysis — Repository Notes
+﻿# Eshava.DomainDrivenDesign.CodeAnalysis — Repository Notes
 
 Roslyn source generator that produces the boilerplate the `Eshava.DomainDrivenDesign` approach
 requires. That boilerplate runs through all four layers and, if the approach is followed
@@ -145,6 +145,32 @@ on either side.
 output byte for byte** — normalise the tick-based `filterValueFor…` variable names first. The
 factory classes can be run outside a generator, which makes that cheap. Joins may shrink; the
 `Where.Add` expressions and the selected columns must not change.
+
+## Children A Payload Leaves Out
+
+**A child property the caller omits arrives as `null`, not as an empty list.** The generated dto
+declares it as a plain auto property — `public IEnumerable<XDto> Children { get; set; }` — and
+nothing fills it in. That is deliberate: an initializer would hide the difference between "not sent"
+and "sent empty", and the two do not have to mean the same thing.
+
+`AddCreateChildModelsStatements` therefore emits the create call inside a null check, for the child
+list and the single child alike and on every nesting level. Without it a missing child is a
+`NullReferenceException` in the generated use case.
+
+**Whether a missing child is an error is asked at run time, not while generating** — `CreateRequiredCheck`
+writes `System.Attribute.IsDefined(typeof(…Dto).GetProperty("Children"), typeof(RequiredAttribute))`
+into the `null` branch, and the faulty response hangs off that.
+
+**The reason is worth keeping, because the generation-time version looks correct and is dead code:**
+a child is no property of the domain model, it is an entry in `childDomainModels` — a name. The route
+by which `CollectPropertyUsings` hands a domain model property's attributes to its dto property
+therefore does not exist for a child, so `ReferenceDtoProperty.Property.Attributes` is what the
+configuration alone put there, which in an ordinary configuration is nothing. The generated dto
+carries the attribute; the configuration object the template sees does not.
+
+**Inside the generated `Create…Async` method the loop stays unguarded on purpose.** Its other caller
+is the update use case, which passes the `ItemsToAdd` of a patch comparison — a list that is never
+`null`.
 
 ## Known Defect: Missing Joins Beyond The Second Reference
 

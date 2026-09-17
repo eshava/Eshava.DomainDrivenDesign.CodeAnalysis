@@ -17,6 +17,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Constants
 			public const string SUFFIX = "Attribute";
 
 			public const string JSONIGNORE = "JsonIgnore";
+			public const string REQUIRED = "Required";
 		}
 
 		public static class DatabaseSettings
@@ -52,6 +53,7 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Constants
 			public const string SYSTEM = "System";
 			public const string SYSTEM_OI = "System.IO";
 			public const string SYSTEM_NET = "System.Net";
+			public const string DATAANNOTATIONS = "System.ComponentModel.DataAnnotations";
 			public const string GENERIC = "System.Collections.Generic";
 			public const string LINQ = "System.Linq";
 			public const string EXPRESSION = "System.Linq.Expressions";

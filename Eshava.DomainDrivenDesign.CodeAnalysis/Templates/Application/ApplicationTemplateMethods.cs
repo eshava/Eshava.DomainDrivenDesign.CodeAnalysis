@@ -790,15 +790,66 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Application
 					? childDomainModel.DomainModelName.ToPlural()
 					: childDomainModel.DomainModelName;
 
+				var childProperty = dto.Access(childReferenceProperty.Property.Name);
+
+				var createStatements = new List<StatementSyntax>();
 				StatementHelpers.AddLocalAsyncMethodCallAndFaultyCheck(
-					statements,
+					createStatements,
 					$"Create{methodReference}Async",
 					$"create{childReferenceProperty.Property.Name}Result",
 					returnDataType,
 					createResult.Access("Data"),
-					dto.Access(childReferenceProperty.Property.Name)
+					childProperty
+				);
+
+				// A child the payload does not carry is null, not an empty list: the generated dto declares
+				// the property without an initializer, so leaving a child out reaches the create as null -
+				// and the create method walked it without asking. Whether that is an error is decided by
+				// the dto property itself, asked at run time - see CreateRequiredCheck.
+				statements.Add(
+					childProperty
+						.IsNull()
+						.If(
+							CreateRequiredCheck(dtoMap.DtoName, childReferenceProperty.Property.Name)
+								.If(
+									CommonNames.RESPONSEDATA
+										.AsGeneric(returnDataType)
+										.CreateFaultyResponse(
+											EshavaMessageConstant.InvalidData.Map(),
+											(childReferenceProperty.Property.Name, CommonNames.Attributes.REQUIRED, null)
+										)
+										.Return()
+								)
+						)
+						.Else(createStatements.ToArray())
 				);
 			}
+		}
+
+		/// <summary>
+		/// Expression asking the dto type at run time whether the child property is declared as required.
+		/// The question cannot be answered while generating: a child is no property of the domain model
+		/// but an entry in its childDomainModels, so the route by which a domain model property hands its
+		/// attributes to the dto property does not exist here, and the configured dto property carries
+		/// nothing to read. The generated dto does carry the attribute, so the type is asked instead.
+		/// </summary>
+		private static ExpressionSyntax CreateRequiredCheck(string dtoName, string propertyName)
+		{
+			var propertyInfo = dtoName
+				.ToIdentifierName()
+				.TypeOf()
+				.Access("GetProperty")
+				.Call(propertyName.ToLiteralString().ToArgument());
+
+			var requiredAttribute = $"{CommonNames.Namespaces.DATAANNOTATIONS}.{CommonNames.Attributes.REQUIRED}{CommonNames.Attributes.SUFFIX}"
+				.ToIdentifierName()
+				.TypeOf();
+
+			// fully qualified: the use cases this runs in do not all declare a using for System
+			return $"{CommonNames.Namespaces.SYSTEM}.Attribute"
+				.ToIdentifierName()
+				.Access("IsDefined")
+				.Call(propertyInfo.ToArgument(), requiredAttribute.ToArgument());
 		}
 
 		public static List<StatementSyntax> CreateCatchBlock(string returnDataType, ApplicationUseCase useCase, ReferenceDomainModelMap domainModel, bool referencesAreFields)
