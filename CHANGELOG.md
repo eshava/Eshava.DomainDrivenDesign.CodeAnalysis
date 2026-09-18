@@ -36,6 +36,41 @@ the Git history is the source for those.
   Verified on the example configuration, which describes children three levels deep and in both
   shapes, and pinned with tests.
 
+* **A route returning a file described itself as JSON and published the internals of
+  `System.IO.FileStream` as its response schema.** A custom use case configured with
+  `producesFileStreamResult` got `.Produces(200, typeof(System.IO.FileStream))`. The overload is
+  `Produces(int statusCode, Type? responseType, string? contentType, params string[])`, so leaving
+  the third argument out left the content type at its default of `application/json` - and because a
+  type was passed, the OpenAPI generation reflected over `FileStream` and wrote its public
+  properties out as the schema: `handle`, `canRead`, `canSeek`, `position`, `readTimeout` and the
+  rest, with `SafeFileHandle` following as a component of its own.
+
+  **The runtime was never wrong.** The generated handler ends in
+  `TypedResults.File(stream, contentType, fileName)` and returns the file with its real content type
+  and name, which is why this survived unnoticed - a caller invoking the route gets what it expects.
+  The damage is on the side that reads the document instead of calling the route: a generated client
+  builds a model class with `canRead` and `handle`, expects `application/json`, and fails in a way
+  that looks like a defect of the service.
+
+  The call is now `.Produces(200, typeof(System.IO.Stream), "application/octet-stream")`.
+  `application/octet-stream` is the right declared value because the real type varies per file and
+  is set by `TypedResults.File` at run time.
+
+  **`System.IO.Stream` rather than `FileStream`, and the difference is not cosmetic.** The OpenAPI
+  schema generation maps `Stream` to `{ "type": "string", "format": "binary" }`, which is the
+  description of a file download; `FileStream` it reflects over like any other object. Passing the
+  content type alone does not help - the object schema simply moves under the new content type.
+  `byte[]` was measured as well and gives `format: "byte"`, which means base64 and would send a
+  generated client decoding a body that is not encoded.
+
+  Established by generating the example and reading the published document rather than from the
+  signature: before the change its two file routes answered with
+  `application/json` and `$ref: FileStream`, after it with `application/octet-stream` and a `Stream`
+  schema of `type: string, format: binary`; `FileStream` and `SafeFileHandle` are gone from the
+  components. Nothing else in the document and nothing else in the generated code changed - the
+  handler bodies are identical, so there is no runtime change to expect in a consuming service, only
+  a corrected description.
+
 ## 1.2.28
 
 ### Fixed

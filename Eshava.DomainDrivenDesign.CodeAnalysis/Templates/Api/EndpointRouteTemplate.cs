@@ -205,7 +205,11 @@ namespace Eshava.DomainDrivenDesign.CodeAnalysis.Templates.Api
 
 				mapCall = mapCall
 					.Access("Produces")
-					.Call([httpStatusCode.ToString().ToLiteralInt().ToArgument(), "System.IO.FileStream".ToIdentifierName().TypeOf().ToArgument()]);
+					.Call([
+						httpStatusCode.ToString().ToLiteralInt().ToArgument(),
+						"System.IO.Stream".ToIdentifierName().TypeOf().ToArgument(),
+						"application/octet-stream".ToLiteralArgument()
+					]);
 			}
 			else
 			{
